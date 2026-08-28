@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="SGIG.Datos/SGIG.Datos.csproj" Id="03453a13-1891-4766-8a16-b49373943aa3" />
+  <Project Path="SGIG.Entidades/SGIG.Entidades.csproj" Id="8dea3172-5525-4f88-aa3d-6b471dfa9aa2" />
+  <Project Path="SGIG.Negocio/SGIG.Negocio.csproj" Id="a665b2d5-b377-4e05-886e-6315aa37d59f" />
+  <Project Path="SGIG.UI/SGIG.UI.csproj" Id="1c25467d-f773-4416-a1ed-16f6147f897f" />
+</Solution>
