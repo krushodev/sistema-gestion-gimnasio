@@ -4,7 +4,7 @@
 - **Arquitectura en 4 capas**, dependencias en un solo sentido: `SGIG.UI → SGIG.Negocio → SGIG.Datos → SGIG.Entidades`. La UI nunca llama a `SGIG.Datos` y ningún formulario contiene SQL.
 - **Datos:** un repositorio por entidad, SQL en `const string`, parámetros por objeto anónimo (jamás interpolación), alias `AS` para mapear snake_case → PascalCase, `try…catch` de `SqlException` relanzada como `AccesoDatosException`. Conexión sólo vía `Conexion.ObtenerConexionAbierta()` (cadena en `App.config` de `SGIG.UI`).
 - **Transacciones `SqlTransaction`** explícitas para toda escritura que toque más de una tabla; baja **lógica**, nunca `DELETE`, sobre `Socio`, `Usuario` y `Plan`. Contraseñas con hash SHA256.
-- **Controles en notación húngara** (`frm`, `txt`, `btn`, `cbo`, `dgv`, `lbl`, `mnu`…) y formularios hijos siempre dentro de `frmMDIParent`. No generar ni editar archivos `.Designer.cs` / `.resx`.
+- **Controles en notación húngara** (`frm`, `txt`, `btn`, `cbo`, `dgv`, `lbl`, `mnu`…) y formularios hijos siempre dentro de `frmMDIParent`. Cada formulario son dos archivos escritos a mano: la clase y su `.Designer.cs`, con la estructura estándar de Visual Studio para que el diseñador visual lo siga pudiendo editar. Verificar siempre con `dotnet build SGIG.slnx`.
 
 **El detalle, con ejemplos de código del propio proyecto, está en [`docs/patrones/`](../docs/patrones/) — leerlo antes de escribir código.** Fuentes de verdad del proyecto: `docs/ERS_SGIG_v3.docx`, `docs/SGIG_CreateDB.sql`, `docs/Plan_Trabajo_SGIG.md`.
 

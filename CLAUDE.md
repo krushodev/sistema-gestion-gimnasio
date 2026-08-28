@@ -126,15 +126,25 @@ Este es el nivel de detalle que se espera en cada repositorio: SQL explícito y 
 
 Si en algún momento el modelo de datos necesita cambiar, el cambio se hace primero en la ERS y en el script SQL (ambos en `/docs`), y recién después se refleja en `SGIG.Entidades` y en la base. Nunca al revés.
 
-## Límite importante de este entorno
+## Qué puede y qué no puede hacer un agente en este entorno
 
-Un agente Claude puede leer, escribir y editar archivos `.cs` (clases de `Entidades`, `Datos`, `Negocio`, y el código "code-behind" no generado por el diseñador de un formulario), y puede razonar sobre la arquitectura, generar SQL, revisar convenciones y mantener la documentación sincronizada. **No puede compilar ni ejecutar el proyecto de Windows Forms** (requiere Visual Studio con el diseñador de formularios en Windows) **ni diseñar visualmente un formulario** (arrastrar controles, fijar `Anchor`/`Dock`, tamaños) — esto aplica igual en .NET moderno que en .NET Framework, el diseñador de WinForms de Visual Studio 2022+ sigue generando `.Designer.cs`/`.resx` de la misma forma. Para cada formulario nuevo, el agente debe:
+Un agente Claude puede leer, escribir y editar todos los archivos `.cs` del proyecto —incluidos los `.Designer.cs`—, razonar sobre la arquitectura, generar SQL, revisar convenciones y mantener la documentación sincronizada.
 
-1. Dejar en el archivo de la clase (no el `.Designer.cs`) un comentario con la lista de controles necesarios y su nombre en notación húngara, para que el estudiante los agregue con el diseñador de Visual Studio.
-2. Escribir el código de los manejadores de eventos (`btnGuardar_Click`, suscripto en el constructor o vía el diseñador) asumiendo esos nombres de control.
-3. Nunca inventar o editar directamente un archivo `.Designer.cs` o `.resx` — esos los genera Visual Studio.
+**Sí puede compilar y ejecutar.** El SDK de .NET 10 está instalado en la máquina (`dotnet --version` → 10.0.400), así que `dotnet build SGIG.slnx` corre y es la forma de verificar el trabajo antes de darlo por terminado. No hace falta Visual Studio para compilar: solo para el diseñador visual. Un agente **no debe cerrar una tarea sin haber compilado**, y cuando el cambio tenga comportamiento verificable (que una clase se instancie, que una consulta devuelva lo esperado) conviene comprobarlo con un proyecto de prueba desechable en el directorio de scratchpad, nunca dentro del repo.
 
-Cuando haga falta compilar o correr el proyecto de verdad, eso lo hace el estudiante en su máquina con Visual Studio; el agente prepara el código para que compile a la primera con solo agregar los controles indicados.
+**Sí puede generar `.Designer.cs`.** Al crear un formulario nuevo, el agente escribe los dos archivos: la clase (`frmLogin.cs`) y su diseñador (`frmLogin.Designer.cs`). El `.Designer.cs` tiene que seguir la estructura exacta que genera Visual Studio, para que el diseñador visual lo pueda seguir abriendo y editando después:
+
+- campo `private System.ComponentModel.IContainer components = null;` y `protected override void Dispose(bool disposing)`;
+- la región `#region Windows Form Designer generated code` con el método `InitializeComponent()`;
+- `SuspendLayout()` / `ResumeLayout(false)` / `PerformLayout()` alrededor de la construcción;
+- asignaciones **totalmente calificadas** (`new System.Windows.Forms.TextBox()`, `System.Drawing.Point`), un bloque comentado por control, y los campos privados declarados al final;
+- eventos suscriptos ahí mismo (`this.btnGuardar.Click += new System.EventHandler(this.btnGuardar_Click);`).
+
+Los nombres de control van en notación húngara (RNF#05), no los que autogeneraría el asistente de VS (`seguridadToolStripMenuItem` y similares). Conviene además dejar en la clase, arriba, un comentario con la tabla de controles y sus propiedades: sirve de referencia rápida y de contrato con el diseñador.
+
+**Lo que sigue sin poder hacer** es el diseño *visual*: no ve el formulario renderizado, así que no puede juzgar espaciados, alineaciones, `Anchor`/`Dock` ni tamaños que "se vean bien". Produce un layout razonable y funcional; el ajuste fino queda para el estudiante en el diseñador de Visual Studio, que es exactamente lo que el `.Designer.cs` bien formado le permite hacer.
+
+**Archivos `.resx`:** no inventarlos. Solo hacen falta cuando el formulario usa recursos (íconos, imágenes); si no hay recursos, el formulario compila sin `.resx` y Visual Studio lo crea solo cuando haga falta.
 
 ## Orden de trabajo
 

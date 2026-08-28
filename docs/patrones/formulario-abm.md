@@ -48,6 +48,11 @@ private void CargarGrilla()
 }
 ```
 
-**Nota para agentes:** el `.Designer.cs` y el `.resx` los genera Visual Studio — nunca crearlos ni
-editarlos. En el archivo de la clase se deja un comentario con la lista de controles a agregar con
-el diseñador (nombre + tipo) y se escribe el code-behind asumiendo esos nombres.
+**Nota para agentes:** el formulario son **dos archivos** y los escribe el agente: la clase
+(`frmSocios.cs`) con el comportamiento, y `frmSocios.Designer.cs` con los controles, siguiendo la
+estructura estándar de Visual Studio (`components`, `Dispose(bool)`, región
+`Windows Form Designer generated code`, `SuspendLayout`/`ResumeLayout`, tipos totalmente
+calificados) para que el diseñador visual lo pueda seguir editando. Los `.resx` no se inventan:
+sólo hacen falta si el formulario usa recursos. Ver la sección "Qué puede y qué no puede hacer un
+agente" de `CLAUDE.md`. Siempre compilar con `dotnet build SGIG.slnx` antes de dar el formulario
+por terminado.

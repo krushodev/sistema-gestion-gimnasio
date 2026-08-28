@@ -16,7 +16,7 @@ las convenciones de SGIG siguen viviendo una sola vez en el resto de `docs/patro
 |---|---|---|
 | `dotnet-winforms-basics` | `wshaddix/dotnet-skills` | WinForms sobre .NET 8+/10: alto DPI (`PerMonitorV2`), `ApplicationConfiguration.Initialize()`, plantillas SDK-style, errores típicos. Es el material más cercano a `frmMDIParent` y los ABM. |
 | `dotnet-agent-gotchas` | `wshaddix/dotnet-skills` | Catálogo de errores que cometen los agentes al escribir C#: APIs deprecadas, NuGet, `.Result`/`.Wait()`. Red de seguridad, no hay que leerla entera. |
-| `dotnet-csproj-reading` | `wshaddix/dotnet-skills` | Leer y modificar `.csproj` SDK-style sin romperlos: `PropertyGroup`, `ItemGroup`, `ProjectReference`, `PackageReference`. Directamente útil porque el agente no puede compilar. |
+| `dotnet-csproj-reading` | `wshaddix/dotnet-skills` | Leer y modificar `.csproj` SDK-style sin romperlos: `PropertyGroup`, `ItemGroup`, `ProjectReference`, `PackageReference`. Útil al tocar referencias de proyecto y paquetes sin romper el build. |
 | `dotnet-solution-navigation` | `wshaddix/dotnet-skills` | Orientarse en una solución: `.sln`/`.slnx`, punto de entrada, grafo de dependencias entre proyectos. |
 | `dotnet-xml-docs` | `wshaddix/dotnet-skills` | Comentarios `///` en entidades, repositorios y servicios: `<summary>`, `<param>`, `<exception>`, `<inheritdoc>`. |
 | `csharp-docs` | `github/awesome-copilot` | Versión corta y opinada de lo mismo, en modo checklist. |
