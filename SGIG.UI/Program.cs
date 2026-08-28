@@ -24,9 +24,7 @@ namespace SGIG.UI
                     break;
                 }
 
-                // TODO (Fase 2.4): pasar el usuario autenticado (login.UsuarioAutenticado)
-                // al constructor de frmMDIParent para armar el menú según su rol.
-                Application.Run(new frmMDIParent());
+                Application.Run(new frmMDIParent(login.UsuarioAutenticado!));
             }
         }
     }

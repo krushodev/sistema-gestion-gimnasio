@@ -1,75 +1,83 @@
+using SGIG.Entidades;
+
 namespace SGIG.UI
 {
     /// <summary>
     /// Contenedor MDI y punto único de navegación del sistema (RNF#02).
-    /// Todos los formularios del sistema se abren como hijos de este, nunca sueltos.
-    /// Se abre desde <see cref="frmLogin"/> tras un login exitoso.
+    /// Todos los formularios se abren como hijos de este, nunca sueltos.
+    /// Se abre desde <see cref="Program"/> tras un login exitoso, con el usuario
+    /// autenticado: el menú se arma según su rol (RF#02).
     /// </summary>
     //
-    // ── CONTROLES A AGREGAR CON EL DISEÑADOR DE VISUAL STUDIO ────────────────
-    //
-    // 1) MenuStrip llamado 'mnuPrincipal' (Dock = Top), con esta jerarquía.
-    //    Cada ítem lleva su nombre en notación húngara, no el que autogenera VS:
-    //
-    //   mnuSeguridad        "&Seguridad"
-    //     ├─ mnuUsuarios            "&Usuarios"
-    //     └─ mnuTablasParametricas  "Tablas &paramétricas"
-    //   mnuPersonas         "&Personas"
-    //     └─ mnuSocios              "&Socios"
-    //   mnuTesoreria        "&Tesorería"
-    //     ├─ mnuPlanes              "P&lanes"
-    //     ├─ mnuPagos               "Registrar &pago"
-    //     └─ mnuHistorialPagos      "&Historial de pagos"
-    //   mnuControlAcceso    "Control de &acceso"
-    //     └─ mnuCheckin             "&Check-in"
-    //   mnuActivos          "Ac&tivos"
-    //     ├─ mnuMaquinas                  "&Máquinas"
-    //     ├─ mnuMantenimiento             "Registrar &mantenimiento"
-    //     └─ mnuHistorialMantenimientos   "&Historial de mantenimientos"
-    //   mnuGastos           "&Gastos"
-    //     ├─ mnuGastosAbm           "&Gastos"
-    //     ├─ mnuReporteBalance      "Reporte de &balance"
-    //     └─ mnuBackup              "&Backup"
-    //
-    // 2) StatusStrip llamado 'stsEstado' (Dock = Bottom) con:
-    //   lblUsuarioLogueado  ToolStripStatusLabel   Text = ""  (nombre y rol activo)
-    //   btnCerrarSesion     ToolStripStatusLabel   Text = "Cerrar sesión"
-    //                       IsLink = True   Alignment = Right
-    //
-    // Propiedades del formulario (frmMDIParent):
-    //   IsMdiContainer  = True        ← imprescindible
-    //   Text            = "SGIG — Sistema de Gestión Integral para Gimnasios"
-    //   WindowState     = Maximized
-    //   MainMenuStrip   = mnuPrincipal
-    //
-    // Eventos a suscribir desde el diseñador:
-    //   btnCerrarSesion.Click -> btnCerrarSesion_Click
+    // ── CONTROLES (ver frmMDIParent.Designer.cs) ─────────────────────────────
+    //   mnuPrincipal (MenuStrip) con mnuSeguridad, mnuPersonas, mnuTesoreria,
+    //   mnuControlAcceso, mnuActivos, mnuGastos y sus subítems.
+    //   stsEstado (StatusStrip) con lblUsuarioLogueado y btnCerrarSesion.
     // ─────────────────────────────────────────────────────────────────────────
     public partial class frmMDIParent : Form
     {
-        public frmMDIParent()
+        private readonly Usuario _usuario;
+
+        public frmMDIParent(Usuario usuario)
         {
             InitializeComponent();
+            _usuario = usuario ?? throw new ArgumentNullException(nameof(usuario));
         }
 
         private void frmMDIParent_Load(object sender, EventArgs e)
         {
-            // TODO (Fase 2.4): recibir el Usuario autenticado, mostrar su nombre y rol
-            // en lblUsuarioLogueado y habilitar los ítems de menú según la matriz de
-            // permisos. Hasta entonces todo el menú arranca deshabilitado.
-            lblUsuarioLogueado.Text = string.Empty;
-            DeshabilitarTodoElMenu();
+            lblUsuarioLogueado.Text =
+                $"{_usuario.Nombre} {_usuario.Apellido}  ·  {_usuario.Rol?.NombreRol}";
+
+            AplicarPermisos(_usuario.Rol?.NombreRol);
         }
 
         /// <summary>
-        /// Deja todos los ítems de menú deshabilitados. En la Fase 2.4 se habilitan
-        /// selectivamente según el rol del usuario logueado.
+        /// Habilita cada pantalla según la matriz de permisos de la ERS (RF#02).
+        /// Todo arranca deshabilitado y se prende sólo lo que el rol tiene permitido:
+        /// si mañana aparece un rol nuevo, por omisión no ve nada.
         /// </summary>
-        private void DeshabilitarTodoElMenu()
+        private void AplicarPermisos(string? nombreRol)
         {
-            foreach (var menu in mnuPrincipal.Items.OfType<ToolStripMenuItem>())
+            foreach (var item in mnuPrincipal.Items.OfType<ToolStripMenuItem>())
             {
-                menu.Enabled = false;
+                item.Enabled = false;
+                foreach (var sub in item.DropDownItems.OfType<ToolStripMenuItem>())
+                {
+                    sub.Enabled = false;
+                }
+            }
+
+            switch (nombreRol)
+            {
+                case "Administrador":
+                    Habilitar(mnuUsuarios, mnuTablasParametricas, mnuSocios, mnuPlanes,
+                              mnuHistorialPagos, mnuMaquinas, mnuHistorialMantenimientos,
+                              mnuGastosAbm, mnuReporteBalance, mnuBackup);
+                    break;
+
+                case "Recepcionista":
+                    Habilitar(mnuSocios, mnuPagos, mnuHistorialPagos, mnuCheckin);
+                    break;
+
+                case "Tecnico":
+                    Habilitar(mnuMaquinas, mnuMantenimiento, mnuHistorialMantenimientos);
+                    break;
+            }
+
+            // Un menú de nivel superior sólo se muestra habilitado si alguno de sus
+            // hijos lo está; si no, queda gris y el usuario no lo intenta abrir.
+            foreach (var item in mnuPrincipal.Items.OfType<ToolStripMenuItem>())
+            {
+                item.Enabled = item.DropDownItems.OfType<ToolStripMenuItem>().Any(s => s.Enabled);
+            }
+        }
+
+        private static void Habilitar(params ToolStripMenuItem[] items)
+        {
+            foreach (var item in items)
+            {
+                item.Enabled = true;
             }
         }
 
@@ -93,6 +101,33 @@ namespace SGIG.UI
                 StartPosition = FormStartPosition.CenterParent
             };
             hijo.Show();
+        }
+
+        /// <summary>Igual que el anterior, para formularios que necesitan el usuario logueado.</summary>
+        private void AbrirFormularioHijo<T>(Func<T> fabrica) where T : Form
+        {
+            var abierto = MdiChildren.OfType<T>().FirstOrDefault();
+
+            if (abierto is not null)
+            {
+                abierto.Activate();
+                return;
+            }
+
+            var hijo = fabrica();
+            hijo.MdiParent = this;
+            hijo.StartPosition = FormStartPosition.CenterParent;
+            hijo.Show();
+        }
+
+        private void mnuUsuarios_Click(object sender, EventArgs e)
+        {
+            AbrirFormularioHijo(() => new frmUsuarios(_usuario));
+        }
+
+        private void mnuTablasParametricas_Click(object sender, EventArgs e)
+        {
+            AbrirFormularioHijo<frmTablasParametricas>();
         }
 
         private void btnCerrarSesion_Click(object sender, EventArgs e)

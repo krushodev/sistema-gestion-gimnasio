@@ -65,24 +65,24 @@ Convenciones: `[ ]` = pendiente, `[x]` = hecho. Notación húngara según `Notac
 
 ### 2.1 Entidades
 
-- [ ] `Rol.cs`, `Persona.cs`, `Usuario.cs` en `SGIG.Entidades`.
+- [x] `Rol.cs`, `Persona.cs`, `Usuario.cs` en `SGIG.Entidades`.
 
 ### 2.2 Acceso a datos
 
-- [ ] `RepositorioRol.cs`: alta y listado.
-- [ ] `RepositorioUsuario.cs`: consulta por nombre de usuario.
-- [ ] `RepositorioUsuario.cs`: alta transaccional (Persona + Usuario).
-- [ ] `RepositorioUsuario.cs`: validación de `nombre_usuario`/`legajo` único.
-- [ ] `RepositorioUsuario.cs`: baja lógica.
+- [x] `RepositorioRol.cs`: alta y listado.
+- [x] `RepositorioUsuario.cs`: consulta por nombre de usuario.
+- [x] `RepositorioUsuario.cs`: alta transaccional (Persona + Usuario).
+- [x] `RepositorioUsuario.cs`: validación de `nombre_usuario`/`legajo` único.
+- [x] `RepositorioUsuario.cs`: baja lógica.
 
 ### 2.3 Lógica de negocio
 
-- [ ] `ServicioAutenticacion.cs`: valida usuario/contraseña contra hash SHA256, devuelve `Usuario` con su `Rol` (RF#01).
+- [x] `ServicioAutenticacion.cs`: valida usuario/contraseña contra hash SHA256, devuelve `Usuario` con su `Rol` (RF#01).
 
 ### 2.4 Login funcional y matriz de permisos (RF#01, RF#02)
 
-- [ ] Conectar `btnIngresar_Click` de `frmLogin` con `ServicioAutenticacion`; si es correcto abre `frmMDIParent` con el `Usuario`, si falla muestra `lblMensajeError`.
-- [ ] En `frmMDIParent`, habilitar los ítems de menú según esta matriz de permisos:
+- [x] Conectar `btnIngresar_Click` de `frmLogin` con `ServicioAutenticacion`; si es correcto abre `frmMDIParent` con el `Usuario`, si falla muestra `lblMensajeError`.
+- [x] En `frmMDIParent`, habilitar los ítems de menú según esta matriz de permisos:
 
   | Pantalla | Administrador | Recepcionista | Técnico |
   |---|---|---|---|
@@ -115,21 +115,22 @@ Convenciones: `[ ]` = pendiente, `[x]` = hecho. Notación húngara según `Notac
   | `txtLegajo`, `dtpFechaIngreso`, `cboRol`, `txtNombreUsuario`, `txtContrasenia` | — | Datos de Usuario |
   | `btnGuardar` / `btnCancelar` | Button | Confirmar o descartar |
 
-- [ ] Crear `frmUsuarios` con estos controles.
-- [ ] Alta unificada Persona + Usuario en una sola transacción.
-- [ ] Edición.
-- [ ] Baja lógica con confirmación `MessageBox` Sí/No (RNF#03).
+- [x] Crear `frmUsuarios` con estos controles.
+- [x] Alta unificada Persona + Usuario en una sola transacción.
+- [x] Edición.
+- [x] Baja lógica con confirmación `MessageBox` Sí/No (RNF#03).
 
 ### 2.6 Pantalla `frmTablasParametricas` (RF#04)
 
 - **Rol de acceso:** Administrador.
 - **Se abre desde:** `mnuTablasParametricas`.
-- **Controles:** `tabCatalogos` (TabControl) con pestañas `tabProvincia`, `tabLocalidad`, `tabTipoDocumento`, `tabMedioPago`, cada una con su `dgv`, sus campos de texto/combo y `btnAgregar`/`btnEditar`/`btnEliminar`.
+- **Controles:** `tabCatalogos` (TabControl) con pestañas `tabRol`, `tabProvincia`, `tabLocalidad`, `tabTipoDocumento`, `tabMedioPago`, cada una con su `dgv`, sus campos de texto/combo y `btnAgregar`/`btnEditar`/`btnDarDeBaja`/`btnCancelar`. La baja de los cinco catálogos es **lógica** (campo `activo`, RF#04 — ERS v3.2), nunca física.
 
-- [ ] Crear `frmTablasParametricas` con las 4 pestañas.
-- [ ] CRUD de Provincia y Localidad.
-- [ ] CRUD de TipoDocumento.
-- [ ] CRUD de MedioPago.
+- [x] Crear `frmTablasParametricas` con las 5 pestañas.
+- [x] CRUD de Provincia y Localidad.
+- [x] CRUD de TipoDocumento.
+- [x] CRUD de MedioPago.
+- [x] CRUD de Rol (baja lógica; no se puede dar de baja un rol con usuarios activos).
 
 ## Fase 3 — Personas: Socios
 

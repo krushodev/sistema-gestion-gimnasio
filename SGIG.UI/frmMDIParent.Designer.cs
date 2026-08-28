@@ -76,11 +76,13 @@ namespace SGIG.UI
             // 
             this.mnuUsuarios.Name = "mnuUsuarios";
             this.mnuUsuarios.Text = "&Usuarios";
+            this.mnuUsuarios.Click += new System.EventHandler(this.mnuUsuarios_Click);
             // 
             // mnuTablasParametricas
             // 
             this.mnuTablasParametricas.Name = "mnuTablasParametricas";
             this.mnuTablasParametricas.Text = "Tablas &paramétricas";
+            this.mnuTablasParametricas.Click += new System.EventHandler(this.mnuTablasParametricas_Click);
             // 
             // mnuPersonas
             // 

@@ -20,27 +20,36 @@ GO
 
 /* ============================================================
    1. TABLAS PARAMETRICAS (sin dependencias)
+   ------------------------------------------------------------
+   Todas llevan el campo 'activo' porque su baja es LOGICA
+   (RF#04, v3.2 de la ERS): nunca se borra fisicamente un
+   catalogo, para no romper los registros historicos que lo
+   referencian. Las consultas de la aplicacion filtran activo=1.
    ============================================================ */
 
 CREATE TABLE dbo.Provincia (
     id_provincia    INT IDENTITY(1,1) PRIMARY KEY,
-    nombre          VARCHAR(100) NOT NULL
+    nombre          VARCHAR(100) NOT NULL,
+    activo          BIT NOT NULL DEFAULT 1
 );
 
 CREATE TABLE dbo.TipoDocumento (
     id_tipo_documento  INT IDENTITY(1,1) PRIMARY KEY,
-    descripcion        VARCHAR(50) NOT NULL
+    descripcion        VARCHAR(50) NOT NULL,
+    activo             BIT NOT NULL DEFAULT 1
 );
 
 CREATE TABLE dbo.Rol (
     id_rol       INT IDENTITY(1,1) PRIMARY KEY,
     nombre_rol   VARCHAR(50) NOT NULL,
-    descripcion  VARCHAR(200) NULL
+    descripcion  VARCHAR(200) NULL,
+    activo       BIT NOT NULL DEFAULT 1
 );
 
 CREATE TABLE dbo.MedioPago (
     id_medio_pago  INT IDENTITY(1,1) PRIMARY KEY,
-    descripcion    VARCHAR(50) NOT NULL
+    descripcion    VARCHAR(50) NOT NULL,
+    activo         BIT NOT NULL DEFAULT 1
 );
 
 CREATE TABLE dbo.[Plan] (
@@ -59,6 +68,7 @@ CREATE TABLE dbo.Localidad (
     id_localidad  INT IDENTITY(1,1) PRIMARY KEY,
     nombre        VARCHAR(100) NOT NULL,
     id_provincia  INT NOT NULL,
+    activo        BIT NOT NULL DEFAULT 1,
     CONSTRAINT FK_Localidad_Provincia
         FOREIGN KEY (id_provincia) REFERENCES dbo.Provincia(id_provincia)
 );
@@ -238,10 +248,10 @@ INSERT INTO dbo.MedioPago (descripcion) VALUES
     ('Transferencia');
 
 /* Persona + Usuario administrador inicial.
-   IMPORTANTE: contrasenia_hash es un valor de ejemplo (placeholder).
-   En la aplicacion VB.NET, la contraseña real debe calcularse con
-   System.Security.Cryptography (por ejemplo SHA256) ANTES de
-   insertarla; nunca se debe guardar en texto plano (RNF#11). */
+   contrasenia_hash es el SHA256 real de la contraseña 'admin', calculado con
+   System.Security.Cryptography (SGIG.Negocio.Hash.Calcular). Son 32 bytes; la
+   contraseña nunca se guarda en texto plano (RNF#11).
+   CAMBIAR esta contraseña desde el ABM de usuarios apenas se instale el sistema. */
 
 INSERT INTO dbo.Persona (documento, id_tipo_documento, nombre, apellido, email)
 VALUES ('00000001', 1, 'Admin', 'Sistema', 'admin@sgig.local');
@@ -250,7 +260,7 @@ INSERT INTO dbo.Usuario (id_persona, nombre_usuario, contrasenia_hash, id_rol, l
 VALUES (
     SCOPE_IDENTITY(),
     'admin',
-    CONVERT(VARBINARY(256), '00000000000000000000000000000000000000000000000000000000000000'), -- reemplazar por el hash real
+    0x8C6976E5B5410415BDE908BD4DEE15DFB167A9C873FC4BB8A81F6F2AB448A918, -- SHA256 de 'admin'
     (SELECT id_rol FROM dbo.Rol WHERE nombre_rol = 'Administrador'),
     'LEG-0001',
     GETDATE()

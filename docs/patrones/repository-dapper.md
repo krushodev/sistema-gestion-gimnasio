@@ -43,6 +43,9 @@ namespace SGIG.Datos
 
 **Métodos típicos:** `ObtenerPorId(int idPersona)`, `ObtenerActivos()` → `IEnumerable<Socio>`, `Alta(Socio socio)` → `int` (con `ExecuteScalar<int>` + `SCOPE_IDENTITY()`), `Modificar(Socio socio)`, `BajaLogica(int idPersona)`.
 
-**Baja lógica, nunca `DELETE`** sobre `Socio`, `Usuario` y `Plan` (RNF#03): el repositorio hace `UPDATE ... SET activo = 0`.
+**Baja lógica, nunca `DELETE`.** Aplica a `Socio`, `Usuario` y `Plan` (RNF#03) y también a las
+tablas paramétricas `Provincia`, `Localidad`, `TipoDocumento` y `MedioPago` (RF#04, ERS v3.2):
+todas llevan columna `activo`. El repositorio hace `UPDATE ... SET activo = 0`, y **todo `SELECT`
+de listado filtra `WHERE activo = 1`**. En el proyecto no hay ningún `DELETE`.
 
 Ver también: [transaccion-sqltransaction.md](transaccion-sqltransaction.md).
