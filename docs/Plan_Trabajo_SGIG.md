@@ -38,7 +38,7 @@ Convenciones: `[ ]` = pendiente, `[x]` = hecho. Notación húngara según `Notac
   | `btnIngresar` | Button | Dispara la autenticación |
   | `lblMensajeError` | Label (oculto) | "Usuario o contraseña incorrectos" |
 
-- [ ] Crear `frmLogin.cs` — esqueleto con estos controles, sin lógica de autenticación todavía (eso es Fase 2.4).
+- [x] Crear `frmLogin.cs` — esqueleto con estos controles, sin lógica de autenticación todavía (eso es Fase 2.4).
 
 ### 1.2 Pantalla `frmMDIParent`
 
@@ -58,8 +58,8 @@ Convenciones: `[ ]` = pendiente, `[x]` = hecho. Notación húngara según `Notac
   | `lblUsuarioLogueado` | Label (`StatusStrip`) | Nombre y rol activo |
   | `btnCerrarSesion` | ToolStripButton | Vuelve a `frmLogin` |
 
-- [ ] Crear `frmMDIParent.cs` — esqueleto (`IsMdiContainer = true`), con este menú, todas las opciones deshabilitadas por ahora.
-- [ ] Editar `Program.cs` para que `Main` arranque en `frmLogin`.
+- [x] Crear `frmMDIParent.cs` — esqueleto (`IsMdiContainer = true`), con este menú, todas las opciones deshabilitadas por ahora.
+- [x] Editar `Program.cs` para que `Main` arranque en `frmLogin`.
 
 ## Fase 2 — Seguridad: Rol, Usuario, Login funcional, ABM de Usuarios, Tablas paramétricas
 
@@ -328,5 +328,5 @@ Convenciones: `[ ]` = pendiente, `[x]` = hecho. Notación húngara según `Notac
 1. Seguir las fases en el orden en que aparecen; dentro de una fase, las subsecciones también van en orden de dependencia (entidad → datos → negocio → pantalla).
 2. No empezar una fase si la anterior no compila.
 3. Cuando el usuario diga "seguí con lo que sigue" o "la próxima fase", el agente ubica el primer paso `[ ]` de este archivo y continúa desde ahí.
-4. El agente no puede compilar, ejecutar, ni diseñar visualmente un formulario (ver `CLAUDE.md`) — cada pantalla ya trae su tabla de controles lista para que el usuario los agregue a mano en el diseñador de Visual Studio.
+4. El agente sí compila (`dotnet build SGIG.slnx`) y escribe tanto la clase del formulario como su `.Designer.cs`; lo que no puede es juzgar el resultado *visual* (ver `CLAUDE.md`) — cada pantalla trae su tabla de controles como contrato, y el ajuste fino de layout queda para el diseñador de Visual Studio.
 5. Marcar cada paso como hecho (`[x]`) a medida que se entrega. Si el agente no puede editar este archivo en el momento, debe decirle al usuario qué pasos completó para que él los tilde.
