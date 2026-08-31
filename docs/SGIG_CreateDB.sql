@@ -1,7 +1,16 @@
 /* ============================================================
    Sistema de Gestion Integral para Gimnasios (SGIG)
    Script de creacion de base de datos - SQL Server
-   Basado en el DER v5 (14 tablas) - version 3.0 de la ERS
+   Basado en el DER v6 (14 tablas) - version 3.2 de la ERS
+   ============================================================
+   Cambios respecto del DER v5:
+   - Se elimina la tabla Gasto. Mantenimiento ya no genera un
+     gasto asociado (RF#23 dado de baja).
+   - Plan reemplaza dias_vigencia por tipo_periodicidad
+     ('Diario' | 'Semanal' | 'Mensual' | 'Anual').
+   - Se agrega Facturacion (tabla intermedia entre Socio, Plan
+     y Pago): representa un ciclo de cuota. Pago ahora cuelga
+     de una Facturacion en vez de apuntar directo a Socio+Plan.
    ============================================================
    Orden de creacion: primero las tablas sin dependencias
    (parametricas), luego Persona, luego sus especializaciones
@@ -20,44 +29,37 @@ GO
 
 /* ============================================================
    1. TABLAS PARAMETRICAS (sin dependencias)
-   ------------------------------------------------------------
-   Todas llevan el campo 'activo' porque su baja es LOGICA
-   (RF#04, v3.2 de la ERS): nunca se borra fisicamente un
-   catalogo, para no romper los registros historicos que lo
-   referencian. Las consultas de la aplicacion filtran activo=1.
    ============================================================ */
 
 CREATE TABLE dbo.Provincia (
     id_provincia    INT IDENTITY(1,1) PRIMARY KEY,
-    nombre          VARCHAR(100) NOT NULL,
-    activo          BIT NOT NULL DEFAULT 1
+    nombre          VARCHAR(100) NOT NULL
 );
 
 CREATE TABLE dbo.TipoDocumento (
     id_tipo_documento  INT IDENTITY(1,1) PRIMARY KEY,
-    descripcion        VARCHAR(50) NOT NULL,
-    activo             BIT NOT NULL DEFAULT 1
+    descripcion        VARCHAR(50) NOT NULL
 );
 
 CREATE TABLE dbo.Rol (
     id_rol       INT IDENTITY(1,1) PRIMARY KEY,
     nombre_rol   VARCHAR(50) NOT NULL,
-    descripcion  VARCHAR(200) NULL,
-    activo       BIT NOT NULL DEFAULT 1
+    descripcion  VARCHAR(200) NULL
 );
 
 CREATE TABLE dbo.MedioPago (
     id_medio_pago  INT IDENTITY(1,1) PRIMARY KEY,
-    descripcion    VARCHAR(50) NOT NULL,
-    activo         BIT NOT NULL DEFAULT 1
+    descripcion    VARCHAR(50) NOT NULL
 );
 
 CREATE TABLE dbo.[Plan] (
-    id_plan        INT IDENTITY(1,1) PRIMARY KEY,
-    nombre         VARCHAR(100) NOT NULL,
-    precio         DECIMAL(10,2) NOT NULL,
-    dias_vigencia  INT NOT NULL,
-    activo         BIT NOT NULL DEFAULT 1
+    id_plan             INT IDENTITY(1,1) PRIMARY KEY,
+    nombre              VARCHAR(100) NOT NULL,
+    precio              DECIMAL(10,2) NOT NULL,
+    tipo_periodicidad   VARCHAR(20) NOT NULL,
+    activo              BIT NOT NULL DEFAULT 1,
+    CONSTRAINT CK_Plan_TipoPeriodicidad
+        CHECK (tipo_periodicidad IN ('Diario', 'Semanal', 'Mensual', 'Anual'))
 );
 
 /* ============================================================
@@ -68,7 +70,6 @@ CREATE TABLE dbo.Localidad (
     id_localidad  INT IDENTITY(1,1) PRIMARY KEY,
     nombre        VARCHAR(100) NOT NULL,
     id_provincia  INT NOT NULL,
-    activo        BIT NOT NULL DEFAULT 1,
     CONSTRAINT FK_Localidad_Provincia
         FOREIGN KEY (id_provincia) REFERENCES dbo.Provincia(id_provincia)
 );
@@ -102,8 +103,8 @@ CREATE TABLE dbo.Persona (
 CREATE TABLE dbo.Socio (
     id_persona                INT PRIMARY KEY,
     apto_medico               VARCHAR(200) NULL,
-    id_plan                   INT NULL,
-    fecha_vencimiento_cuota   DATE NULL,
+    id_plan                   INT NULL,      -- plan preferido/actual, solo para precargar el combo al facturar
+    fecha_vencimiento_cuota   DATE NULL,     -- cache de lectura rapida para Check-in (RNF#01); la fuente de verdad es Facturacion
     activo                    BIT NOT NULL DEFAULT 1,
     CONSTRAINT FK_Socio_Persona
         FOREIGN KEY (id_persona) REFERENCES dbo.Persona(id_persona),
@@ -128,21 +129,34 @@ CREATE TABLE dbo.Usuario (
 );
 
 /* ============================================================
-   5. TESORERIA (Pago depende de Socio, Plan y MedioPago)
+   5. TESORERIA: Facturacion (depende de Socio y Plan) y
+   Pago (depende de Facturacion y MedioPago)
    ============================================================ */
 
-CREATE TABLE dbo.Pago (
-    id_pago                       INT IDENTITY(1,1) PRIMARY KEY,
-    id_persona                    INT NOT NULL,
-    id_plan                       INT NOT NULL,
-    id_medio_pago                 INT NOT NULL,
-    fecha_pago                    DATE NOT NULL,
-    monto                         DECIMAL(10,2) NOT NULL,
-    fecha_vencimiento_generada    DATE NULL,
-    CONSTRAINT FK_Pago_Socio
+CREATE TABLE dbo.Facturacion (
+    id_facturacion    INT IDENTITY(1,1) PRIMARY KEY,
+    id_persona        INT NOT NULL,   -- Socio
+    id_plan           INT NOT NULL,
+    fecha_emision     DATE NOT NULL,
+    fecha_vencimiento DATE NOT NULL,  -- fecha_emision + periodo segun Plan.tipo_periodicidad
+    monto_total       DECIMAL(10,2) NOT NULL,  -- copia del precio del plan al momento de emitir (no se recalcula si el plan cambia de precio despues)
+    estado            VARCHAR(20) NOT NULL DEFAULT 'Pendiente',
+    CONSTRAINT FK_Facturacion_Socio
         FOREIGN KEY (id_persona) REFERENCES dbo.Socio(id_persona),
-    CONSTRAINT FK_Pago_Plan
+    CONSTRAINT FK_Facturacion_Plan
         FOREIGN KEY (id_plan) REFERENCES dbo.[Plan](id_plan),
+    CONSTRAINT CK_Facturacion_Estado
+        CHECK (estado IN ('Pendiente', 'Pagada', 'Vencida'))
+);
+
+CREATE TABLE dbo.Pago (
+    id_pago         INT IDENTITY(1,1) PRIMARY KEY,
+    id_facturacion  INT NOT NULL,
+    id_medio_pago   INT NOT NULL,
+    fecha_pago      DATE NOT NULL,
+    monto           DECIMAL(10,2) NOT NULL,
+    CONSTRAINT FK_Pago_Facturacion
+        FOREIGN KEY (id_facturacion) REFERENCES dbo.Facturacion(id_facturacion),
     CONSTRAINT FK_Pago_MedioPago
         FOREIGN KEY (id_medio_pago) REFERENCES dbo.MedioPago(id_medio_pago)
 );
@@ -163,7 +177,7 @@ CREATE TABLE dbo.Checkin (
 );
 
 /* ============================================================
-   7. ACTIVOS Y GASTOS
+   7. ACTIVOS (Mantenimiento depende de Maquina y Usuario)
    ============================================================ */
 
 CREATE TABLE dbo.Maquina (
@@ -176,15 +190,6 @@ CREATE TABLE dbo.Maquina (
         CHECK (estado IN ('Operativa', 'En Reparacion'))
 );
 
-CREATE TABLE dbo.Gasto (
-    id_gasto      INT IDENTITY(1,1) PRIMARY KEY,
-    fecha         DATE NOT NULL,
-    monto         DECIMAL(10,2) NOT NULL,
-    descripcion   VARCHAR(300) NULL,
-    comprobante   VARCHAR(100) NULL
-);
-
-/* Mantenimiento depende de Maquina, Usuario (tecnico) y Gasto */
 CREATE TABLE dbo.Mantenimiento (
     id_mantenimiento   INT IDENTITY(1,1) PRIMARY KEY,
     id_maquina         INT NOT NULL,
@@ -192,14 +197,10 @@ CREATE TABLE dbo.Mantenimiento (
     fecha_inicio       DATE NOT NULL,
     fecha_fin          DATE NULL,
     detalle_tecnico    VARCHAR(500) NULL,
-    id_gasto           INT NOT NULL,
-    CONSTRAINT UQ_Mantenimiento_Gasto UNIQUE (id_gasto),
     CONSTRAINT FK_Mantenimiento_Maquina
         FOREIGN KEY (id_maquina) REFERENCES dbo.Maquina(id_maquina),
     CONSTRAINT FK_Mantenimiento_Usuario
-        FOREIGN KEY (id_persona) REFERENCES dbo.Usuario(id_persona),
-    CONSTRAINT FK_Mantenimiento_Gasto
-        FOREIGN KEY (id_gasto) REFERENCES dbo.Gasto(id_gasto)
+        FOREIGN KEY (id_persona) REFERENCES dbo.Usuario(id_persona)
 );
 
 /* ============================================================
@@ -214,14 +215,14 @@ CREATE TABLE dbo.Mantenimiento (
 CREATE INDEX IX_Checkin_Persona_Fecha
     ON dbo.Checkin (id_persona, fecha_hora DESC);
 
-CREATE INDEX IX_Pago_Persona_Fecha
-    ON dbo.Pago (id_persona, fecha_pago DESC);
+CREATE INDEX IX_Facturacion_Persona_Vencimiento
+    ON dbo.Facturacion (id_persona, fecha_vencimiento DESC);
+
+CREATE INDEX IX_Pago_Facturacion
+    ON dbo.Pago (id_facturacion);
 
 CREATE INDEX IX_Mantenimiento_Maquina
     ON dbo.Mantenimiento (id_maquina);
-
-CREATE INDEX IX_Gasto_Fecha
-    ON dbo.Gasto (fecha);
 
 GO
 
@@ -248,10 +249,10 @@ INSERT INTO dbo.MedioPago (descripcion) VALUES
     ('Transferencia');
 
 /* Persona + Usuario administrador inicial.
-   contrasenia_hash es el SHA256 real de la contraseña 'admin', calculado con
-   System.Security.Cryptography (SGIG.Negocio.Hash.Calcular). Son 32 bytes; la
-   contraseña nunca se guarda en texto plano (RNF#11).
-   CAMBIAR esta contraseña desde el ABM de usuarios apenas se instale el sistema. */
+   IMPORTANTE: contrasenia_hash es un valor de ejemplo (placeholder).
+   En la aplicacion, la contraseña real debe calcularse con
+   System.Security.Cryptography (SHA256) ANTES de insertarla;
+   nunca se debe guardar en texto plano (RNF#11). */
 
 INSERT INTO dbo.Persona (documento, id_tipo_documento, nombre, apellido, email)
 VALUES ('00000001', 1, 'Admin', 'Sistema', 'admin@sgig.local');
@@ -260,17 +261,10 @@ INSERT INTO dbo.Usuario (id_persona, nombre_usuario, contrasenia_hash, id_rol, l
 VALUES (
     SCOPE_IDENTITY(),
     'admin',
-    0x8C6976E5B5410415BDE908BD4DEE15DFB167A9C873FC4BB8A81F6F2AB448A918, -- SHA256 de 'admin'
+    CONVERT(VARBINARY(256), '00000000000000000000000000000000000000000000000000000000000000'), -- reemplazar por el hash real
     (SELECT id_rol FROM dbo.Rol WHERE nombre_rol = 'Administrador'),
     'LEG-0001',
     GETDATE()
 );
-
-USE [master];
-CREATE LOGIN sgig_user WITH PASSWORD = 'admin', CHECK_POLICY = OFF;
-
-USE SGIG;
-CREATE USER sgig_user FOR LOGIN sgig_user;
-ALTER ROLE db_owner ADD MEMBER sgig_user;
 
 GO
