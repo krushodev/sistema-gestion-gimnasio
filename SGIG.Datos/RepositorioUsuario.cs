@@ -82,9 +82,21 @@ namespace SGIG.Datos
         /// <summary>Usuarios no dados de baja, para la grilla del ABM.</summary>
         public IEnumerable<Usuario> ObtenerActivos()
         {
-            const string sql = SelectBase + @"
-            WHERE u.activo = 1
-            ORDER BY p.apellido, p.nombre";
+            // Trae el nombre del rol en la misma consulta para que la grilla no tenga
+            // que resolverlo fila por fila.
+            const string sql = @"
+                SELECT p.id_persona AS IdPersona, p.documento AS Documento,
+                       p.id_tipo_documento AS IdTipoDocumento, p.nombre AS Nombre,
+                       p.apellido AS Apellido, p.email AS Email, p.telefono AS Telefono,
+                       p.id_localidad AS IdLocalidad, p.fecha_nacimiento AS FechaNacimiento,
+                       u.nombre_usuario AS NombreUsuario, u.contrasenia_hash AS ContraseniaHash,
+                       u.id_rol AS IdRol, u.legajo AS Legajo, u.fecha_ingreso AS FechaIngreso,
+                       u.activo AS Activo, r.nombre_rol AS NombreRol
+                FROM dbo.Usuario u
+                INNER JOIN dbo.Persona p ON p.id_persona = u.id_persona
+                INNER JOIN dbo.Rol r ON r.id_rol = u.id_rol
+                WHERE u.activo = 1
+                ORDER BY p.apellido, p.nombre";
 
             try
             {

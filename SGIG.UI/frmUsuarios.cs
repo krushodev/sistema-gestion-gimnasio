@@ -33,12 +33,16 @@ namespace SGIG.UI
         {
             InitializeComponent();
             _usuarioLogueado = usuarioLogueado;
+
+            // RNF#04: el campo documento no acepta letras.
+            txtDocumento.KeyPress += Grillas.SoloDigitos;
         }
 
         private void frmUsuarios_Load(object sender, EventArgs e)
         {
             try
             {
+                ConfigurarGrilla();
                 CargarCombos();
                 CargarGrilla();
                 HabilitarPanel(false);
@@ -47,6 +51,23 @@ namespace SGIG.UI
             {
                 MostrarError(ex);
             }
+        }
+
+        /// <summary>
+        /// Columnas explícitas: la grilla muestra sólo lo que le sirve al administrador.
+        /// Sin esto se autogeneraría una columna por propiedad, incluido el hash de la
+        /// contraseña y todos los ids internos.
+        /// </summary>
+        private void ConfigurarGrilla()
+        {
+            Grillas.Configurar(dgvUsuarios,
+                (nameof(Usuario.Apellido), "Apellido", 100),
+                (nameof(Usuario.Nombre), "Nombre", 100),
+                (nameof(Usuario.Documento), "Documento", 80),
+                (nameof(Usuario.NombreUsuario), "Usuario", 90),
+                (nameof(Usuario.NombreRol), "Rol", 90),
+                (nameof(Usuario.Legajo), "Legajo", 70),
+                (nameof(Usuario.Email), "Email", 130));
         }
 
         // ── Carga de datos ───────────────────────────────────────────────────

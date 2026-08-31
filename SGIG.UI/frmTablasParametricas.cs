@@ -35,6 +35,7 @@ namespace SGIG.UI
         {
             try
             {
+                ConfigurarGrillas();
                 CargarRoles();
                 CargarProvincias();
                 CargarLocalidades();
@@ -45,6 +46,30 @@ namespace SGIG.UI
             {
                 MostrarError(ex);
             }
+        }
+
+        /// <summary>
+        /// Columnas explícitas en las cinco grillas, para no mostrar los ids internos
+        /// ni la bandera 'activo' (que siempre vale 1, porque las consultas ya filtran).
+        /// </summary>
+        private void ConfigurarGrillas()
+        {
+            Grillas.Configurar(dgvRol,
+                (nameof(Rol.NombreRol), "Rol", 100),
+                (nameof(Rol.Descripcion), "Descripción", 200));
+
+            Grillas.Configurar(dgvProvincia,
+                (nameof(Provincia.Nombre), "Provincia", 100));
+
+            Grillas.Configurar(dgvLocalidad,
+                (nameof(Localidad.Nombre), "Localidad", 100),
+                (nameof(Localidad.NombreProvincia), "Provincia", 100));
+
+            Grillas.Configurar(dgvTipoDocumento,
+                (nameof(TipoDocumento.Descripcion), "Tipo de documento", 100));
+
+            Grillas.Configurar(dgvMedioPago,
+                (nameof(MedioPago.Descripcion), "Medio de pago", 100));
         }
 
         // ── Rol ──────────────────────────────────────────────────────────────

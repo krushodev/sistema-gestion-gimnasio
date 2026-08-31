@@ -119,6 +119,8 @@ Convenciones: `[ ]` = pendiente, `[x]` = hecho. Notación húngara según `Notac
 - [x] Alta unificada Persona + Usuario en una sola transacción.
 - [x] Edición.
 - [x] Baja lógica con confirmación `MessageBox` Sí/No (RNF#03).
+- [x] Validación de formato con expresiones regulares: documento sólo numérico y estructura del email (RF#09, RNF#04).
+- [x] Columnas explícitas en `dgvUsuarios` (no exponer el hash de contraseña ni los ids internos).
 
 ### 2.6 Pantalla `frmTablasParametricas` (RF#04)
 

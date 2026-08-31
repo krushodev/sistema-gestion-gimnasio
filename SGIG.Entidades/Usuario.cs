@@ -22,5 +22,12 @@ namespace SGIG.Entidades
 
         /// <summary>Rol asociado, resuelto por el repositorio al autenticar.</summary>
         public Rol? Rol { get; set; }
+
+        /// <summary>
+        /// Nombre del rol resuelto por el JOIN, para mostrarlo en la grilla sin una
+        /// consulta extra. Lo llena <c>ObtenerActivos</c>; en el camino del login se
+        /// usa <see cref="Rol"/>, que trae el objeto completo.
+        /// </summary>
+        public string? NombreRol { get; set; }
     }
 }
