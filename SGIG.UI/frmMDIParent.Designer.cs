@@ -39,9 +39,8 @@ namespace SGIG.UI
             this.mnuMaquinas = new System.Windows.Forms.ToolStripMenuItem();
             this.mnuMantenimiento = new System.Windows.Forms.ToolStripMenuItem();
             this.mnuHistorialMantenimientos = new System.Windows.Forms.ToolStripMenuItem();
-            this.mnuGastos = new System.Windows.Forms.ToolStripMenuItem();
-            this.mnuGastosAbm = new System.Windows.Forms.ToolStripMenuItem();
-            this.mnuReporteBalance = new System.Windows.Forms.ToolStripMenuItem();
+            this.mnuReportes = new System.Windows.Forms.ToolStripMenuItem();
+            this.mnuReporteIngresos = new System.Windows.Forms.ToolStripMenuItem();
             this.mnuBackup = new System.Windows.Forms.ToolStripMenuItem();
             this.stsEstado = new System.Windows.Forms.StatusStrip();
             this.lblUsuarioLogueado = new System.Windows.Forms.ToolStripStatusLabel();
@@ -58,7 +57,7 @@ namespace SGIG.UI
             this.mnuTesoreria,
             this.mnuControlAcceso,
             this.mnuActivos,
-            this.mnuGastos});
+            this.mnuReportes});
             this.mnuPrincipal.Location = new System.Drawing.Point(0, 0);
             this.mnuPrincipal.Name = "mnuPrincipal";
             this.mnuPrincipal.Size = new System.Drawing.Size(984, 24);
@@ -156,24 +155,18 @@ namespace SGIG.UI
             this.mnuHistorialMantenimientos.Name = "mnuHistorialMantenimientos";
             this.mnuHistorialMantenimientos.Text = "&Historial de mantenimientos";
             // 
-            // mnuGastos
+            // mnuReportes
             // 
-            this.mnuGastos.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.mnuGastosAbm,
-            this.mnuReporteBalance,
+            this.mnuReportes.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.mnuReporteIngresos,
             this.mnuBackup});
-            this.mnuGastos.Name = "mnuGastos";
-            this.mnuGastos.Text = "&Gastos";
+            this.mnuReportes.Name = "mnuReportes";
+            this.mnuReportes.Text = "&Reportes";
             // 
-            // mnuGastosAbm
+            // mnuReporteIngresos
             // 
-            this.mnuGastosAbm.Name = "mnuGastosAbm";
-            this.mnuGastosAbm.Text = "&Gastos";
-            // 
-            // mnuReporteBalance
-            // 
-            this.mnuReporteBalance.Name = "mnuReporteBalance";
-            this.mnuReporteBalance.Text = "Reporte de &balance";
+            this.mnuReporteIngresos.Name = "mnuReporteIngresos";
+            this.mnuReporteIngresos.Text = "Reporte de &ingresos";
             // 
             // mnuBackup
             // 
@@ -244,9 +237,8 @@ namespace SGIG.UI
         private System.Windows.Forms.ToolStripMenuItem mnuMaquinas;
         private System.Windows.Forms.ToolStripMenuItem mnuMantenimiento;
         private System.Windows.Forms.ToolStripMenuItem mnuHistorialMantenimientos;
-        private System.Windows.Forms.ToolStripMenuItem mnuGastos;
-        private System.Windows.Forms.ToolStripMenuItem mnuGastosAbm;
-        private System.Windows.Forms.ToolStripMenuItem mnuReporteBalance;
+        private System.Windows.Forms.ToolStripMenuItem mnuReportes;
+        private System.Windows.Forms.ToolStripMenuItem mnuReporteIngresos;
         private System.Windows.Forms.ToolStripMenuItem mnuBackup;
         private System.Windows.Forms.StatusStrip stsEstado;
         private System.Windows.Forms.ToolStripStatusLabel lblUsuarioLogueado;

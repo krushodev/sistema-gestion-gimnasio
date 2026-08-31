@@ -11,7 +11,7 @@ namespace SGIG.UI
     //
     // ── CONTROLES (ver frmMDIParent.Designer.cs) ─────────────────────────────
     //   mnuPrincipal (MenuStrip) con mnuSeguridad, mnuPersonas, mnuTesoreria,
-    //   mnuControlAcceso, mnuActivos, mnuGastos y sus subítems.
+    //   mnuControlAcceso, mnuActivos, mnuReportes y sus subítems.
     //   stsEstado (StatusStrip) con lblUsuarioLogueado y btnCerrarSesion.
     // ─────────────────────────────────────────────────────────────────────────
     public partial class frmMDIParent : Form
@@ -53,7 +53,7 @@ namespace SGIG.UI
                 case "Administrador":
                     Habilitar(mnuUsuarios, mnuTablasParametricas, mnuSocios, mnuPlanes,
                               mnuHistorialPagos, mnuMaquinas, mnuHistorialMantenimientos,
-                              mnuGastosAbm, mnuReporteBalance, mnuBackup);
+                              mnuReporteIngresos, mnuBackup);
                     break;
 
                 case "Recepcionista":

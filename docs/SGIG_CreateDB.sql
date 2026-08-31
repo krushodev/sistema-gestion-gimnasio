@@ -1,7 +1,7 @@
 /* ============================================================
    Sistema de Gestion Integral para Gimnasios (SGIG)
    Script de creacion de base de datos - SQL Server
-   Basado en el DER v6 (14 tablas) - version 3.2 de la ERS
+   Basado en el DER v6 (14 tablas) - version 4.0 de la ERS
    ============================================================
    Cambios respecto del DER v5:
    - Se elimina la tabla Gasto. Mantenimiento ya no genera un
@@ -11,6 +11,13 @@
    - Se agrega Facturacion (tabla intermedia entre Socio, Plan
      y Pago): representa un ciclo de cuota. Pago ahora cuelga
      de una Facturacion en vez de apuntar directo a Socio+Plan.
+   ============================================================
+   Las cinco tablas parametricas (Provincia, Localidad, Rol,
+   TipoDocumento, MedioPago) llevan el campo 'activo' porque su
+   baja es LOGICA (RF#04, RNF#03): el registro se marca inactivo
+   y desaparece de grillas y combos, pero la fila queda para no
+   invalidar los registros historicos que la referencian. Las
+   consultas de la aplicacion filtran siempre por activo = 1.
    ============================================================
    Orden de creacion: primero las tablas sin dependencias
    (parametricas), luego Persona, luego sus especializaciones
@@ -33,23 +40,27 @@ GO
 
 CREATE TABLE dbo.Provincia (
     id_provincia    INT IDENTITY(1,1) PRIMARY KEY,
-    nombre          VARCHAR(100) NOT NULL
+    nombre          VARCHAR(100) NOT NULL,
+    activo          BIT NOT NULL DEFAULT 1
 );
 
 CREATE TABLE dbo.TipoDocumento (
     id_tipo_documento  INT IDENTITY(1,1) PRIMARY KEY,
-    descripcion        VARCHAR(50) NOT NULL
+    descripcion        VARCHAR(50) NOT NULL,
+    activo             BIT NOT NULL DEFAULT 1
 );
 
 CREATE TABLE dbo.Rol (
     id_rol       INT IDENTITY(1,1) PRIMARY KEY,
     nombre_rol   VARCHAR(50) NOT NULL,
-    descripcion  VARCHAR(200) NULL
+    descripcion  VARCHAR(200) NULL,
+    activo       BIT NOT NULL DEFAULT 1
 );
 
 CREATE TABLE dbo.MedioPago (
     id_medio_pago  INT IDENTITY(1,1) PRIMARY KEY,
-    descripcion    VARCHAR(50) NOT NULL
+    descripcion    VARCHAR(50) NOT NULL,
+    activo         BIT NOT NULL DEFAULT 1
 );
 
 CREATE TABLE dbo.[Plan] (
@@ -70,6 +81,7 @@ CREATE TABLE dbo.Localidad (
     id_localidad  INT IDENTITY(1,1) PRIMARY KEY,
     nombre        VARCHAR(100) NOT NULL,
     id_provincia  INT NOT NULL,
+    activo        BIT NOT NULL DEFAULT 1,
     CONSTRAINT FK_Localidad_Provincia
         FOREIGN KEY (id_provincia) REFERENCES dbo.Provincia(id_provincia)
 );
@@ -249,10 +261,19 @@ INSERT INTO dbo.MedioPago (descripcion) VALUES
     ('Transferencia');
 
 /* Persona + Usuario administrador inicial.
-   IMPORTANTE: contrasenia_hash es un valor de ejemplo (placeholder).
-   En la aplicacion, la contraseña real debe calcularse con
-   System.Security.Cryptography (SHA256) ANTES de insertarla;
-   nunca se debe guardar en texto plano (RNF#11). */
+
+   contrasenia_hash es el SHA256 real de la contraseña "admin1234"
+   (32 bytes), calculado con el mismo algoritmo que usa
+   SGIG.Negocio.Hash.Calcular, para que este usuario pueda iniciar
+   sesion apenas se crea la base. La contraseña nunca se guarda en
+   texto plano (RNF#11): lo que viaja a la tabla es el hash.
+
+   IMPORTANTE: cambiar esta contraseña desde frmUsuarios antes de
+   entregar o poner el sistema en uso real.
+
+   Para generar el hash de otra contraseña sin salir de la app:
+       SGIG.Negocio.Hash.ATextoHex(SGIG.Negocio.Hash.Calcular("laQueSea"))
+   devuelve el literal 0x... listo para pegar en este INSERT. */
 
 INSERT INTO dbo.Persona (documento, id_tipo_documento, nombre, apellido, email)
 VALUES ('00000001', 1, 'Admin', 'Sistema', 'admin@sgig.local');
@@ -261,7 +282,7 @@ INSERT INTO dbo.Usuario (id_persona, nombre_usuario, contrasenia_hash, id_rol, l
 VALUES (
     SCOPE_IDENTITY(),
     'admin',
-    CONVERT(VARBINARY(256), '00000000000000000000000000000000000000000000000000000000000000'), -- reemplazar por el hash real
+    0xAC9689E2272427085E35B9D3E3E8BED88CB3434828B43B86FC0596CAD4C6E270, -- SHA256 de "admin1234"
     (SELECT id_rol FROM dbo.Rol WHERE nombre_rol = 'Administrador'),
     'LEG-0001',
     GETDATE()

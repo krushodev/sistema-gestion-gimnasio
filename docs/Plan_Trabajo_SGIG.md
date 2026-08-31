@@ -2,11 +2,11 @@
 
 Un solo plan, de punta a punta: arranca en la arquitectura, sigue con cada módulo de backend (entidades → datos → negocio) y, en el mismo lugar donde corresponde, con la pantalla completa de ese módulo (controles y comportamiento ya definidos, no hay que inventarlos después). Es la fuente que un agente Claude debe seguir para saber qué construir y en qué orden. `CLAUDE.md` lo referencia desde su sección "Orden de trabajo".
 
-El documento hermano de este es `Backlog_Trello_SGIG.md`: por cada entregable de acá abajo, ese archivo te dice qué tarjeta crear y en qué lista, para que puedas ir cargando Trello a la par que el agente (o vos) avanza con el plan.
+El documento hermano de este es el **backlog de Trello**: por cada entregable de acá abajo, indica qué tarjeta crear y en qué lista, para que puedas ir cargando el tablero a la par que el agente (o vos) avanza con el plan. Ese backlog **no está versionado en este repo** — vive fuera, del lado del usuario —, así que este archivo es la única fuente de verdad sobre qué construir.
 
-**Cambio de modelo (28/08/2026 — ERS v3.2):** se eliminó la tabla `Gasto` (el Mantenimiento ya no genera un gasto asociado, se simplifica) y se refactorizó Tesorería: `Plan` pasa a tener `tipo_periodicidad` (Diario/Semanal/Mensual/Anual) en vez de `dias_vigencia`, y se agregó `Facturacion` como tabla intermedia entre Socio, Plan y Pago (representa un ciclo de cuota; `Pago` ahora cuelga de una `Facturacion`). El cálculo de vencimiento para Mensual/Anual usa aritmética de calendario (`AddMonths`/`AddYears`), no días fijos. Esto afecta las Fases 4, 6 y 7 de este plan — ver el detalle en cada una.
+**Cambio de modelo (31/08/2026 — ERS v4.0):** se eliminó la tabla `Gasto` (el Mantenimiento ya no genera un gasto asociado, se simplifica) y se refactorizó Tesorería: `Plan` pasa a tener `tipo_periodicidad` (Diario/Semanal/Mensual/Anual) en vez de `dias_vigencia`, y se agregó `Facturacion` como tabla intermedia entre Socio, Plan y Pago (representa un ciclo de cuota; `Pago` ahora cuelga de una `Facturacion`). El cálculo de vencimiento para Mensual/Anual usa aritmética de calendario (`AddMonths`/`AddYears`), no días fijos. Esto afecta las Fases 4, 6 y 7 de este plan — ver el detalle en cada una.
 
-Convenciones: `[ ]` = pendiente, `[x]` = hecho. Notación húngara según `Notación.pdf` (RNF#05). Cada referencia `RF#`/`RNF#`/`HU-` apunta a la ERS v3.2.
+Convenciones: `[ ]` = pendiente, `[x]` = hecho. Notación húngara según `Notación.pdf` (RNF#05). Cada referencia `RF#`/`RNF#`/`HU-` apunta a la ERS v4.0 (`docs/ERS_SGIG_v4_0.docx`).
 
 ---
 
@@ -63,7 +63,7 @@ Convenciones: `[ ]` = pendiente, `[x]` = hecho. Notación húngara según `Notac
 - [x] Crear `frmMDIParent.cs` — esqueleto (`IsMdiContainer = true`), con este menú, todas las opciones deshabilitadas por ahora.
 - [x] Editar `Program.cs` para que `Main` arranque en `frmLogin`.
 
-> **Nota (28/08/2026):** el menú `mnuGastos` se renombró a `mnuReportes` y perdió el ítem `mnuGastosAbm` (ya no hay ABM de gastos). Si `frmMDIParent` ya está construido con el nombre viejo, es un ajuste menor: renombrar el `ToolStripMenuItem` y sacar el ítem de gastos.
+- [x] Renombrar el menú `mnuGastos` → `mnuReportes` y `mnuReporteBalance` → `mnuReporteIngresos`, y sacar el ítem `mnuGastosAbm` (ya no hay ABM de gastos, ERS v4.0). `mnuReportes` queda con `mnuReporteIngresos` y `mnuBackup`.
 
 ## Fase 2 — Seguridad: Rol, Usuario, Login funcional, ABM de Usuarios, Tablas paramétricas
 
@@ -129,7 +129,7 @@ Convenciones: `[ ]` = pendiente, `[x]` = hecho. Notación húngara según `Notac
 
 - **Rol de acceso:** Administrador.
 - **Se abre desde:** `mnuTablasParametricas`.
-- **Controles:** `tabCatalogos` (TabControl) con pestañas `tabRol`, `tabProvincia`, `tabLocalidad`, `tabTipoDocumento`, `tabMedioPago`, cada una con su `dgv`, sus campos de texto/combo y `btnAgregar`/`btnEditar`/`btnDarDeBaja`/`btnCancelar`. La baja de los cinco catálogos es **lógica** (campo `activo`, RF#04 — ERS v3.2), nunca física.
+- **Controles:** `tabCatalogos` (TabControl) con pestañas `tabRol`, `tabProvincia`, `tabLocalidad`, `tabTipoDocumento`, `tabMedioPago`, cada una con su `dgv`, sus campos de texto/combo y `btnAgregar`/`btnEditar`/`btnDarDeBaja`/`btnCancelar`. La baja de los cinco catálogos es **lógica** (campo `activo`, RF#04 — ERS v4.0), nunca física.
 
 - [x] Crear `frmTablasParametricas` con las 5 pestañas.
 - [x] CRUD de Provincia y Localidad.
@@ -177,7 +177,7 @@ Convenciones: `[ ]` = pendiente, `[x]` = hecho. Notación húngara según `Notac
 
 ## Fase 4 — Tesorería: Planes, Facturación y Pagos
 
-> **Refactor (28/08/2026 — ERS v3.2):** esta fase cambió de fondo respecto de versiones anteriores del plan. `Plan` ya no tiene `dias_vigencia` sino `tipo_periodicidad` (Diario/Semanal/Mensual/Anual). Se agrega `Facturacion` como tabla intermedia: representa un ciclo de cuota de un socio en un plan (fecha de emisión, vencimiento, monto). `Pago` ya no apunta directo a Socio+Plan, sino a una `Facturacion`. El vencimiento de Mensual/Anual se calcula con aritmética de calendario (`AddMonths`/`AddYears`), no días fijos — así se maneja bien la irregularidad de los meses (RF#12).
+> **Refactor (31/08/2026 — ERS v4.0):** esta fase cambió de fondo respecto de versiones anteriores del plan. `Plan` ya no tiene `dias_vigencia` sino `tipo_periodicidad` (Diario/Semanal/Mensual/Anual). Se agrega `Facturacion` como tabla intermedia: representa un ciclo de cuota de un socio en un plan (fecha de emisión, vencimiento, monto). `Pago` ya no apunta directo a Socio+Plan, sino a una `Facturacion`. El vencimiento de Mensual/Anual se calcula con aritmética de calendario (`AddMonths`/`AddYears`), no días fijos — así se maneja bien la irregularidad de los meses (RF#12).
 
 ### 4.1 Entidades
 
@@ -245,7 +245,7 @@ Convenciones: `[ ]` = pendiente, `[x]` = hecho. Notación húngara según `Notac
 
 ## Fase 6 — Activos: Máquinas y Mantenimientos (rol Técnico)
 
-> **Simplificación (28/08/2026 — ERS v3.2):** Mantenimiento ya no genera un `Gasto` asociado (la tabla `Gasto` se eliminó del modelo). RF#23 ("debe generar el Gasto asociado") queda dado de baja. La transacción de alta de Mantenimiento se reduce a 2 tablas: `Mantenimiento` + actualización de `Maquina.estado`.
+> **Simplificación (31/08/2026 — ERS v4.0):** Mantenimiento ya no genera un `Gasto` asociado (la tabla `Gasto` se eliminó del modelo). RF#23 ("debe generar el Gasto asociado") queda dado de baja. La transacción de alta de Mantenimiento se reduce a 2 tablas: `Mantenimiento` + actualización de `Maquina.estado`.
 
 ### 6.1 Entidades
 
@@ -286,7 +286,7 @@ Convenciones: `[ ]` = pendiente, `[x]` = hecho. Notación húngara según `Notac
 
 ## Fase 7 — Reportes y Backup
 
-> **Cambio de alcance (28/08/2026 — ERS v3.2):** al eliminar `Gasto`, no hay ABM de gastos ni "balance" (pagos − gastos). RF#22 se da de baja. RF#24 se redefine como un **reporte de ingresos por pagos**, filtrado por rango de fechas, sin gastos.
+> **Cambio de alcance (31/08/2026 — ERS v4.0):** al eliminar `Gasto`, no hay ABM de gastos ni "balance" (pagos − gastos). RF#22 se da de baja. RF#24 se redefine como un **reporte de ingresos por pagos**, filtrado por rango de fechas, sin gastos.
 
 ### 7.1 Lógica de negocio
 
