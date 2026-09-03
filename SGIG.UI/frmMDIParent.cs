@@ -22,7 +22,12 @@ namespace SGIG.UI
         {
             InitializeComponent();
             _usuario = usuario ?? throw new ArgumentNullException(nameof(usuario));
+
+            // Enganchamos el evento de clic por código
+            mnuSocios.Click += mnuSocios_Click;
         }
+
+
 
         private void frmMDIParent_Load(object sender, EventArgs e)
         {
@@ -125,6 +130,11 @@ namespace SGIG.UI
             AbrirFormularioHijo(() => new frmUsuarios(_usuario));
         }
 
+        private void mnuSocios_Click(object sender, EventArgs e)
+        {
+            AbrirFormularioHijo<frmSocios>();
+        }
+
         private void mnuTablasParametricas_Click(object sender, EventArgs e)
         {
             AbrirFormularioHijo<frmTablasParametricas>();
@@ -138,8 +148,6 @@ namespace SGIG.UI
 
             if (respuesta != DialogResult.Yes) return;
 
-            // Basta con cerrar el contenedor: el bucle de Program.Main vuelve a
-            // mostrar frmLogin. Al cerrarse el MDI, sus hijos se cierran con él.
             Close();
         }
     }

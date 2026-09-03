@@ -12,8 +12,11 @@ namespace SGIG.UI
         [STAThread]
         static void Main()
         {
-            // Configuración de alto DPI y fuente por defecto: https://aka.ms/applicationconfiguration
+            // Configuración de alto DPI y fuente por defecto
             ApplicationConfiguration.Initialize();
+
+           
+            // ==========================================
 
             while (true)
             {
