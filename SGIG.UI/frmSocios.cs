@@ -145,19 +145,21 @@ namespace SGIG.UI
             };
 
             var lblDni = new Label { Left = 20, Top = 20, Text = "DNI:" };
-            var txtDni = new TextBox { Left = 120, Top = 18, Width = 210, Text = socioExistente?.Documento ?? "" };
+            var txtDni = new TextBox { Left = 120, Top = 18, Width = 210, MaxLength = 12, Text = socioExistente?.Documento ?? "" };
+            txtDni.KeyPress += SoloNumeros_KeyPress;
 
             var lblNom = new Label { Left = 20, Top = 55, Text = "Nombre:" };
-            var txtNom = new TextBox { Left = 120, Top = 53, Width = 210, Text = socioExistente?.Nombre ?? "" };
+            var txtNom = new TextBox { Left = 120, Top = 53, Width = 210, MaxLength = 50, Text = socioExistente?.Nombre ?? "" };
 
             var lblApe = new Label { Left = 20, Top = 90, Text = "Apellido:" };
-            var txtApe = new TextBox { Left = 120, Top = 88, Width = 210, Text = socioExistente?.Apellido ?? "" };
+            var txtApe = new TextBox { Left = 120, Top = 88, Width = 210, MaxLength = 50, Text = socioExistente?.Apellido ?? "" };
 
             var lblTel = new Label { Left = 20, Top = 125, Text = "Teléfono:" };
-            var txtTel = new TextBox { Left = 120, Top = 123, Width = 210, Text = socioExistente?.Telefono ?? "" };
+            var txtTel = new TextBox { Left = 120, Top = 123, Width = 210, MaxLength = 20, Text = socioExistente?.Telefono ?? "" };
+            txtTel.KeyPress += SoloNumeros_KeyPress;
 
             var lblEmail = new Label { Left = 20, Top = 160, Text = "Email:" };
-            var txtEmail = new TextBox { Left = 120, Top = 158, Width = 210, Text = socioExistente?.Email ?? "" };
+            var txtEmail = new TextBox { Left = 120, Top = 158, Width = 210, MaxLength = 100, Text = socioExistente?.Email ?? "" };
 
             var btnOk = new Button { Text = "Guardar", Left = 140, Width = 90, Top = 210, DialogResult = DialogResult.OK };
             var btnCancel = new Button { Text = "Cancelar", Left = 240, Width = 90, Top = 210, DialogResult = DialogResult.Cancel };
@@ -200,6 +202,15 @@ namespace SGIG.UI
                 {
                     MessageBox.Show($"Error al guardar: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
+            }
+        }
+
+        private static void SoloNumeros_KeyPress(object? sender, KeyPressEventArgs e)
+        {
+            // Permite solo digitos y teclas de control como Backspace o Delete
+            if (!char.IsDigit(e.KeyChar) && !char.IsControl(e.KeyChar))
+            {
+                e.Handled = true;
             }
         }
 
