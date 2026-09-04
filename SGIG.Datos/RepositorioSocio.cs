@@ -49,7 +49,11 @@ namespace SGIG.Datos
             catch (SqlException ex)
             {
                 tran.Rollback();
-                throw new AccesoDatosException("Error al registrar el socio de forma transaccional.", ex);
+                if (ex.Number == 2627 || ex.Number == 2601)
+                {
+                    throw new AccesoDatosException($"Ya existe una persona registrada con el documento '{socio.Documento}'.", ex);
+                }
+                throw new AccesoDatosException($"Error al registrar o actualizar el socio: {ex.Message}", ex);
             }
         }
 
