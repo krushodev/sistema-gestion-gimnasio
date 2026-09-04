@@ -2,10 +2,8 @@ namespace SGIG.UI
 {
     partial class frmMDIParent
     {
-        /// <summary>Required designer variable.</summary>
         private System.ComponentModel.IContainer components = null;
 
-        /// <summary>Clean up any resources being used.</summary>
         protected override void Dispose(bool disposing)
         {
             if (disposing && (components != null))
@@ -17,10 +15,6 @@ namespace SGIG.UI
 
         #region Windows Form Designer generated code
 
-        /// <summary>
-        /// Required method for Designer support - do not modify
-        /// the contents of this method with the code editor.
-        /// </summary>
         private void InitializeComponent()
         {
             this.mnuPrincipal = new System.Windows.Forms.MenuStrip();
@@ -45,133 +39,8 @@ namespace SGIG.UI
             this.stsEstado = new System.Windows.Forms.StatusStrip();
             this.lblUsuarioLogueado = new System.Windows.Forms.ToolStripStatusLabel();
             this.btnCerrarSesion = new System.Windows.Forms.ToolStripStatusLabel();
-            this.mnuPrincipal.SuspendLayout();
             this.stsEstado.SuspendLayout();
             this.SuspendLayout();
-            // 
-            // mnuPrincipal
-            // 
-            this.mnuPrincipal.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.mnuSeguridad,
-            this.mnuPersonas,
-            this.mnuTesoreria,
-            this.mnuControlAcceso,
-            this.mnuActivos,
-            this.mnuReportes});
-            this.mnuPrincipal.Location = new System.Drawing.Point(0, 0);
-            this.mnuPrincipal.Name = "mnuPrincipal";
-            this.mnuPrincipal.Size = new System.Drawing.Size(984, 24);
-            this.mnuPrincipal.TabIndex = 0;
-            // 
-            // mnuSeguridad
-            // 
-            this.mnuSeguridad.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.mnuUsuarios,
-            this.mnuTablasParametricas});
-            this.mnuSeguridad.Name = "mnuSeguridad";
-            this.mnuSeguridad.Text = "&Seguridad";
-            // 
-            // mnuUsuarios
-            // 
-            this.mnuUsuarios.Name = "mnuUsuarios";
-            this.mnuUsuarios.Text = "&Usuarios";
-            this.mnuUsuarios.Click += new System.EventHandler(this.mnuUsuarios_Click);
-            // 
-            // mnuTablasParametricas
-            // 
-            this.mnuTablasParametricas.Name = "mnuTablasParametricas";
-            this.mnuTablasParametricas.Text = "Tablas &paramétricas";
-            this.mnuTablasParametricas.Click += new System.EventHandler(this.mnuTablasParametricas_Click);
-            // 
-            // mnuPersonas
-            // 
-            this.mnuPersonas.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.mnuSocios});
-            this.mnuPersonas.Name = "mnuPersonas";
-            this.mnuPersonas.Text = "&Personas";
-            // 
-            // mnuSocios
-            // 
-            this.mnuSocios.Name = "mnuSocios";
-            this.mnuSocios.Text = "&Socios";
-            // 
-            // mnuTesoreria
-            // 
-            this.mnuTesoreria.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.mnuPlanes,
-            this.mnuPagos,
-            this.mnuHistorialPagos});
-            this.mnuTesoreria.Name = "mnuTesoreria";
-            this.mnuTesoreria.Text = "&Tesorería";
-            // 
-            // mnuPlanes
-            // 
-            this.mnuPlanes.Name = "mnuPlanes";
-            this.mnuPlanes.Text = "P&lanes";
-            // 
-            // mnuPagos
-            // 
-            this.mnuPagos.Name = "mnuPagos";
-            this.mnuPagos.Text = "Registrar &pago";
-            // 
-            // mnuHistorialPagos
-            // 
-            this.mnuHistorialPagos.Name = "mnuHistorialPagos";
-            this.mnuHistorialPagos.Text = "&Historial de pagos";
-            // 
-            // mnuControlAcceso
-            // 
-            this.mnuControlAcceso.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.mnuCheckin});
-            this.mnuControlAcceso.Name = "mnuControlAcceso";
-            this.mnuControlAcceso.Text = "Control de &acceso";
-            // 
-            // mnuCheckin
-            // 
-            this.mnuCheckin.Name = "mnuCheckin";
-            this.mnuCheckin.Text = "&Check-in";
-            // 
-            // mnuActivos
-            // 
-            this.mnuActivos.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.mnuMaquinas,
-            this.mnuMantenimiento,
-            this.mnuHistorialMantenimientos});
-            this.mnuActivos.Name = "mnuActivos";
-            this.mnuActivos.Text = "Ac&tivos";
-            // 
-            // mnuMaquinas
-            // 
-            this.mnuMaquinas.Name = "mnuMaquinas";
-            this.mnuMaquinas.Text = "&Máquinas";
-            // 
-            // mnuMantenimiento
-            // 
-            this.mnuMantenimiento.Name = "mnuMantenimiento";
-            this.mnuMantenimiento.Text = "Registrar &mantenimiento";
-            // 
-            // mnuHistorialMantenimientos
-            // 
-            this.mnuHistorialMantenimientos.Name = "mnuHistorialMantenimientos";
-            this.mnuHistorialMantenimientos.Text = "&Historial de mantenimientos";
-            // 
-            // mnuReportes
-            // 
-            this.mnuReportes.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.mnuReporteIngresos,
-            this.mnuBackup});
-            this.mnuReportes.Name = "mnuReportes";
-            this.mnuReportes.Text = "&Reportes";
-            // 
-            // mnuReporteIngresos
-            // 
-            this.mnuReporteIngresos.Name = "mnuReporteIngresos";
-            this.mnuReporteIngresos.Text = "Reporte de &ingresos";
-            // 
-            // mnuBackup
-            // 
-            this.mnuBackup.Name = "mnuBackup";
-            this.mnuBackup.Text = "&Backup";
             // 
             // stsEstado
             // 
@@ -203,16 +72,12 @@ namespace SGIG.UI
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(984, 661);
             this.Controls.Add(this.stsEstado);
-            this.Controls.Add(this.mnuPrincipal);
-            this.IsMdiContainer = true;
-            this.MainMenuStrip = this.mnuPrincipal;
+            this.IsMdiContainer = false;
             this.Name = "frmMDIParent";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "SGIG — Sistema de Gestión Integral para Gimnasios";
             this.WindowState = System.Windows.Forms.FormWindowState.Maximized;
             this.Load += new System.EventHandler(this.frmMDIParent_Load);
-            this.mnuPrincipal.ResumeLayout(false);
-            this.mnuPrincipal.PerformLayout();
             this.stsEstado.ResumeLayout(false);
             this.stsEstado.PerformLayout();
             this.ResumeLayout(false);
