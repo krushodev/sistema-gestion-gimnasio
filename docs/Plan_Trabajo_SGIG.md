@@ -223,27 +223,29 @@ Convenciones: `[ ]` = pendiente, `[x]` = hecho. Notación húngara según `Notac
 
 ## Fase 5 — Control de Acceso: Check-in
 
+> **Nota (07/09/2026):** implementada en su totalidad. Como Fase 4 (Tesorería) todavía no existe, `Socio.FechaVencimientoCuota` está en `NULL` para todo socio hasta que se registre el primer pago real — hoy el Check-in rechaza a todo el mundo por "no tiene ninguna cuota registrada", que es el comportamiento correcto dado el estado actual de los datos, no un bug. Para probar el camino "Concedido" antes de que exista Fase 4, hay que cargar manualmente un `fecha_vencimiento_cuota` futuro en algún registro de `dbo.Socio` por SQL directo. La verificación de que la respuesta baja de 2 segundos (RNF#01) queda pendiente porque requiere ejecutar la app con datos reales — el agente no puede correr WinForms (ver límite en `CLAUDE.md`); la consulta de `RepositorioCheckin.BuscarSocioPorDocumento` es una única sentencia indexada, así que en la práctica no debería ser un problema.
+
 ### 5.1 Entidad
 
-- [ ] `Checkin.cs` en `SGIG.Entidades`.
+- [x] `Checkin.cs` en `SGIG.Entidades`.
 
 ### 5.2 Acceso a datos
 
-- [ ] `RepositorioCheckin.cs`: inserción.
-- [ ] `RepositorioCheckin.cs`: consulta rápida por documento.
+- [x] `RepositorioCheckin.cs`: inserción.
+- [x] `RepositorioCheckin.cs`: consulta rápida por documento.
 
 ### 5.3 Lógica de negocio
 
-- [ ] `ServicioCheckin.cs`: lógica Concedido/Rechazado comparando contra `Socio.fecha_vencimiento_cuota` (el campo caché, no consulta `Facturacion` — es lo que mantiene el Check-in rápido, RNF#01) (RF#16).
+- [x] `ServicioCheckin.cs`: lógica Concedido/Rechazado comparando contra `Socio.fecha_vencimiento_cuota` (el campo caché, no consulta `Facturacion` — es lo que mantiene el Check-in rápido, RNF#01) (RF#16).
 
 ### 5.4 Pantalla `frmCheckin` (RF#15, RF#17, RNF#01)
 
 - **Rol de acceso:** Recepcionista. **Se abre desde:** `mnuCheckin`.
 - **Controles:** `txtDocumento` (foco automático, dispara con Enter), `pnlResultado` (verde/rojo), `lblResultado`, `lblNombreSocio`.
 
-- [ ] Crear `frmCheckin` — campo único, sin botones intermedios.
-- [ ] Feedback visual verde/rojo y registro automático del intento.
-- [ ] Verificar que la respuesta se resuelve en menos de 2 segundos.
+- [x] Crear `frmCheckin` — campo único, sin botones intermedios.
+- [x] Feedback visual verde/rojo y registro automático del intento.
+- [ ] Verificar que la respuesta se resuelve en menos de 2 segundos (requiere ejecutar la app — ver nota arriba).
 
 ## Fase 6 — Activos: Máquinas y Mantenimientos (rol Técnico)
 

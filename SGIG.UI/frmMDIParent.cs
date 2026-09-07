@@ -156,14 +156,17 @@ namespace SGIG.UI
                     Color.FromArgb(16, 185, 129),
                     () => MessageBox.Show("Módulo de Cobros en desarrollo.", "SGIG", MessageBoxButtons.OK, MessageBoxIcon.Information)
                 );
+            }
 
-                // 5. ⏱️ Control de Acceso
+            // 5. ⏱️ Control de Acceso — sólo Recepcionista según la matriz de permisos (Fase 2.4).
+            if (rol == "Recepcionista")
+            {
                 AgregarTarjetaGrilla(
                     "Control de Acceso",
                     "Monitoreo de entradas en recepción, molinete y estado de cuotas al día.",
                     "⏱️",
                     Color.FromArgb(245, 158, 11),
-                    () => MessageBox.Show("Módulo de Check-in en desarrollo.", "SGIG", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                    () => AbrirFormularioEnPanel(new frmCheckin())
                 );
             }
 
