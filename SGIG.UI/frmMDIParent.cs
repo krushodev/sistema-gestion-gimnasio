@@ -170,15 +170,36 @@ namespace SGIG.UI
                 );
             }
 
-            // 6. 🏋️ Activos y Máquinas
+            // 6. 🏋️ Activos y Máquinas (RF#18: Administrador y Técnico)
             if (rol is "Administrador" or "Tecnico")
             {
                 AgregarTarjetaGrilla(
-                    "Activos y Máquinas",
-                    "Inventario de equipamiento, registro de fallas y mantenimiento preventivo.",
+                    "Máquinas",
+                    "Inventario de equipamiento: alta, edición y baja de máquinas.",
                     "🏋️",
                     Color.FromArgb(236, 72, 153),
-                    () => MessageBox.Show("Módulo de Máquinas en desarrollo.", "SGIG", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                    () => AbrirFormularioEnPanel(new frmMaquinas())
+                );
+
+                // Historial de mantenimientos (RF#21): Administrador y Técnico
+                AgregarTarjetaGrilla(
+                    "Historial de Mantenimientos",
+                    "Consulta de intervenciones técnicas registradas por máquina.",
+                    "🛠️",
+                    Color.FromArgb(190, 24, 93),
+                    () => AbrirFormularioEnPanel(new frmHistorialMantenimientos())
+                );
+            }
+
+            // Mantenimiento (RF#19, RF#20): sólo Técnico, es quien registra y cierra la intervención.
+            if (rol == "Tecnico")
+            {
+                AgregarTarjetaGrilla(
+                    "Mantenimiento",
+                    "Registrar una falla y finalizar mantenimientos en curso.",
+                    "🔧",
+                    Color.FromArgb(217, 119, 6),
+                    () => AbrirFormularioEnPanel(new frmMantenimiento(_usuario))
                 );
             }
 

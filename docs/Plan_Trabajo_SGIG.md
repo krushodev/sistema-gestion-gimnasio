@@ -251,42 +251,44 @@ Convenciones: `[ ]` = pendiente, `[x]` = hecho. Notación húngara según `Notac
 
 > **Simplificación (31/08/2026 — ERS v4.0):** Mantenimiento ya no genera un `Gasto` asociado (la tabla `Gasto` se eliminó del modelo). RF#23 ("debe generar el Gasto asociado") queda dado de baja. La transacción de alta de Mantenimiento se reduce a 2 tablas: `Mantenimiento` + actualización de `Maquina.estado`.
 
+> **Nota (07/09/2026):** implementada en su totalidad. `dbo.Maquina` no tiene columna `activo` (a diferencia de Socio/Usuario/Plan), así que `btnEliminar` en `frmMaquinas` hace un `DELETE` físico, bloqueado desde `ServicioMaquina.Eliminar` si la máquina ya tiene mantenimientos registrados (para no perder ese historial). El estado `'En Reparacion'` se escribe sin tilde en todo el código porque así está el `CHECK` en `SGIG_CreateDB.sql` (`CK_Maquina_Estado`). `frmMantenimiento` sólo ofrece en `cboMaquina` las máquinas hoy "Operativa" (una "En Reparacion" ya tiene un mantenimiento activo). En el dashboard de `frmMDIParent`, "Máquinas" e "Historial de Mantenimientos" quedaron habilitadas para Administrador y Técnico, y "Mantenimiento" sólo para Técnico, según la matriz de la Fase 2.4.
+
 ### 6.1 Entidades
 
-- [ ] `Maquina.cs`, `Mantenimiento.cs` en `SGIG.Entidades` (`Mantenimiento` ya no tiene `IdGasto`).
+- [x] `Maquina.cs`, `Mantenimiento.cs` en `SGIG.Entidades` (`Mantenimiento` ya no tiene `IdGasto`).
 
 ### 6.2 Acceso a datos
 
-- [ ] `RepositorioMaquina.cs`: CRUD.
-- [ ] `RepositorioMantenimiento.cs`: alta transaccional (inserta el mantenimiento y cambia el estado de la máquina a "En Reparación", RF#20).
-- [ ] `RepositorioMantenimiento.cs`: historial por máquina (RF#21).
+- [x] `RepositorioMaquina.cs`: CRUD.
+- [x] `RepositorioMantenimiento.cs`: alta transaccional (inserta el mantenimiento y cambia el estado de la máquina a "En Reparación", RF#20).
+- [x] `RepositorioMantenimiento.cs`: historial por máquina (RF#21).
 
 ### 6.3 Lógica de negocio
 
-- [ ] `ServicioMaquina.cs`: cambio de estado automático.
-- [ ] `ServicioMantenimiento.cs`: técnico a cargo tomado del usuario logueado.
+- [x] `ServicioMaquina.cs`: cambio de estado automático.
+- [x] `ServicioMantenimiento.cs`: técnico a cargo tomado del usuario logueado.
 
 ### 6.4 Pantalla `frmMaquinas` (RF#18)
 
 - **Rol de acceso:** Administrador, Técnico. **Se abre desde:** `mnuMaquinas`.
 - **Controles:** `dgvMaquinas`, `txtMarca`, `txtNombre`, `dtpFechaCompra`, `cboEstado`, `btnNuevo`/`btnGuardar`/`btnEliminar`.
 
-- [ ] Crear `frmMaquinas` con ABM completo.
+- [x] Crear `frmMaquinas` con ABM completo.
 
 ### 6.5 Pantalla `frmMantenimiento` (RF#19, RF#20)
 
 - **Rol de acceso:** Técnico. **Se abre desde:** `mnuMantenimiento`.
 - **Controles:** `dgvMantenimientosActivos`, `cboMaquina`, `dtpFechaInicio`, `txtDetalleTecnico`, `btnRegistrar`, `dtpFechaFin`, `btnFinalizar`. (Se sacan `txtMontoGasto` y `txtDescripcionGasto` — ya no aplica.)
 
-- [ ] Crear `frmMantenimiento` — alta transaccional (mantenimiento + estado "En Reparación").
-- [ ] Finalización: cierra el mantenimiento y devuelve la máquina a "Operativa", estado visible en la grilla.
+- [x] Crear `frmMantenimiento` — alta transaccional (mantenimiento + estado "En Reparación").
+- [x] Finalización: cierra el mantenimiento y devuelve la máquina a "Operativa", estado visible en la grilla.
 
 ### 6.6 Pantalla `frmHistorialMantenimientos` (RF#21)
 
 - **Rol de acceso:** Administrador, Técnico. **Se abre desde:** `mnuHistorialMantenimientos`.
 - **Controles:** `cboMaquina`, `dgvHistorialMantenimientos`.
 
-- [ ] Crear `frmHistorialMantenimientos` con consulta por máquina.
+- [x] Crear `frmHistorialMantenimientos` con consulta por máquina.
 
 ## Fase 7 — Reportes y Backup
 
