@@ -1,245 +1,325 @@
-﻿using System;
-using System.Drawing;
-using System.Linq;
-using System.Windows.Forms;
-using SGIG.Datos;
 using SGIG.Entidades;
+using SGIG.Negocio;
 
 namespace SGIG.UI
 {
-    public class frmSocios : Form
+    /// <summary>
+    /// ABM de socios (RF#05, RF#06, RF#07, RNF#03). Accesible para Administrador y
+    /// Recepcionista. Permite reutilizar una Persona ya cargada (por ejemplo, un
+    /// Usuario) al dar de alta un socio nuevo, edición y baja lógica con confirmación.
+    /// </summary>
+    //
+    // ── CONTROLES (ver frmSocios.Designer.cs) ────────────────────────────────
+    //   txtBuscarDocumento, btnBuscar (RF#06), dgvSocios, btnNuevo, btnEditar,
+    //   btnDarDeBaja
+    //   Datos de Persona: txtDocumento, cboTipoDocumento, txtNombre, txtApellido,
+    //                     txtEmail, txtTelefono, cboLocalidad
+    //   Datos de Socio: dtpFechaNacimiento, txtAptoMedico, cboPlan (deshabilitado
+    //                   hasta que exista el módulo de Planes, Fase 4),
+    //                   lblFechaVencimientoCuota (solo lectura), chkActivo (solo lectura)
+    //   btnGuardar, btnCancelar
+    // ───────────────────────────────────────────────────────────────────────────
+    public partial class frmSocios : Form
     {
-        private readonly RepositorioSocio _repoSocio = new();
-        private DataGridView dgvSocios = null!;
-        private Button btnNuevo = null!;
-        private Button btnModificar = null!;
-        private Button btnDarDeBaja = null!;
-        private Button btnRecargar = null!;
+        private readonly ServicioSocio _servicioSocio = new();
+        private readonly ServicioCatalogo _servicioCatalogo = new();
+
+        /// <summary>id_persona en edición; null cuando se está dando un alta.</summary>
+        private int? _idEnEdicion;
+
+        /// <summary>
+        /// id_persona de una Persona existente encontrada por <see cref="btnBuscar_Click"/>
+        /// que todavía no es socio; se reutiliza al guardar el alta (RF#06).
+        /// </summary>
+        private int? _idPersonaReutilizada;
 
         public frmSocios()
         {
-            InicializarComponentes();
-            CargarSocios();
+            InitializeComponent();
+
+            // RNF#04: el campo documento no acepta letras.
+            txtDocumento.KeyPress += Grillas.SoloDigitos;
+            txtBuscarDocumento.KeyPress += Grillas.SoloDigitos;
         }
 
-        private void InicializarComponentes()
-        {
-            this.Text = "Gestión de Socios";
-            this.Size = new Size(850, 520);
-            this.StartPosition = FormStartPosition.CenterParent;
-
-            // Panel superior de acciones
-            var panelSuperior = new Panel
-            {
-                Dock = DockStyle.Top,
-                Height = 50
-            };
-
-            btnNuevo = new Button
-            {
-                Text = "Nuevo Socio",
-                Location = new Point(15, 10),
-                Size = new Size(110, 30)
-            };
-            btnNuevo.Click += BtnNuevo_Click;
-
-            btnModificar = new Button
-            {
-                Text = "Modificar",
-                Location = new Point(135, 10),
-                Size = new Size(110, 30)
-            };
-            btnModificar.Click += BtnModificar_Click;
-
-            btnDarDeBaja = new Button
-            {
-                Text = "Dar de Baja",
-                Location = new Point(255, 10),
-                Size = new Size(110, 30)
-            };
-            btnDarDeBaja.Click += BtnDarDeBaja_Click;
-
-            btnRecargar = new Button
-            {
-                Text = "Actualizar",
-                Location = new Point(375, 10),
-                Size = new Size(100, 30)
-            };
-            btnRecargar.Click += (s, e) => CargarSocios();
-
-            panelSuperior.Controls.Add(btnNuevo);
-            panelSuperior.Controls.Add(btnModificar);
-            panelSuperior.Controls.Add(btnDarDeBaja);
-            panelSuperior.Controls.Add(btnRecargar);
-
-            // Grilla de Socios
-            dgvSocios = new DataGridView
-            {
-                Dock = DockStyle.Fill,
-                AutoGenerateColumns = false,
-                SelectionMode = DataGridViewSelectionMode.FullRowSelect,
-                MultiSelect = false,
-                ReadOnly = true,
-                AllowUserToAddRows = false
-            };
-
-            dgvSocios.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "IdPersona", HeaderText = "ID", Width = 50 });
-            dgvSocios.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "Documento", HeaderText = "DNI", Width = 100 });
-            dgvSocios.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "Nombre", HeaderText = "Nombre", Width = 140 });
-            dgvSocios.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "Apellido", HeaderText = "Apellido", Width = 140 });
-            dgvSocios.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "Telefono", HeaderText = "Teléfono", Width = 110 });
-            dgvSocios.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "Email", HeaderText = "Email", Width = 200 });
-
-            // Doble clic en una fila abre el editor
-            dgvSocios.CellDoubleClick += (s, e) =>
-            {
-                if (e.RowIndex >= 0) BtnModificar_Click(s, e);
-            };
-
-            this.Controls.Add(dgvSocios);
-            this.Controls.Add(panelSuperior);
-        }
-
-        private void CargarSocios()
+        private void frmSocios_Load(object sender, EventArgs e)
         {
             try
             {
-                var lista = _repoSocio.ListarTodos().ToList();
-                dgvSocios.DataSource = lista;
+                ConfigurarGrilla();
+                CargarCombos();
+                CargarGrilla();
+                HabilitarPanel(false);
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error al cargar la lista de socios: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MostrarError(ex);
             }
         }
 
-        private void BtnNuevo_Click(object? sender, EventArgs e)
+        /// <summary>
+        /// Columnas explícitas: la grilla muestra sólo lo que le sirve a recepción,
+        /// sin exponer ids internos.
+        /// </summary>
+        private void ConfigurarGrilla()
         {
-            AbrirDialogoSocio(null);
+            Grillas.Configurar(dgvSocios,
+                (nameof(Socio.Apellido), "Apellido", 100),
+                (nameof(Socio.Nombre), "Nombre", 100),
+                (nameof(Socio.Documento), "Documento", 80),
+                (nameof(Socio.Telefono), "Teléfono", 90),
+                (nameof(Socio.Email), "Email", 130),
+                (nameof(Socio.FechaVencimientoCuota), "Vencim. cuota", 90));
         }
 
-        private void BtnModificar_Click(object? sender, EventArgs e)
+        // ── Carga de datos ───────────────────────────────────────────────────
+
+        private void CargarCombos()
         {
-            if (dgvSocios.CurrentRow?.DataBoundItem is not Socio socioSeleccionado)
+            cboTipoDocumento.DisplayMember = nameof(TipoDocumento.Descripcion);
+            cboTipoDocumento.ValueMember = nameof(TipoDocumento.IdTipoDocumento);
+            cboTipoDocumento.DataSource = _servicioCatalogo.ObtenerTiposDocumento().ToList();
+
+            // La localidad es opcional: se agrega una fila vacía al principio.
+            var localidades = _servicioCatalogo.ObtenerLocalidades().ToList();
+            localidades.Insert(0, new Localidad { IdLocalidad = 0, Nombre = "(sin especificar)" });
+            cboLocalidad.DisplayMember = nameof(Localidad.Nombre);
+            cboLocalidad.ValueMember = nameof(Localidad.IdLocalidad);
+            cboLocalidad.DataSource = localidades;
+
+            // El módulo de Planes todavía no existe (Fase 4, Tesorería): el combo se
+            // deja deshabilitado con un texto explicativo hasta que se pueda cargar.
+            cboPlan.Items.Add("(disponible cuando se implemente Fase 4 - Tesorería)");
+            cboPlan.SelectedIndex = 0;
+        }
+
+        private void CargarGrilla()
+        {
+            dgvSocios.DataSource = _servicioSocio.ObtenerActivos().ToList();
+        }
+
+        // ── ABM ──────────────────────────────────────────────────────────────
+
+        private void btnBuscar_Click(object sender, EventArgs e)
+        {
+            var documento = txtBuscarDocumento.Text.Trim();
+
+            if (string.IsNullOrWhiteSpace(documento))
             {
-                MessageBox.Show("Seleccioná un socio de la lista para modificar.", "Aviso", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("Ingresá un documento para buscar.", "SGIG",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
 
-            AbrirDialogoSocio(socioSeleccionado);
+            try
+            {
+                var persona = _servicioSocio.BuscarPersonaPorDocumento(documento);
+
+                LimpiarPanel();
+                _idEnEdicion = null;
+                _idPersonaReutilizada = null;
+
+                if (persona is null)
+                {
+                    txtDocumento.Text = documento;
+                    MessageBox.Show(
+                        "No existe ninguna persona con ese documento. Completá los datos para darla de alta como socio nuevo.",
+                        "SGIG", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+                else
+                {
+                    _idPersonaReutilizada = persona.IdPersona;
+
+                    txtDocumento.Text = persona.Documento;
+                    cboTipoDocumento.SelectedValue = persona.IdTipoDocumento;
+                    txtNombre.Text = persona.Nombre;
+                    txtApellido.Text = persona.Apellido;
+                    txtEmail.Text = persona.Email ?? string.Empty;
+                    txtTelefono.Text = persona.Telefono ?? string.Empty;
+                    cboLocalidad.SelectedValue = persona.IdLocalidad ?? 0;
+                    dtpFechaNacimiento.Value = persona.FechaNacimiento ?? DateTime.Today;
+
+                    MessageBox.Show(
+                        "Ya existe una persona registrada con ese documento. Se reutilizan sus datos: completá el resto y guardá para darla de alta como socio.",
+                        "SGIG", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+
+                HabilitarPanel(true);
+                txtNombre.Focus();
+            }
+            catch (Exception ex)
+            {
+                MostrarError(ex);
+            }
         }
 
-        private void AbrirDialogoSocio(Socio? socioExistente)
+        private void btnNuevo_Click(object sender, EventArgs e)
         {
-            bool esEdicion = socioExistente != null;
+            _idEnEdicion = null;
+            _idPersonaReutilizada = null;
+            LimpiarPanel();
+            HabilitarPanel(true);
+            txtDocumento.Focus();
+        }
 
-            using var prompt = new Form
+        private void btnEditar_Click(object sender, EventArgs e)
+        {
+            var socio = SocioSeleccionado();
+            if (socio is null) return;
+
+            _idEnEdicion = socio.IdPersona;
+            _idPersonaReutilizada = null;
+
+            txtDocumento.Text = socio.Documento;
+            cboTipoDocumento.SelectedValue = socio.IdTipoDocumento;
+            txtNombre.Text = socio.Nombre;
+            txtApellido.Text = socio.Apellido;
+            txtEmail.Text = socio.Email ?? string.Empty;
+            txtTelefono.Text = socio.Telefono ?? string.Empty;
+            cboLocalidad.SelectedValue = socio.IdLocalidad ?? 0;
+            dtpFechaNacimiento.Value = socio.FechaNacimiento ?? DateTime.Today;
+            txtAptoMedico.Text = socio.AptoMedico ?? string.Empty;
+            lblFechaVencimientoCuota.Text = socio.FechaVencimientoCuota?.ToString("dd/MM/yyyy") ?? "Sin cuota registrada";
+            chkActivo.Checked = socio.Activo;
+
+            HabilitarPanel(true);
+            txtDocumento.Focus();
+        }
+
+        private void btnGuardar_Click(object sender, EventArgs e)
+        {
+            var idLocalidad = (int)(cboLocalidad.SelectedValue ?? 0);
+
+            var socio = new Socio
             {
-                Width = 380,
-                Height = 310,
-                FormBorderStyle = FormBorderStyle.FixedDialog,
-                Text = esEdicion ? "Modificar Socio" : "Registrar Nuevo Socio",
-                StartPosition = FormStartPosition.CenterParent,
-                MaximizeBox = false,
-                MinimizeBox = false
+                IdPersona = _idEnEdicion ?? _idPersonaReutilizada ?? 0,
+                Documento = txtDocumento.Text.Trim(),
+                IdTipoDocumento = (int)(cboTipoDocumento.SelectedValue ?? 0),
+                Nombre = txtNombre.Text.Trim(),
+                Apellido = txtApellido.Text.Trim(),
+                Email = TextoOpcional(txtEmail),
+                Telefono = TextoOpcional(txtTelefono),
+                IdLocalidad = idLocalidad > 0 ? idLocalidad : null,
+                FechaNacimiento = dtpFechaNacimiento.Value.Date,
+                AptoMedico = TextoOpcional(txtAptoMedico)
             };
 
-            var lblDni = new Label { Left = 20, Top = 20, Text = "DNI:" };
-            var txtDni = new TextBox { Left = 120, Top = 18, Width = 210, MaxLength = 12, Text = socioExistente?.Documento ?? "" };
-            txtDni.KeyPress += SoloNumeros_KeyPress;
-
-            var lblNom = new Label { Left = 20, Top = 55, Text = "Nombre:" };
-            var txtNom = new TextBox { Left = 120, Top = 53, Width = 210, MaxLength = 50, Text = socioExistente?.Nombre ?? "" };
-
-            var lblApe = new Label { Left = 20, Top = 90, Text = "Apellido:" };
-            var txtApe = new TextBox { Left = 120, Top = 88, Width = 210, MaxLength = 50, Text = socioExistente?.Apellido ?? "" };
-
-            var lblTel = new Label { Left = 20, Top = 125, Text = "Teléfono:" };
-            var txtTel = new TextBox { Left = 120, Top = 123, Width = 210, MaxLength = 20, Text = socioExistente?.Telefono ?? "" };
-            txtTel.KeyPress += SoloNumeros_KeyPress;
-
-            var lblEmail = new Label { Left = 20, Top = 160, Text = "Email:" };
-            var txtEmail = new TextBox { Left = 120, Top = 158, Width = 210, MaxLength = 100, Text = socioExistente?.Email ?? "" };
-
-            var btnOk = new Button { Text = "Guardar", Left = 140, Width = 90, Top = 210, DialogResult = DialogResult.OK };
-            var btnCancel = new Button { Text = "Cancelar", Left = 240, Width = 90, Top = 210, DialogResult = DialogResult.Cancel };
-
-            prompt.Controls.AddRange(new Control[] {
-                lblDni, txtDni,
-                lblNom, txtNom,
-                lblApe, txtApe,
-                lblTel, txtTel,
-                lblEmail, txtEmail,
-                btnOk, btnCancel
-            });
-
-            prompt.AcceptButton = btnOk;
-            prompt.CancelButton = btnCancel;
-
-            if (prompt.ShowDialog() == DialogResult.OK)
+            try
             {
-                if (string.IsNullOrWhiteSpace(txtDni.Text) || string.IsNullOrWhiteSpace(txtNom.Text) || string.IsNullOrWhiteSpace(txtApe.Text))
+                Cursor = Cursors.WaitCursor;
+
+                if (_idEnEdicion is null)
                 {
-                    MessageBox.Show("DNI, Nombre y Apellido son campos obligatorios.", "Aviso", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    return;
+                    _servicioSocio.Alta(socio);
+                }
+                else
+                {
+                    _servicioSocio.Modificar(socio);
                 }
 
-                try
-                {
-                    var socio = socioExistente ?? new Socio();
-                    socio.Documento = txtDni.Text.Trim();
-                    socio.IdTipoDocumento = socioExistente?.IdTipoDocumento ?? 1;
-                    socio.Nombre = txtNom.Text.Trim();
-                    socio.Apellido = txtApe.Text.Trim();
-                    socio.Telefono = string.IsNullOrWhiteSpace(txtTel.Text) ? null : txtTel.Text.Trim();
-                    socio.Email = string.IsNullOrWhiteSpace(txtEmail.Text) ? null : txtEmail.Text.Trim();
-
-                    _repoSocio.Guardar(socio);
-                    MessageBox.Show(esEdicion ? "Socio actualizado con éxito." : "Socio registrado con éxito.", "Éxito", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    CargarSocios();
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"Error al guardar: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                }
+                CargarGrilla();
+                HabilitarPanel(false);
+                LimpiarPanel();
+            }
+            catch (Exception ex)
+            {
+                MostrarError(ex);
+            }
+            finally
+            {
+                Cursor = Cursors.Default;
             }
         }
 
-        private static void SoloNumeros_KeyPress(object? sender, KeyPressEventArgs e)
+        private void btnDarDeBaja_Click(object sender, EventArgs e)
         {
-            // Permite solo digitos y teclas de control como Backspace o Delete
-            if (!char.IsDigit(e.KeyChar) && !char.IsControl(e.KeyChar))
+            var socio = SocioSeleccionado();
+            if (socio is null) return;
+
+            var respuesta = MessageBox.Show(
+                $"¿Confirmás dar de baja al socio {socio.Apellido}, {socio.Nombre}?",
+                "Confirmar baja", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+
+            if (respuesta != DialogResult.Yes) return;
+
+            try
             {
-                e.Handled = true;
+                _servicioSocio.DarDeBaja(socio.IdPersona);
+                CargarGrilla();
+            }
+            catch (Exception ex)
+            {
+                MostrarError(ex);
             }
         }
 
-        private void BtnDarDeBaja_Click(object? sender, EventArgs e)
+        private void btnCancelar_Click(object sender, EventArgs e)
         {
-            if (dgvSocios.CurrentRow?.DataBoundItem is not Socio socio)
+            HabilitarPanel(false);
+            LimpiarPanel();
+        }
+
+        // ── Helpers de UI ────────────────────────────────────────────────────
+
+        private Socio? SocioSeleccionado()
+        {
+            if (dgvSocios.CurrentRow?.DataBoundItem is Socio socio)
             {
-                MessageBox.Show("Seleccioná un socio de la lista para dar de baja.", "Aviso", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
+                return socio;
             }
 
-            var confirm = MessageBox.Show(
-                $"¿Seguro que deseás dar de baja a {socio.Nombre} {socio.Apellido}?",
-                "Confirmar Baja",
-                MessageBoxButtons.YesNo,
-                MessageBoxIcon.Question);
+            MessageBox.Show("Seleccioná un socio de la grilla.", "SGIG",
+                MessageBoxButtons.OK, MessageBoxIcon.Information);
+            return null;
+        }
 
-            if (confirm == DialogResult.Yes)
+        private static string? TextoOpcional(TextBox caja) =>
+            string.IsNullOrWhiteSpace(caja.Text) ? null : caja.Text.Trim();
+
+        /// <summary>Habilita el panel de edición y deshabilita la grilla, y viceversa.</summary>
+        private void HabilitarPanel(bool editando)
+        {
+            grpDatos.Enabled = editando;
+            btnGuardar.Enabled = editando;
+            btnCancelar.Enabled = editando;
+
+            dgvSocios.Enabled = !editando;
+            txtBuscarDocumento.Enabled = !editando;
+            btnBuscar.Enabled = !editando;
+            btnNuevo.Enabled = !editando;
+            btnEditar.Enabled = !editando;
+            btnDarDeBaja.Enabled = !editando;
+
+            // cboPlan y chkActivo son de solo lectura incluso con el panel habilitado.
+            cboPlan.Enabled = false;
+            chkActivo.Enabled = false;
+        }
+
+        private void LimpiarPanel()
+        {
+            foreach (var caja in new[] { txtDocumento, txtNombre, txtApellido, txtEmail, txtTelefono, txtAptoMedico })
             {
-                try
-                {
-                    _repoSocio.BajaLogica(socio.IdPersona);
-                    CargarSocios();
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"Error al dar de baja: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                }
+                caja.Clear();
             }
+
+            if (cboTipoDocumento.Items.Count > 0) cboTipoDocumento.SelectedIndex = 0;
+            if (cboLocalidad.Items.Count > 0) cboLocalidad.SelectedIndex = 0;
+            dtpFechaNacimiento.Value = DateTime.Today.AddYears(-18);
+            lblFechaVencimientoCuota.Text = "Sin cuota registrada";
+            chkActivo.Checked = true;
+            txtBuscarDocumento.Clear();
+        }
+
+        /// <summary>
+        /// Los errores de negocio se muestran como advertencia (el usuario puede
+        /// corregirlos); los de acceso a datos, como error.
+        /// </summary>
+        private static void MostrarError(Exception ex)
+        {
+            var esNegocio = ex is NegocioException;
+
+            MessageBox.Show(ex.Message, "SGIG", MessageBoxButtons.OK,
+                esNegocio ? MessageBoxIcon.Warning : MessageBoxIcon.Error);
         }
     }
 }
