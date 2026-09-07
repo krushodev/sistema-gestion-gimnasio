@@ -139,21 +139,23 @@ Convenciones: `[ ]` = pendiente, `[x]` = hecho. Notación húngara según `Notac
 
 ## Fase 3 — Personas: Socios
 
+> **Nota (07/09/2026):** `frmSocios` se implementó con un diseño simplificado, divergente del contrato de controles definido más abajo — usa un diálogo interno de alta/edición en vez de los campos embebidos, le falta `cboTipoDocumento`, `cboLocalidad`, `dtpFechaNacimiento`, `txtAptoMedico`, `lblFechaVencimientoCuota` y `chkActivo`, y el botón de edición se llama `btnModificar` en vez de `btnEditar`. La entidad `Socio.cs` tampoco tiene todavía `IdPlan` ni `FechaVencimientoCuota` (dependen de que exista `Plan`, Fase 4). Queda pendiente decidir con el resto del equipo si se alinea `frmSocios` al contrato original antes o durante la Fase 4, ya que esa fase necesita ampliar `Socio.cs` con esos dos campos.
+
 ### 3.1 Entidad
 
-- [ ] `Socio.cs` en `SGIG.Entidades`.
+- [x] `Socio.cs` en `SGIG.Entidades`.
 
 ### 3.2 Acceso a datos
 
-- [ ] `RepositorioPersona.cs`: búsqueda por documento (RF#06).
-- [ ] `RepositorioSocio.cs`: alta transaccional (Persona + Socio).
-- [ ] `RepositorioSocio.cs`: consulta por documento y listado de activos.
-- [ ] `RepositorioSocio.cs`: baja lógica.
+- [x] `RepositorioPersona.cs`: búsqueda por documento (RF#06).
+- [x] `RepositorioSocio.cs`: alta transaccional (Persona + Socio).
+- [x] `RepositorioSocio.cs`: consulta por documento y listado de activos.
+- [x] `RepositorioSocio.cs`: baja lógica.
 
 ### 3.3 Lógica de negocio
 
-- [ ] `ServicioSocio.cs`: validación de documento único (RF#09).
-- [ ] `ServicioSocio.cs`: validación regex de email/documento (RF#09).
+- [x] `ServicioSocio.cs`: validación de documento único (RF#09).
+- [x] `ServicioSocio.cs`: validación regex de email/documento (RF#09).
 
 ### 3.4 Pantalla `frmSocios` (RF#05, RF#06, RF#07, RNF#03)
 
@@ -170,10 +172,10 @@ Convenciones: `[ ]` = pendiente, `[x]` = hecho. Notación húngara según `Notac
   | `dtpFechaNacimiento`, `txtAptoMedico`, `cboPlan`, `lblFechaVencimientoCuota` (solo lectura), `chkActivo` (solo lectura) | — | Datos de Socio (`cboPlan` es el plan preferido, no genera facturación por sí solo) |
   | `btnGuardar` / `btnCancelar` | Button | Confirmar o descartar |
 
-- [ ] Crear `frmSocios` con estos controles.
-- [ ] Alta reutilizando persona existente si el documento ya está cargado.
-- [ ] Edición.
-- [ ] Baja lógica con confirmación.
+- [x] Crear `frmSocios` con estos controles — ver nota de divergencia arriba, no coincide 1:1 con la tabla.
+- [x] Alta reutilizando persona existente si el documento ya está cargado.
+- [x] Edición.
+- [x] Baja lógica con confirmación.
 
 ## Fase 4 — Tesorería: Planes, Facturación y Pagos
 
