@@ -20,8 +20,12 @@ namespace SGIG.Negocio
         public IEnumerable<Rol> ObtenerRoles() => _repositorioRol.ObtenerActivos();
 
         /// <summary>
-        /// Da de alta Persona + Usuario. La contraseña llega en texto plano y se
-        /// guarda hasheada; nunca se persiste en claro (RNF#11).
+        /// Da de alta un usuario. La contraseña llega en texto plano y se guarda
+        /// hasheada; nunca se persiste en claro (RNF#11). Si <see cref="Usuario.IdPersona"/>
+        /// ya viene cargado (se reutilizó una Persona existente, por ejemplo alguien
+        /// que ya era Socio) reactiva la fila de Usuario si ya la tenía, o la inserta
+        /// si nunca fue usuario; si no, da de alta Persona + Usuario completos. Igual
+        /// que ServicioSocio.Alta.
         /// </summary>
         public int Alta(Usuario usuario, string contrasenia)
         {
@@ -29,6 +33,21 @@ namespace SGIG.Negocio
             VerificarUnicidad(usuario, idPersonaExcluida: null);
 
             usuario.ContraseniaHash = Hash.Calcular(contrasenia);
+
+            if (usuario.IdPersona > 0)
+            {
+                if (_repositorioUsuario.ExisteFilaUsuario(usuario.IdPersona))
+                {
+                    _repositorioUsuario.Reactivar(usuario);
+                }
+                else
+                {
+                    _repositorioUsuario.AltaSobrePersonaExistente(usuario);
+                }
+
+                return usuario.IdPersona;
+            }
+
             return _repositorioUsuario.Alta(usuario);
         }
 
@@ -116,10 +135,10 @@ namespace SGIG.Negocio
 
         private void VerificarUnicidad(Usuario usuario, int? idPersonaExcluida)
         {
-            if (_repositorioUsuario.ExisteDocumento(usuario.Documento, idPersonaExcluida))
+            if (_repositorioUsuario.ExisteDocumentoUsuarioActivo(usuario.Documento, idPersonaExcluida))
             {
                 throw new CampoDuplicadoException(nameof(usuario.Documento),
-                    $"Ya existe una persona con el documento {usuario.Documento}.");
+                    $"Ya existe un usuario activo registrado con el documento {usuario.Documento}.");
             }
 
             if (_repositorioUsuario.ExisteNombreUsuario(usuario.NombreUsuario, idPersonaExcluida))

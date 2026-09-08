@@ -11,7 +11,7 @@ namespace SGIG.Negocio
     public class ServicioSocio
     {
         private readonly RepositorioSocio _repositorioSocio = new();
-        private readonly RepositorioPersona _repositorioPersona = new();
+        private readonly ServicioPersona _servicioPersona = new();
 
         public IEnumerable<Socio> ObtenerActivos() => _repositorioSocio.ObtenerActivos();
 
@@ -22,7 +22,7 @@ namespace SGIG.Negocio
         /// alta un socio (RF#06) en vez de duplicar sus datos personales.
         /// </summary>
         public Persona? BuscarPersonaPorDocumento(string documento) =>
-            _repositorioPersona.ObtenerPorDocumento(documento);
+            _servicioPersona.BuscarPorDocumento(documento);
 
         /// <summary>
         /// Da de alta un socio. Si <see cref="Socio.IdPersona"/> ya viene cargado

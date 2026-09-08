@@ -245,6 +245,9 @@ GO
    iniciar sesion.
    ============================================================ */
 
+-- IdRol 1 = Administrador, 2 = Recepcionista, 3 = Tecnico (orden de este INSERT,
+-- IDENTITY(1,1)). SGIG.Entidades.Roles depende de este orden: no reordenar estas
+-- filas ni insertar roles nuevos antes de estas tres sin actualizar esa clase.
 INSERT INTO dbo.Rol (nombre_rol, descripcion) VALUES
     ('Administrador', 'Control total del sistema'),
     ('Recepcionista', 'Atencion al publico: socios, cuotas, check-in'),

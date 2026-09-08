@@ -67,6 +67,19 @@ Convenciones: `[ ]` = pendiente, `[x]` = hecho. Notación húngara según `Notac
 
 ## Fase 2 — Seguridad: Rol, Usuario, Login funcional, ABM de Usuarios, Tablas paramétricas
 
+> **Nota (08/09/2026):** refactor de UI y permisos, a pedido del usuario. `frmUsuarios` y
+> `frmTablasParametricas` (sus 5 pestañas) pasaron del patrón de panel de edición embebido a
+> editor modal (`ShowDialog`) — ver `docs/patrones/formulario-abm.md`. Se agregaron
+> `frmUsuarioEditor`, `frmRolEditor`, `frmProvinciaEditor`, `frmLocalidadEditor`,
+> `frmTipoDocumentoEditor` y `frmMedioPagoEditor`. `frmMDIParent.CargarTarjetasSegunRol` pasó de
+> comparar `_usuario.Rol?.NombreRol` (string) a comparar `_usuario.IdRol` contra las constantes de
+> la nueva clase `SGIG.Entidades.Roles` (Administrador=1, Recepcionista=2, Tecnico=3, según el
+> orden del seed en `SGIG_CreateDB.sql`) — los 3 roles siguen siendo fijos, no se crean roles
+> nuevos desde la UI de negocio; esto sólo evita comparar por string. Además, `ServicioUsuario.Alta`
+> ahora reutiliza una Persona existente (por ejemplo, alguien que ya es Socio) en vez de rechazar
+> el alta con `CampoDuplicadoException`, igual que ya hacía `ServicioSocio.Alta` — ver el nuevo
+> `ServicioPersona` (Fase 3).
+
 ### 2.1 Entidades
 
 - [x] `Rol.cs`, `Persona.cs`, `Usuario.cs` en `SGIG.Entidades`.
@@ -176,6 +189,18 @@ Convenciones: `[ ]` = pendiente, `[x]` = hecho. Notación húngara según `Notac
 - [x] Alta reutilizando persona existente si el documento ya está cargado.
 - [x] Edición.
 - [x] Baja lógica con confirmación.
+
+> **Nota (08/09/2026):** `frmSocios` pasó del panel de edición embebido a editor modal
+> (`frmSocioEditor`, `ShowDialog`) — mismo refactor que Fase 2, ver `docs/patrones/formulario-abm.md`.
+> El flujo de "buscar/reutilizar Persona por documento" (antes sólo en `frmSocios.btnBuscar_Click`)
+> se extrajo a un componente compartido: `ServicioPersona` (`SGIG.Negocio`, wrapper de
+> `RepositorioPersona.ObtenerPorDocumento`) y el `UserControl` `ucDatosPersona` (`SGIG.UI`), que
+> autocompleta y **bloquea** los campos de Persona cuando el documento ya existe. Ambos editores
+> (`frmSocioEditor` y el nuevo `frmUsuarioEditor` de Fase 2) embeben `ucDatosPersona`, así que
+> ahora el alta de Usuario también puede reutilizar una Persona que ya es Socio (antes fallaba con
+> `CampoDuplicadoException`) — para eso `RepositorioUsuario`/`ServicioUsuario` ganaron los mismos
+> métodos de reutilización que ya tenía `RepositorioSocio`/`ServicioSocio` (`ExisteFilaUsuario`,
+> `AltaSobrePersonaExistente`, `Reactivar`, `ExisteDocumentoUsuarioActivo`).
 
 ## Fase 4 — Tesorería: Planes, Facturación y Pagos
 

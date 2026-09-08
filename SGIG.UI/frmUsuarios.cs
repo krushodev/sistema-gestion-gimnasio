@@ -1,41 +1,28 @@
-using SGIG.Datos;
 using SGIG.Entidades;
 using SGIG.Negocio;
 
 namespace SGIG.UI
 {
     /// <summary>
-    /// ABM de usuarios del sistema (RF#03, RNF#03). Sólo accesible para el rol
-    /// Administrador. Alta unificada de Persona + Usuario en una transacción,
-    /// edición, y baja lógica con confirmación.
+    /// Listado de usuarios del sistema (RF#03, RNF#03). Sólo accesible para el rol
+    /// Administrador. El alta y la edición se hacen en el diálogo modal
+    /// <see cref="frmUsuarioEditor"/>; esta pantalla sólo lista y filtra.
     /// </summary>
     //
     // ── CONTROLES (ver frmUsuarios.Designer.cs) ──────────────────────────────
-    //   dgvUsuarios, txtBuscar, btnNuevo, btnEditar, btnDarDeBaja
-    //   Datos de Persona: txtDocumento, cboTipoDocumento, txtNombre, txtApellido,
-    //                     txtEmail, txtTelefono, cboLocalidad
-    //   Datos de Usuario: txtLegajo, dtpFechaIngreso, cboRol, txtNombreUsuario,
-    //                     txtContrasenia
-    //   btnGuardar, btnCancelar
+    //   txtBuscar (filtro rápido), dgvUsuarios, btnNuevo, btnEditar, btnDarDeBaja
     // ─────────────────────────────────────────────────────────────────────────
     public partial class frmUsuarios : Form
     {
         private readonly ServicioUsuario _servicioUsuario = new();
-        private readonly ServicioCatalogo _servicioCatalogo = new();
         private readonly Usuario _usuarioLogueado;
 
         private List<Usuario> _usuarios = new();
-
-        /// <summary>id_persona en edición; null cuando se está dando un alta.</summary>
-        private int? _idEnEdicion;
 
         public frmUsuarios(Usuario usuarioLogueado)
         {
             InitializeComponent();
             _usuarioLogueado = usuarioLogueado;
-
-            // RNF#04: el campo documento no acepta letras.
-            txtDocumento.KeyPress += Grillas.SoloDigitos;
         }
 
         private void frmUsuarios_Load(object sender, EventArgs e)
@@ -43,9 +30,7 @@ namespace SGIG.UI
             try
             {
                 ConfigurarGrilla();
-                CargarCombos();
                 CargarGrilla();
-                HabilitarPanel(false);
             }
             catch (Exception ex)
             {
@@ -68,26 +53,6 @@ namespace SGIG.UI
                 (nameof(Usuario.NombreRol), "Rol", 90),
                 (nameof(Usuario.Legajo), "Legajo", 70),
                 (nameof(Usuario.Email), "Email", 130));
-        }
-
-        // ── Carga de datos ───────────────────────────────────────────────────
-
-        private void CargarCombos()
-        {
-            cboRol.DisplayMember = nameof(Rol.NombreRol);
-            cboRol.ValueMember = nameof(Rol.IdRol);
-            cboRol.DataSource = _servicioUsuario.ObtenerRoles().ToList();
-
-            cboTipoDocumento.DisplayMember = nameof(TipoDocumento.Descripcion);
-            cboTipoDocumento.ValueMember = nameof(TipoDocumento.IdTipoDocumento);
-            cboTipoDocumento.DataSource = _servicioCatalogo.ObtenerTiposDocumento().ToList();
-
-            // La localidad es opcional: se agrega una fila vacía al principio.
-            var localidades = _servicioCatalogo.ObtenerLocalidades().ToList();
-            localidades.Insert(0, new Localidad { IdLocalidad = 0, Nombre = "(sin especificar)" });
-            cboLocalidad.DisplayMember = nameof(Localidad.Nombre);
-            cboLocalidad.ValueMember = nameof(Localidad.IdLocalidad);
-            cboLocalidad.DataSource = localidades;
         }
 
         private void CargarGrilla()
@@ -120,11 +85,11 @@ namespace SGIG.UI
 
         private void btnNuevo_Click(object sender, EventArgs e)
         {
-            _idEnEdicion = null;
-            LimpiarPanel();
-            HabilitarPanel(true);
-            lblAyudaContrasenia.Text = "Obligatoria.";
-            txtDocumento.Focus();
+            using var editor = new frmUsuarioEditor(null);
+            if (editor.ShowDialog(this) == DialogResult.OK)
+            {
+                CargarGrilla();
+            }
         }
 
         private void btnEditar_Click(object sender, EventArgs e)
@@ -132,71 +97,10 @@ namespace SGIG.UI
             var usuario = UsuarioSeleccionado();
             if (usuario is null) return;
 
-            _idEnEdicion = usuario.IdPersona;
-
-            txtDocumento.Text = usuario.Documento;
-            cboTipoDocumento.SelectedValue = usuario.IdTipoDocumento;
-            txtNombre.Text = usuario.Nombre;
-            txtApellido.Text = usuario.Apellido;
-            txtEmail.Text = usuario.Email ?? string.Empty;
-            txtTelefono.Text = usuario.Telefono ?? string.Empty;
-            cboLocalidad.SelectedValue = usuario.IdLocalidad ?? 0;
-
-            txtLegajo.Text = usuario.Legajo;
-            dtpFechaIngreso.Value = usuario.FechaIngreso ?? DateTime.Today;
-            cboRol.SelectedValue = usuario.IdRol;
-            txtNombreUsuario.Text = usuario.NombreUsuario;
-            txtContrasenia.Clear();
-
-            lblAyudaContrasenia.Text = "Dejar vacía para no cambiarla.";
-            HabilitarPanel(true);
-            txtDocumento.Focus();
-        }
-
-        private void btnGuardar_Click(object sender, EventArgs e)
-        {
-            var idLocalidad = (int)(cboLocalidad.SelectedValue ?? 0);
-
-            var usuario = new Usuario
+            using var editor = new frmUsuarioEditor(usuario);
+            if (editor.ShowDialog(this) == DialogResult.OK)
             {
-                IdPersona = _idEnEdicion ?? 0,
-                Documento = txtDocumento.Text.Trim(),
-                IdTipoDocumento = (int)(cboTipoDocumento.SelectedValue ?? 0),
-                Nombre = txtNombre.Text.Trim(),
-                Apellido = txtApellido.Text.Trim(),
-                Email = TextoOpcional(txtEmail),
-                Telefono = TextoOpcional(txtTelefono),
-                IdLocalidad = idLocalidad > 0 ? idLocalidad : null,
-                Legajo = txtLegajo.Text.Trim(),
-                FechaIngreso = dtpFechaIngreso.Value.Date,
-                IdRol = (int)(cboRol.SelectedValue ?? 0),
-                NombreUsuario = txtNombreUsuario.Text.Trim()
-            };
-
-            try
-            {
-                Cursor = Cursors.WaitCursor;
-
-                if (_idEnEdicion is null)
-                {
-                    _servicioUsuario.Alta(usuario, txtContrasenia.Text);
-                }
-                else
-                {
-                    _servicioUsuario.Modificar(usuario, txtContrasenia.Text);
-                }
-
                 CargarGrilla();
-                HabilitarPanel(false);
-                LimpiarPanel();
-            }
-            catch (Exception ex)
-            {
-                MostrarError(ex);
-            }
-            finally
-            {
-                Cursor = Cursors.Default;
             }
         }
 
@@ -222,12 +126,6 @@ namespace SGIG.UI
             }
         }
 
-        private void btnCancelar_Click(object sender, EventArgs e)
-        {
-            HabilitarPanel(false);
-            LimpiarPanel();
-        }
-
         // ── Helpers de UI ────────────────────────────────────────────────────
 
         private Usuario? UsuarioSeleccionado()
@@ -240,37 +138,6 @@ namespace SGIG.UI
             MessageBox.Show("Seleccioná un usuario de la grilla.", "SGIG",
                 MessageBoxButtons.OK, MessageBoxIcon.Information);
             return null;
-        }
-
-        private static string? TextoOpcional(TextBox caja) =>
-            string.IsNullOrWhiteSpace(caja.Text) ? null : caja.Text.Trim();
-
-        /// <summary>Habilita el panel de edición y deshabilita la grilla, y viceversa.</summary>
-        private void HabilitarPanel(bool editando)
-        {
-            grpDatos.Enabled = editando;
-            btnGuardar.Enabled = editando;
-            btnCancelar.Enabled = editando;
-
-            dgvUsuarios.Enabled = !editando;
-            txtBuscar.Enabled = !editando;
-            btnNuevo.Enabled = !editando;
-            btnEditar.Enabled = !editando;
-            btnDarDeBaja.Enabled = !editando;
-        }
-
-        private void LimpiarPanel()
-        {
-            foreach (var caja in new[] { txtDocumento, txtNombre, txtApellido, txtEmail,
-                                         txtTelefono, txtLegajo, txtNombreUsuario, txtContrasenia })
-            {
-                caja.Clear();
-            }
-
-            if (cboTipoDocumento.Items.Count > 0) cboTipoDocumento.SelectedIndex = 0;
-            if (cboLocalidad.Items.Count > 0) cboLocalidad.SelectedIndex = 0;
-            if (cboRol.Items.Count > 0) cboRol.SelectedIndex = 0;
-            dtpFechaIngreso.Value = DateTime.Today;
         }
 
         /// <summary>

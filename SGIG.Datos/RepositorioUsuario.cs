@@ -230,6 +230,79 @@ namespace SGIG.Datos
             }
         }
 
+        /// <summary>
+        /// Existe una fila en dbo.Usuario para esa Persona (fue usuario alguna vez,
+        /// activo o dado de baja). Determina si el alta debe insertar o reactivar,
+        /// igual que RepositorioSocio.ExisteFilaSocio.
+        /// </summary>
+        public bool ExisteFilaUsuario(int idPersona)
+        {
+            const string sql = "SELECT COUNT(1) FROM dbo.Usuario WHERE id_persona = @IdPersona";
+            return Existe(sql, new { IdPersona = idPersona }, "Error al verificar si la persona ya fue usuario.");
+        }
+
+        /// <summary>
+        /// Da de alta el Usuario sobre una Persona ya existente (por ejemplo, alguien
+        /// que ya estaba cargado como Socio) que nunca tuvo fila en Usuario.
+        /// </summary>
+        public void AltaSobrePersonaExistente(Usuario usuario)
+        {
+            const string sql = @"
+                INSERT INTO dbo.Usuario
+                    (id_persona, nombre_usuario, contrasenia_hash, id_rol, legajo, fecha_ingreso, activo)
+                VALUES
+                    (@IdPersona, @NombreUsuario, @ContraseniaHash, @IdRol, @Legajo, @FechaIngreso, 1);";
+
+            try
+            {
+                using var connection = Conexion.ObtenerConexionAbierta();
+                connection.Execute(sql, new
+                {
+                    usuario.IdPersona,
+                    usuario.NombreUsuario,
+                    usuario.ContraseniaHash,
+                    usuario.IdRol,
+                    usuario.Legajo,
+                    usuario.FechaIngreso
+                });
+            }
+            catch (SqlException ex)
+            {
+                throw new AccesoDatosException("No se pudo registrar el usuario sobre la persona existente.", ex);
+            }
+        }
+
+        /// <summary>
+        /// Reactiva a un usuario que ya tenía fila en dbo.Usuario pero estaba dado de
+        /// baja. Como id_persona es la PK de Usuario, no se puede volver a insertar.
+        /// </summary>
+        public void Reactivar(Usuario usuario)
+        {
+            const string sql = @"
+                UPDATE dbo.Usuario
+                SET nombre_usuario = @NombreUsuario, contrasenia_hash = @ContraseniaHash,
+                    id_rol = @IdRol, legajo = @Legajo, fecha_ingreso = @FechaIngreso, activo = 1
+                WHERE id_persona = @IdPersona;";
+
+            try
+            {
+                using var connection = Conexion.ObtenerConexionAbierta();
+                connection.Execute(sql, new
+                {
+                    usuario.IdPersona,
+                    usuario.NombreUsuario,
+                    usuario.ContraseniaHash,
+                    usuario.IdRol,
+                    usuario.Legajo,
+                    usuario.FechaIngreso
+                });
+            }
+            catch (SqlException ex)
+            {
+                throw new AccesoDatosException("No se pudo reactivar el usuario.", ex);
+            }
+        }
+
         /// <summary>Baja lógica (RNF#03): nunca DELETE físico.</summary>
         public void BajaLogica(int idPersona)
         {
@@ -281,6 +354,23 @@ namespace SGIG.Datos
 
             return Existe(sql, new { Documento = documento, IdPersonaExcluida = idPersonaExcluida },
                 "Error al verificar el documento.");
+        }
+
+        /// <summary>
+        /// Verifica que el documento no pertenezca a otro usuario activo (a diferencia
+        /// de ExisteDocumento, no bloquea reutilizar una Persona que sólo es Socio o
+        /// que fue Usuario y está dado de baja). Igual que RepositorioSocio.ExisteDocumentoSocioActivo.
+        /// </summary>
+        public bool ExisteDocumentoUsuarioActivo(string documento, int? idPersonaExcluida = null)
+        {
+            const string sql = @"
+                SELECT COUNT(1) FROM dbo.Usuario u
+                INNER JOIN dbo.Persona p ON p.id_persona = u.id_persona
+                WHERE p.documento = @Documento AND u.activo = 1
+                  AND (@IdPersonaExcluida IS NULL OR u.id_persona <> @IdPersonaExcluida)";
+
+            return Existe(sql, new { Documento = documento, IdPersonaExcluida = idPersonaExcluida },
+                "Error al verificar el documento del usuario.");
         }
 
         private static bool Existe(string sql, object parametros, string mensajeError)

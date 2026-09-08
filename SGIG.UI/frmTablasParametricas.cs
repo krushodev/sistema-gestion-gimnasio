@@ -1,30 +1,25 @@
-using SGIG.Datos;
 using SGIG.Entidades;
 using SGIG.Negocio;
 
 namespace SGIG.UI
 {
     /// <summary>
-    /// ABM de las tablas paramétricas del sistema (RF#04): Rol, Provincia,
+    /// Listado de las tablas paramétricas del sistema (RF#04): Rol, Provincia,
     /// Localidad, TipoDocumento y MedioPago. Sólo accesible para el rol
-    /// Administrador. La baja de todos estos catálogos es lógica, nunca física.
+    /// Administrador. El alta y la edición de cada catálogo se hacen en su propio
+    /// diálogo modal (frmRolEditor, frmProvinciaEditor, frmLocalidadEditor,
+    /// frmTipoDocumentoEditor, frmMedioPagoEditor); esta pantalla sólo lista.
+    /// La baja de todos estos catálogos es lógica, nunca física.
     /// </summary>
     //
     // ── CONTROLES (ver frmTablasParametricas.Designer.cs) ────────────────────
     //   tabCatalogos (TabControl) con tabRol, tabProvincia, tabLocalidad,
-    //   tabTipoDocumento y tabMedioPago. Cada pestaña tiene su dgv, sus campos
-    //   y btnAgregar / btnEditar / btnDarDeBaja / btnCancelar.
+    //   tabTipoDocumento y tabMedioPago. Cada pestaña tiene sólo su dgv y sus
+    //   botones btnNuevo / btnEditar / btnDarDeBaja.
     // ─────────────────────────────────────────────────────────────────────────
     public partial class frmTablasParametricas : Form
     {
         private readonly ServicioCatalogo _servicio = new();
-
-        /// <summary>Id en edición por pestaña; 0 significa "alta nueva".</summary>
-        private int _idRol;
-        private int _idProvincia;
-        private int _idLocalidad;
-        private int _idTipoDocumento;
-        private int _idMedioPago;
 
         public frmTablasParametricas()
         {
@@ -74,40 +69,12 @@ namespace SGIG.UI
 
         // ── Rol ──────────────────────────────────────────────────────────────
 
-        private void CargarRoles()
+        private void CargarRoles() => dgvRol.DataSource = _servicio.ObtenerRoles().ToList();
+
+        private void btnNuevoRol_Click(object sender, EventArgs e)
         {
-            dgvRol.DataSource = _servicio.ObtenerRoles().ToList();
-            LimpiarRol();
-        }
-
-        private void btnAgregarRol_Click(object sender, EventArgs e)
-        {
-            try
-            {
-                var rol = new Rol
-                {
-                    IdRol = _idRol,
-                    NombreRol = txtRol.Text.Trim(),
-                    Descripcion = string.IsNullOrWhiteSpace(txtDescripcionRol.Text)
-                        ? null
-                        : txtDescripcionRol.Text.Trim()
-                };
-
-                if (_idRol == 0)
-                {
-                    _servicio.AltaRol(rol);
-                }
-                else
-                {
-                    _servicio.ModificarRol(rol);
-                }
-
-                CargarRoles();
-            }
-            catch (Exception ex)
-            {
-                MostrarError(ex);
-            }
+            using var editor = new frmRolEditor(null);
+            if (editor.ShowDialog(this) == DialogResult.OK) CargarRoles();
         }
 
         private void btnEditarRol_Click(object sender, EventArgs e)
@@ -118,11 +85,8 @@ namespace SGIG.UI
                 return;
             }
 
-            _idRol = rol.IdRol;
-            txtRol.Text = rol.NombreRol;
-            txtDescripcionRol.Text = rol.Descripcion ?? string.Empty;
-            btnAgregarRol.Text = "Guardar";
-            txtRol.Focus();
+            using var editor = new frmRolEditor(rol);
+            if (editor.ShowDialog(this) == DialogResult.OK) CargarRoles();
         }
 
         private void btnDarDeBajaRol_Click(object sender, EventArgs e)
@@ -146,51 +110,17 @@ namespace SGIG.UI
             }
         }
 
-        private void btnCancelarRol_Click(object sender, EventArgs e) => LimpiarRol();
-
-        private void LimpiarRol()
-        {
-            _idRol = 0;
-            txtRol.Clear();
-            txtDescripcionRol.Clear();
-            btnAgregarRol.Text = "Agregar";
-        }
-
         // ── Provincia ────────────────────────────────────────────────────────
 
-        private void CargarProvincias()
+        private void CargarProvincias() => dgvProvincia.DataSource = _servicio.ObtenerProvincias().ToList();
+
+        private void btnNuevoProvincia_Click(object sender, EventArgs e)
         {
-            var provincias = _servicio.ObtenerProvincias().ToList();
-            dgvProvincia.DataSource = provincias;
-
-            // El combo de la pestaña Localidad depende de esta misma lista.
-            cboProvinciaDeLocalidad.DisplayMember = nameof(Provincia.Nombre);
-            cboProvinciaDeLocalidad.ValueMember = nameof(Provincia.IdProvincia);
-            cboProvinciaDeLocalidad.DataSource = provincias.ToList();
-
-            LimpiarProvincia();
-        }
-
-        private void btnAgregarProvincia_Click(object sender, EventArgs e)
-        {
-            try
+            using var editor = new frmProvinciaEditor(null);
+            if (editor.ShowDialog(this) == DialogResult.OK)
             {
-                var provincia = new Provincia { IdProvincia = _idProvincia, Nombre = txtProvincia.Text.Trim() };
-
-                if (_idProvincia == 0)
-                {
-                    _servicio.AltaProvincia(provincia);
-                }
-                else
-                {
-                    _servicio.ModificarProvincia(provincia);
-                }
-
                 CargarProvincias();
-            }
-            catch (Exception ex)
-            {
-                MostrarError(ex);
+                CargarLocalidades();
             }
         }
 
@@ -202,10 +132,12 @@ namespace SGIG.UI
                 return;
             }
 
-            _idProvincia = provincia.IdProvincia;
-            txtProvincia.Text = provincia.Nombre;
-            btnAgregarProvincia.Text = "Guardar";
-            txtProvincia.Focus();
+            using var editor = new frmProvinciaEditor(provincia);
+            if (editor.ShowDialog(this) == DialogResult.OK)
+            {
+                CargarProvincias();
+                CargarLocalidades();
+            }
         }
 
         private void btnDarDeBajaProvincia_Click(object sender, EventArgs e)
@@ -229,49 +161,14 @@ namespace SGIG.UI
             }
         }
 
-        private void btnCancelarProvincia_Click(object sender, EventArgs e) => LimpiarProvincia();
-
-        private void LimpiarProvincia()
-        {
-            _idProvincia = 0;
-            txtProvincia.Clear();
-            btnAgregarProvincia.Text = "Agregar";
-        }
-
         // ── Localidad ────────────────────────────────────────────────────────
 
-        private void CargarLocalidades()
+        private void CargarLocalidades() => dgvLocalidad.DataSource = _servicio.ObtenerLocalidades().ToList();
+
+        private void btnNuevoLocalidad_Click(object sender, EventArgs e)
         {
-            dgvLocalidad.DataSource = _servicio.ObtenerLocalidades().ToList();
-            LimpiarLocalidad();
-        }
-
-        private void btnAgregarLocalidad_Click(object sender, EventArgs e)
-        {
-            try
-            {
-                var localidad = new Localidad
-                {
-                    IdLocalidad = _idLocalidad,
-                    Nombre = txtLocalidad.Text.Trim(),
-                    IdProvincia = (int)(cboProvinciaDeLocalidad.SelectedValue ?? 0)
-                };
-
-                if (_idLocalidad == 0)
-                {
-                    _servicio.AltaLocalidad(localidad);
-                }
-                else
-                {
-                    _servicio.ModificarLocalidad(localidad);
-                }
-
-                CargarLocalidades();
-            }
-            catch (Exception ex)
-            {
-                MostrarError(ex);
-            }
+            using var editor = new frmLocalidadEditor(null);
+            if (editor.ShowDialog(this) == DialogResult.OK) CargarLocalidades();
         }
 
         private void btnEditarLocalidad_Click(object sender, EventArgs e)
@@ -282,11 +179,8 @@ namespace SGIG.UI
                 return;
             }
 
-            _idLocalidad = localidad.IdLocalidad;
-            txtLocalidad.Text = localidad.Nombre;
-            cboProvinciaDeLocalidad.SelectedValue = localidad.IdProvincia;
-            btnAgregarLocalidad.Text = "Guardar";
-            txtLocalidad.Focus();
+            using var editor = new frmLocalidadEditor(localidad);
+            if (editor.ShowDialog(this) == DialogResult.OK) CargarLocalidades();
         }
 
         private void btnDarDeBajaLocalidad_Click(object sender, EventArgs e)
@@ -310,48 +204,14 @@ namespace SGIG.UI
             }
         }
 
-        private void btnCancelarLocalidad_Click(object sender, EventArgs e) => LimpiarLocalidad();
-
-        private void LimpiarLocalidad()
-        {
-            _idLocalidad = 0;
-            txtLocalidad.Clear();
-            btnAgregarLocalidad.Text = "Agregar";
-        }
-
         // ── TipoDocumento ────────────────────────────────────────────────────
 
-        private void CargarTiposDocumento()
+        private void CargarTiposDocumento() => dgvTipoDocumento.DataSource = _servicio.ObtenerTiposDocumento().ToList();
+
+        private void btnNuevoTipoDocumento_Click(object sender, EventArgs e)
         {
-            dgvTipoDocumento.DataSource = _servicio.ObtenerTiposDocumento().ToList();
-            LimpiarTipoDocumento();
-        }
-
-        private void btnAgregarTipoDocumento_Click(object sender, EventArgs e)
-        {
-            try
-            {
-                var tipo = new TipoDocumento
-                {
-                    IdTipoDocumento = _idTipoDocumento,
-                    Descripcion = txtTipoDocumento.Text.Trim()
-                };
-
-                if (_idTipoDocumento == 0)
-                {
-                    _servicio.AltaTipoDocumento(tipo);
-                }
-                else
-                {
-                    _servicio.ModificarTipoDocumento(tipo);
-                }
-
-                CargarTiposDocumento();
-            }
-            catch (Exception ex)
-            {
-                MostrarError(ex);
-            }
+            using var editor = new frmTipoDocumentoEditor(null);
+            if (editor.ShowDialog(this) == DialogResult.OK) CargarTiposDocumento();
         }
 
         private void btnEditarTipoDocumento_Click(object sender, EventArgs e)
@@ -362,10 +222,8 @@ namespace SGIG.UI
                 return;
             }
 
-            _idTipoDocumento = tipo.IdTipoDocumento;
-            txtTipoDocumento.Text = tipo.Descripcion;
-            btnAgregarTipoDocumento.Text = "Guardar";
-            txtTipoDocumento.Focus();
+            using var editor = new frmTipoDocumentoEditor(tipo);
+            if (editor.ShowDialog(this) == DialogResult.OK) CargarTiposDocumento();
         }
 
         private void btnDarDeBajaTipoDocumento_Click(object sender, EventArgs e)
@@ -389,48 +247,14 @@ namespace SGIG.UI
             }
         }
 
-        private void btnCancelarTipoDocumento_Click(object sender, EventArgs e) => LimpiarTipoDocumento();
-
-        private void LimpiarTipoDocumento()
-        {
-            _idTipoDocumento = 0;
-            txtTipoDocumento.Clear();
-            btnAgregarTipoDocumento.Text = "Agregar";
-        }
-
         // ── MedioPago ────────────────────────────────────────────────────────
 
-        private void CargarMediosPago()
+        private void CargarMediosPago() => dgvMedioPago.DataSource = _servicio.ObtenerMediosPago().ToList();
+
+        private void btnNuevoMedioPago_Click(object sender, EventArgs e)
         {
-            dgvMedioPago.DataSource = _servicio.ObtenerMediosPago().ToList();
-            LimpiarMedioPago();
-        }
-
-        private void btnAgregarMedioPago_Click(object sender, EventArgs e)
-        {
-            try
-            {
-                var medio = new MedioPago
-                {
-                    IdMedioPago = _idMedioPago,
-                    Descripcion = txtMedioPago.Text.Trim()
-                };
-
-                if (_idMedioPago == 0)
-                {
-                    _servicio.AltaMedioPago(medio);
-                }
-                else
-                {
-                    _servicio.ModificarMedioPago(medio);
-                }
-
-                CargarMediosPago();
-            }
-            catch (Exception ex)
-            {
-                MostrarError(ex);
-            }
+            using var editor = new frmMedioPagoEditor(null);
+            if (editor.ShowDialog(this) == DialogResult.OK) CargarMediosPago();
         }
 
         private void btnEditarMedioPago_Click(object sender, EventArgs e)
@@ -441,10 +265,8 @@ namespace SGIG.UI
                 return;
             }
 
-            _idMedioPago = medio.IdMedioPago;
-            txtMedioPago.Text = medio.Descripcion;
-            btnAgregarMedioPago.Text = "Guardar";
-            txtMedioPago.Focus();
+            using var editor = new frmMedioPagoEditor(medio);
+            if (editor.ShowDialog(this) == DialogResult.OK) CargarMediosPago();
         }
 
         private void btnDarDeBajaMedioPago_Click(object sender, EventArgs e)
@@ -466,15 +288,6 @@ namespace SGIG.UI
             {
                 MostrarError(ex);
             }
-        }
-
-        private void btnCancelarMedioPago_Click(object sender, EventArgs e) => LimpiarMedioPago();
-
-        private void LimpiarMedioPago()
-        {
-            _idMedioPago = 0;
-            txtMedioPago.Clear();
-            btnAgregarMedioPago.Text = "Agregar";
         }
 
         // ── Helpers ──────────────────────────────────────────────────────────

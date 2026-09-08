@@ -23,7 +23,7 @@ namespace SGIG.UI
             lblUsuarioLogueado.Text = $"👤  {_usuario.Nombre} {_usuario.Apellido}   |   Rol: {_usuario.Rol?.NombreRol}";
 
             ConstruirDashboard();
-            CargarTarjetasSegunRol(_usuario.Rol?.NombreRol);
+            CargarTarjetasSegunRol(_usuario.IdRol);
         }
 
         private void ConstruirDashboard()
@@ -109,12 +109,12 @@ namespace SGIG.UI
             pnlContenedor.Controls.Add(pnlDashboard);
         }
 
-        private void CargarTarjetasSegunRol(string? rol)
+        private void CargarTarjetasSegunRol(int idRol)
         {
             tlpGrilla.Controls.Clear();
 
             // 1. 👥 Socios
-            if (rol is "Administrador" or "Recepcionista")
+            if (idRol is Roles.Administrador or Roles.Recepcionista)
             {
                 AgregarTarjetaGrilla(
                     "Gestión de Socios",
@@ -126,7 +126,7 @@ namespace SGIG.UI
             }
 
             // 2. 🛡️ Usuarios
-            if (rol == "Administrador")
+            if (idRol == Roles.Administrador)
             {
                 AgregarTarjetaGrilla(
                     "Seguridad y Usuarios",
@@ -147,7 +147,7 @@ namespace SGIG.UI
             }
 
             // 4. 💳 Planes y Cobros
-            if (rol is "Administrador" or "Recepcionista")
+            if (idRol is Roles.Administrador or Roles.Recepcionista)
             {
                 AgregarTarjetaGrilla(
                     "Planes y Cobros",
@@ -159,7 +159,7 @@ namespace SGIG.UI
             }
 
             // 5. ⏱️ Control de Acceso — sólo Recepcionista según la matriz de permisos (Fase 2.4).
-            if (rol == "Recepcionista")
+            if (idRol == Roles.Recepcionista)
             {
                 AgregarTarjetaGrilla(
                     "Control de Acceso",
@@ -171,7 +171,7 @@ namespace SGIG.UI
             }
 
             // 6. 🏋️ Activos y Máquinas (RF#18: Administrador y Técnico)
-            if (rol is "Administrador" or "Tecnico")
+            if (idRol is Roles.Administrador or Roles.Tecnico)
             {
                 AgregarTarjetaGrilla(
                     "Máquinas",
@@ -192,7 +192,7 @@ namespace SGIG.UI
             }
 
             // Mantenimiento (RF#19, RF#20): sólo Técnico, es quien registra y cierra la intervención.
-            if (rol == "Tecnico")
+            if (idRol == Roles.Tecnico)
             {
                 AgregarTarjetaGrilla(
                     "Mantenimiento",
@@ -204,7 +204,7 @@ namespace SGIG.UI
             }
 
             // 7. 📊 Reportes
-            if (rol == "Administrador")
+            if (idRol == Roles.Administrador)
             {
                 AgregarTarjetaGrilla(
                     "Reportes e Ingresos",
