@@ -38,6 +38,7 @@ namespace SGIG.UI
             {
                 ucDatosPersona.CargarCatalogos(
                     _servicioCatalogo.ObtenerTiposDocumento(),
+                    _servicioCatalogo.ObtenerProvincias(),
                     _servicioCatalogo.ObtenerLocalidades());
 
                 cboRol.DisplayMember = nameof(Rol.NombreRol);

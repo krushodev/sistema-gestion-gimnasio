@@ -263,6 +263,186 @@ INSERT INTO dbo.MedioPago (descripcion) VALUES
     ('Tarjeta'),
     ('Transferencia');
 
+/* Provincia y Localidad no tienen ABM previsto en el alcance actual: se cargan
+   una sola vez con este seed (23 provincias + CABA, capital + algunas ciudades
+   principales por provincia) y se consumen desde los combos de ucDatosPersona.
+   Se resuelve id_provincia por nombre via subquery, no por IDENTITY, para que
+   el script no dependa del orden de insercion. */
+
+INSERT INTO dbo.Provincia (nombre) VALUES
+    ('Buenos Aires'),
+    ('Catamarca'),
+    ('Chaco'),
+    ('Chubut'),
+    ('Ciudad Autonoma de Buenos Aires'),
+    ('Cordoba'),
+    ('Corrientes'),
+    ('Entre Rios'),
+    ('Formosa'),
+    ('Jujuy'),
+    ('La Pampa'),
+    ('La Rioja'),
+    ('Mendoza'),
+    ('Misiones'),
+    ('Neuquen'),
+    ('Rio Negro'),
+    ('Salta'),
+    ('San Juan'),
+    ('San Luis'),
+    ('Santa Cruz'),
+    ('Santa Fe'),
+    ('Santiago del Estero'),
+    ('Tierra del Fuego, Antartida e Islas del Atlantico Sur'),
+    ('Tucuman');
+
+INSERT INTO dbo.Localidad (nombre, id_provincia) VALUES
+    ('La Plata', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Buenos Aires')),
+    ('Mar del Plata', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Buenos Aires')),
+    ('Bahia Blanca', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Buenos Aires')),
+    ('Tandil', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Buenos Aires')),
+    ('San Nicolas de los Arroyos', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Buenos Aires')),
+    ('Pergamino', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Buenos Aires')),
+
+    ('San Fernando del Valle de Catamarca', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Catamarca')),
+    ('Andalgala', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Catamarca')),
+    ('Belen', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Catamarca')),
+    ('Tinogasta', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Catamarca')),
+
+    ('Resistencia', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Chaco')),
+    ('Presidencia Roque Saenz Pena', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Chaco')),
+    ('Villa Angela', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Chaco')),
+    ('Charata', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Chaco')),
+
+    ('Rawson', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Chubut')),
+    ('Comodoro Rivadavia', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Chubut')),
+    ('Trelew', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Chubut')),
+    ('Puerto Madryn', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Chubut')),
+    ('Esquel', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Chubut')),
+
+    ('Palermo', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Ciudad Autonoma de Buenos Aires')),
+    ('Recoleta', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Ciudad Autonoma de Buenos Aires')),
+    ('Belgrano', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Ciudad Autonoma de Buenos Aires')),
+    ('Caballito', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Ciudad Autonoma de Buenos Aires')),
+    ('Flores', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Ciudad Autonoma de Buenos Aires')),
+
+    ('Cordoba', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Cordoba')),
+    ('Rio Cuarto', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Cordoba')),
+    ('Villa Maria', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Cordoba')),
+    ('San Francisco', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Cordoba')),
+    ('Alta Gracia', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Cordoba')),
+
+    ('Corrientes', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Corrientes')),
+    ('Goya', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Corrientes')),
+    ('Mercedes', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Corrientes')),
+    ('Paso de los Libres', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Corrientes')),
+    ('Curuzu Cuatia', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Corrientes')),
+    ('Santo Tome', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Corrientes')),
+    ('Ituzaingo', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Corrientes')),
+    ('Bella Vista', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Corrientes')),
+    ('Esquina', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Corrientes')),
+    ('Saladas', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Corrientes')),
+    ('San Luis del Palmar', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Corrientes')),
+    ('Monte Caseros', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Corrientes')),
+    ('Gobernador Virasoro', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Corrientes')),
+    ('Empedrado', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Corrientes')),
+    ('Lavalle', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Corrientes')),
+    ('San Cosme', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Corrientes')),
+
+    ('Parana', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Entre Rios')),
+    ('Concordia', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Entre Rios')),
+    ('Gualeguaychu', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Entre Rios')),
+    ('Concepcion del Uruguay', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Entre Rios')),
+
+    ('Formosa', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Formosa')),
+    ('Clorinda', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Formosa')),
+    ('Pirane', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Formosa')),
+
+    ('San Salvador de Jujuy', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Jujuy')),
+    ('Palpala', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Jujuy')),
+    ('Libertador General San Martin', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Jujuy')),
+
+    ('Santa Rosa', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'La Pampa')),
+    ('General Pico', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'La Pampa')),
+    ('Realico', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'La Pampa')),
+
+    ('La Rioja', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'La Rioja')),
+    ('Chilecito', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'La Rioja')),
+    ('Chamical', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'La Rioja')),
+
+    ('Mendoza', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Mendoza')),
+    ('San Rafael', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Mendoza')),
+    ('Godoy Cruz', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Mendoza')),
+    ('Lujan de Cuyo', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Mendoza')),
+
+    ('Posadas', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Misiones')),
+    ('Obera', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Misiones')),
+    ('Eldorado', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Misiones')),
+    ('Puerto Iguazu', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Misiones')),
+
+    ('Neuquen', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Neuquen')),
+    ('Plottier', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Neuquen')),
+    ('Cutral Co', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Neuquen')),
+    ('San Martin de los Andes', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Neuquen')),
+
+    ('Viedma', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Rio Negro')),
+    ('San Carlos de Bariloche', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Rio Negro')),
+    ('General Roca', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Rio Negro')),
+    ('Cipolletti', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Rio Negro')),
+
+    ('Salta', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Salta')),
+    ('San Ramon de la Nueva Oran', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Salta')),
+    ('Tartagal', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Salta')),
+
+    ('San Juan', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'San Juan')),
+    ('Rawson (San Juan)', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'San Juan')),
+    ('Chimbas', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'San Juan')),
+
+    ('San Luis', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'San Luis')),
+    ('Villa Mercedes', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'San Luis')),
+    ('Merlo', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'San Luis')),
+
+    ('Rio Gallegos', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Santa Cruz')),
+    ('Caleta Olivia', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Santa Cruz')),
+    ('El Calafate', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Santa Cruz')),
+
+    ('Santa Fe', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Santa Fe')),
+    ('Rosario', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Santa Fe')),
+    ('Rafaela', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Santa Fe')),
+    ('Venado Tuerto', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Santa Fe')),
+
+    ('Santiago del Estero', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Santiago del Estero')),
+    ('La Banda', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Santiago del Estero')),
+    ('Termas de Rio Hondo', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Santiago del Estero')),
+
+    ('Ushuaia', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Tierra del Fuego, Antartida e Islas del Atlantico Sur')),
+    ('Rio Grande', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Tierra del Fuego, Antartida e Islas del Atlantico Sur')),
+    ('Tolhuin', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Tierra del Fuego, Antartida e Islas del Atlantico Sur')),
+
+    ('San Miguel de Tucuman', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Tucuman')),
+    ('Tafi Viejo', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Tucuman')),
+    ('Concepcion', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Tucuman')),
+    ('Yerba Buena', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Tucuman'));
+
+/* Maquina no tiene ABM de alta/baja desde una pantalla dedicada de carga masiva:
+   el parque de maquinas se siembra una vez con datos de ejemplo tipicos de un
+   gimnasio y despues se gestiona con frmMaquinas (RF Fase 6). Dos quedan en
+   'En Reparacion' para poder probar el listado y el alta de Mantenimiento
+   (RF#20) sin cargar datos a mano. */
+
+INSERT INTO dbo.Maquina (marca, nombre, fecha_compra, estado) VALUES
+    ('Life Fitness', 'Cinta de correr', '2023-02-10', 'Operativa'),
+    ('Matrix', 'Bicicleta fija', '2023-02-10', 'Operativa'),
+    ('Technogym', 'Eliptica', '2023-03-15', 'Operativa'),
+    ('Precor', 'Remo', '2023-03-15', 'Operativa'),
+    ('Hammer Strength', 'Press de banca', '2023-05-20', 'Operativa'),
+    ('Hammer Strength', 'Prensa de piernas', '2023-05-20', 'En Reparacion'),
+    ('Cybex', 'Multi estacion', '2023-06-01', 'Operativa'),
+    ('Cybex', 'Maquina de poleas', '2023-06-01', 'Operativa'),
+    ('Body-Solid', 'Escaladora', '2023-08-12', 'Operativa'),
+    ('Body-Solid', 'Step', '2023-08-12', 'Operativa'),
+    ('Rogue', 'Rack de sentadillas', '2024-01-18', 'Operativa'),
+    ('Rogue', 'Barra olimpica y discos', '2024-01-18', 'En Reparacion');
+
 /* Persona + Usuario administrador inicial.
 
    contrasenia_hash es el SHA256 real de la contraseña "admin1234"

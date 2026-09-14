@@ -34,6 +34,7 @@ namespace SGIG.UI
             {
                 ucDatosPersona.CargarCatalogos(
                     _servicioCatalogo.ObtenerTiposDocumento(),
+                    _servicioCatalogo.ObtenerProvincias(),
                     _servicioCatalogo.ObtenerLocalidades());
 
                 // El módulo de Planes todavía no existe (Fase 4, Tesorería): el combo

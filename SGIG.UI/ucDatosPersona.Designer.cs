@@ -32,6 +32,8 @@ namespace SGIG.UI
             this.txtEmail = new System.Windows.Forms.TextBox();
             this.lblTelefono = new System.Windows.Forms.Label();
             this.txtTelefono = new System.Windows.Forms.TextBox();
+            this.lblProvincia = new System.Windows.Forms.Label();
+            this.cboProvincia = new System.Windows.Forms.ComboBox();
             this.lblLocalidad = new System.Windows.Forms.Label();
             this.cboLocalidad = new System.Windows.Forms.ComboBox();
             this.lblFechaNacimiento = new System.Windows.Forms.Label();
@@ -144,10 +146,26 @@ namespace SGIG.UI
             this.txtTelefono.Size = new System.Drawing.Size(150, 23);
             this.txtTelefono.TabIndex = 6;
             //
+            // lblProvincia
+            //
+            this.lblProvincia.AutoSize = true;
+            this.lblProvincia.Location = new System.Drawing.Point(8, 105);
+            this.lblProvincia.Name = "lblProvincia";
+            this.lblProvincia.Size = new System.Drawing.Size(62, 15);
+            this.lblProvincia.Text = "Provincia:";
+            //
+            // cboProvincia
+            //
+            this.cboProvincia.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cboProvincia.Location = new System.Drawing.Point(80, 102);
+            this.cboProvincia.Name = "cboProvincia";
+            this.cboProvincia.Size = new System.Drawing.Size(470, 23);
+            this.cboProvincia.TabIndex = 7;
+            //
             // lblLocalidad
             //
             this.lblLocalidad.AutoSize = true;
-            this.lblLocalidad.Location = new System.Drawing.Point(8, 105);
+            this.lblLocalidad.Location = new System.Drawing.Point(8, 137);
             this.lblLocalidad.Name = "lblLocalidad";
             this.lblLocalidad.Size = new System.Drawing.Size(62, 15);
             this.lblLocalidad.Text = "Localidad:";
@@ -155,15 +173,15 @@ namespace SGIG.UI
             // cboLocalidad
             //
             this.cboLocalidad.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.cboLocalidad.Location = new System.Drawing.Point(80, 102);
+            this.cboLocalidad.Location = new System.Drawing.Point(80, 134);
             this.cboLocalidad.Name = "cboLocalidad";
             this.cboLocalidad.Size = new System.Drawing.Size(470, 23);
-            this.cboLocalidad.TabIndex = 7;
+            this.cboLocalidad.TabIndex = 8;
             //
             // lblFechaNacimiento
             //
             this.lblFechaNacimiento.AutoSize = true;
-            this.lblFechaNacimiento.Location = new System.Drawing.Point(8, 137);
+            this.lblFechaNacimiento.Location = new System.Drawing.Point(8, 169);
             this.lblFechaNacimiento.Name = "lblFechaNacimiento";
             this.lblFechaNacimiento.Size = new System.Drawing.Size(105, 15);
             this.lblFechaNacimiento.Text = "Fecha nacimiento:";
@@ -171,10 +189,10 @@ namespace SGIG.UI
             // dtpFechaNacimiento
             //
             this.dtpFechaNacimiento.Format = System.Windows.Forms.DateTimePickerFormat.Short;
-            this.dtpFechaNacimiento.Location = new System.Drawing.Point(120, 134);
+            this.dtpFechaNacimiento.Location = new System.Drawing.Point(120, 166);
             this.dtpFechaNacimiento.Name = "dtpFechaNacimiento";
             this.dtpFechaNacimiento.Size = new System.Drawing.Size(150, 23);
-            this.dtpFechaNacimiento.TabIndex = 8;
+            this.dtpFechaNacimiento.TabIndex = 9;
             //
             // ucDatosPersona
             //
@@ -191,12 +209,14 @@ namespace SGIG.UI
             this.Controls.Add(this.txtEmail);
             this.Controls.Add(this.lblTelefono);
             this.Controls.Add(this.txtTelefono);
+            this.Controls.Add(this.lblProvincia);
+            this.Controls.Add(this.cboProvincia);
             this.Controls.Add(this.lblLocalidad);
             this.Controls.Add(this.cboLocalidad);
             this.Controls.Add(this.lblFechaNacimiento);
             this.Controls.Add(this.dtpFechaNacimiento);
             this.Name = "ucDatosPersona";
-            this.Size = new System.Drawing.Size(560, 168);
+            this.Size = new System.Drawing.Size(560, 200);
             this.ResumeLayout(false);
             this.PerformLayout();
         }
@@ -216,6 +236,8 @@ namespace SGIG.UI
         private System.Windows.Forms.TextBox txtEmail;
         private System.Windows.Forms.Label lblTelefono;
         private System.Windows.Forms.TextBox txtTelefono;
+        private System.Windows.Forms.Label lblProvincia;
+        private System.Windows.Forms.ComboBox cboProvincia;
         private System.Windows.Forms.Label lblLocalidad;
         private System.Windows.Forms.ComboBox cboLocalidad;
         private System.Windows.Forms.Label lblFechaNacimiento;
