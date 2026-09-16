@@ -263,6 +263,15 @@ INSERT INTO dbo.MedioPago (descripcion) VALUES
     ('Tarjeta'),
     ('Transferencia');
 
+/* Plan tampoco tiene ABM en la UI (RF#10 paso a ser solo consulta, ver
+   frmPlanes): se carga una sola vez con este seed, cubriendo las 4
+   periodicidades soportadas por tipo_periodicidad. */
+INSERT INTO dbo.[Plan] (nombre, precio, tipo_periodicidad) VALUES
+    ('Clase Suelta', 3500.00, 'Diario'),
+    ('Pase Semanal', 12000.00, 'Semanal'),
+    ('Mensual Full', 35000.00, 'Mensual'),
+    ('Anual Full', 350000.00, 'Anual');
+
 /* Provincia y Localidad no tienen ABM previsto en el alcance actual: se cargan
    una sola vez con este seed (23 provincias + CABA, capital + algunas ciudades
    principales por provincia) y se consumen desde los combos de ucDatosPersona.
@@ -423,25 +432,57 @@ INSERT INTO dbo.Localidad (nombre, id_provincia) VALUES
     ('Concepcion', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Tucuman')),
     ('Yerba Buena', (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Tucuman'));
 
-/* Maquina no tiene ABM de alta/baja desde una pantalla dedicada de carga masiva:
-   el parque de maquinas se siembra una vez con datos de ejemplo tipicos de un
-   gimnasio y despues se gestiona con frmMaquinas (RF Fase 6). Dos quedan en
-   'En Reparacion' para poder probar el listado y el alta de Mantenimiento
-   (RF#20) sin cargar datos a mano. */
+/* Maquina tampoco tiene ABM en la UI (RF#18 paso a ser solo consulta, ver
+   frmMaquinas): el parque de maquinas se siembra una vez con datos de ejemplo
+   tipicos de un gimnasio. Dos quedan en 'En Reparacion' para poder probar el
+   listado y el alta de Mantenimiento (RF#20) sin cargar datos a mano. */
 
 INSERT INTO dbo.Maquina (marca, nombre, fecha_compra, estado) VALUES
+    -- Cardio
+    ('Life Fitness', 'Cinta de correr', '2023-02-10', 'Operativa'),
     ('Life Fitness', 'Cinta de correr', '2023-02-10', 'Operativa'),
     ('Matrix', 'Bicicleta fija', '2023-02-10', 'Operativa'),
+    ('Matrix', 'Bicicleta reclinada', '2023-02-10', 'Operativa'),
+    ('Technogym', 'Eliptica', '2023-03-15', 'Operativa'),
     ('Technogym', 'Eliptica', '2023-03-15', 'Operativa'),
     ('Precor', 'Remo', '2023-03-15', 'Operativa'),
+    ('Concept2', 'Remo', '2024-04-02', 'Operativa'),
+    ('Assault Fitness', 'Bicicleta de asalto (AirBike)', '2024-04-02', 'Operativa'),
+    ('Technogym', 'Escaladora (StairMaster)', '2023-08-12', 'Operativa'),
+    -- Fuerza selectorizada
     ('Hammer Strength', 'Press de banca', '2023-05-20', 'Operativa'),
     ('Hammer Strength', 'Prensa de piernas', '2023-05-20', 'En Reparacion'),
+    ('Hammer Strength', 'Press militar', '2023-05-20', 'Operativa'),
     ('Cybex', 'Multi estacion', '2023-06-01', 'Operativa'),
     ('Cybex', 'Maquina de poleas', '2023-06-01', 'Operativa'),
-    ('Body-Solid', 'Escaladora', '2023-08-12', 'Operativa'),
-    ('Body-Solid', 'Step', '2023-08-12', 'Operativa'),
+    ('Cybex', 'Extension de cuadriceps', '2023-06-01', 'Operativa'),
+    ('Cybex', 'Curl femoral', '2023-06-01', 'Operativa'),
+    ('Matrix', 'Jalon al pecho (Lat Pulldown)', '2024-01-18', 'Operativa'),
+    ('Matrix', 'Remo sentado', '2024-01-18', 'Operativa'),
+    ('Technogym', 'Aductor/Abductor de cadera', '2024-01-18', 'Operativa'),
+    ('Precor', 'Pec deck (aperturas)', '2024-04-02', 'Operativa'),
+    ('Body-Solid', 'Hiperextension', '2023-08-12', 'Operativa'),
+    -- Free weights: racks, barras, discos, mancuernas
     ('Rogue', 'Rack de sentadillas', '2024-01-18', 'Operativa'),
-    ('Rogue', 'Barra olimpica y discos', '2024-01-18', 'En Reparacion');
+    ('Rogue', 'Rack de sentadillas', '2024-01-18', 'Operativa'),
+    ('Rogue', 'Barra olimpica 20kg', '2024-01-18', 'En Reparacion'),
+    ('Eleiko', 'Barra olimpica 20kg', '2024-04-02', 'Operativa'),
+    ('Eleiko', 'Set de discos olimpicos (2.5-25kg)', '2024-04-02', 'Operativa'),
+    ('Rogue', 'Set de discos bumper (5-25kg)', '2024-01-18', 'Operativa'),
+    ('Eleiko', 'Set de mancuernas (2-40kg)', '2024-04-02', 'Operativa'),
+    ('Body-Solid', 'Set de mancuernas (2-40kg)', '2023-08-12', 'Operativa'),
+    ('Rogue', 'Set de kettlebells (8-32kg)', '2024-01-18', 'Operativa'),
+    ('Eleiko', 'Barra para peso muerto', '2024-04-02', 'Operativa'),
+    -- Bancos y accesorios
+    ('Rogue', 'Banco plano', '2024-01-18', 'Operativa'),
+    ('Rogue', 'Banco ajustable', '2024-01-18', 'Operativa'),
+    ('Body-Solid', 'Banco ajustable', '2023-08-12', 'Operativa'),
+    ('Body-Solid', 'Step', '2023-08-12', 'Operativa'),
+    ('Rogue', 'Rack de mancuernas', '2024-01-18', 'Operativa'),
+    ('Rogue', 'Barra fija (dominadas/paralelas)', '2024-01-18', 'Operativa'),
+    ('TRX', 'Bandas de suspension', '2024-04-02', 'Operativa'),
+    ('Rogue', 'Cuerda de battle rope', '2024-01-18', 'Operativa'),
+    ('Rogue', 'Trineo de arrastre (sled)', '2024-01-18', 'Operativa');
 
 /* Persona + Usuario administrador inicial.
 

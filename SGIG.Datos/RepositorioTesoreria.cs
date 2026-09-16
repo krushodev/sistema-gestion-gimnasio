@@ -22,7 +22,7 @@ public class RepositorioTesoreria
             FROM dbo.Pago p
             INNER JOIN dbo.Facturacion f ON p.id_facturacion = f.id_facturacion
             INNER JOIN dbo.[Plan] pl ON f.id_plan = pl.id_plan
-            INNER JOIN dbo.Medio_Pago mp ON p.id_medio_pago = mp.id_medio_pago
+            INNER JOIN dbo.MedioPago mp ON p.id_medio_pago = mp.id_medio_pago
             WHERE f.id_persona = @IdPersona
             ORDER BY p.id_pago DESC";
 

@@ -138,17 +138,20 @@ Convenciones: `[ ]` = pendiente, `[x]` = hecho. Notación húngara según `Notac
 - [x] Validación de formato con expresiones regulares: documento sólo numérico y estructura del email (RF#09, RNF#04).
 - [x] Columnas explícitas en `dgvUsuarios` (no exponer el hash de contraseña ni los ids internos).
 
-### 2.6 Pantalla `frmTablasParametricas` (RF#04)
+### 2.6 Pantalla `frmTablasParametricas` (RF#04) — RETIRADA
 
-- **Rol de acceso:** Administrador.
-- **Se abre desde:** `mnuTablasParametricas`.
-- **Controles:** `tabCatalogos` (TabControl) con pestañas `tabRol`, `tabProvincia`, `tabLocalidad`, `tabTipoDocumento`, `tabMedioPago`, cada una con su `dgv`, sus campos de texto/combo y `btnAgregar`/`btnEditar`/`btnDarDeBaja`/`btnCancelar`. La baja de los cinco catálogos es **lógica** (campo `activo`, RF#04 — ERS v4.0), nunca física.
+> **Nota (16/09/2026):** `frmTablasParametricas` y sus 5 editores (`frmRolEditor`,
+> `frmProvinciaEditor`, `frmLocalidadEditor`, `frmTipoDocumentoEditor`, `frmMedioPagoEditor`) se
+> eliminaron del todo. Decisión del usuario: Rol, Provincia, Localidad, TipoDocumento y MedioPago
+> pasan a ser catálogos **sembrados con la aplicación** (ver seed en `docs/SGIG_CreateDB.sql`),
+> sin ABM en la UI — ver `docs/patrones/catalogos-seed-only.md`. `RepositorioCatalogo`/
+> `ServicioCatalogo`/`RepositorioRol` quedaron recortados a solo los métodos `Obtener*` que
+> siguen alimentando combos en otras pantallas. La tarjeta "⚙️ Tablas Paramétricas" se sacó de
+> `frmMDIParent`. Los roles en sí siguen siendo los 3 fijos de siempre (Administrador,
+> Recepcionista, Técnico) — lo que ya era dinámico y se mantiene sin cambios es la asignación de
+> uno de esos 3 roles al dar de alta un `Usuario` (`frmUsuarioEditor.cboRol`, ver 2.5).
 
-- [x] Crear `frmTablasParametricas` con las 5 pestañas.
-- [x] CRUD de Provincia y Localidad.
-- [x] CRUD de TipoDocumento.
-- [x] CRUD de MedioPago.
-- [x] CRUD de Rol (baja lógica; no se puede dar de baja un rol con usuarios activos).
+- [x] ~~Crear `frmTablasParametricas` con las 5 pestañas.~~ Retirada — ver nota arriba.
 
 ## Fase 3 — Personas: Socios
 
@@ -206,45 +209,44 @@ Convenciones: `[ ]` = pendiente, `[x]` = hecho. Notación húngara según `Notac
 
 > **Refactor (31/08/2026 — ERS v4.0):** esta fase cambió de fondo respecto de versiones anteriores del plan. `Plan` ya no tiene `dias_vigencia` sino `tipo_periodicidad` (Diario/Semanal/Mensual/Anual). Se agrega `Facturacion` como tabla intermedia: representa un ciclo de cuota de un socio en un plan (fecha de emisión, vencimiento, monto). `Pago` ya no apunta directo a Socio+Plan, sino a una `Facturacion`. El vencimiento de Mensual/Anual se calcula con aritmética de calendario (`AddMonths`/`AddYears`), no días fijos — así se maneja bien la irregularidad de los meses (RF#12).
 
+> **Nota (16/09/2026):** implementada. Acceso a datos y lógica de negocio se consolidaron en `RepositorioTesoreria.cs`/`ServicioTesoreria.cs` en vez de separar `RepositorioFacturacion`/`RepositorioPago` y `ServicioFacturacion`/`ServicioPago` como preveía este plan (Facturación y Pago se dan de alta siempre juntos dentro de la misma transacción, así que no había un caso de uso real que los necesitara aparte). Las pantallas `frmPagos` y `frmHistorialPagos` también se unificaron en una sola, `frmCobroCuota` (búsqueda de socio + cobro + grilla de historial en la misma ventana), con controles `txtDocumento`/`btnBuscarSocio` en vez de `txtBuscarDocumento`/`btnBuscar` y `cboPlanes` en vez de `cboPlan`. Al revisar esta entrega se corrigió además un bug real: `RepositorioTesoreria.ObtenerHistorialPorSocio` apuntaba a una tabla `dbo.Medio_Pago` que no existe (el DER usa `dbo.MedioPago`, sin guion bajo), y `RepositorioPlan.cs` no tenía el `Try…Catch` obligatorio (RNF#06) en ninguno de sus métodos — ambos corregidos. La base de datos local se recreó desde `SGIG_CreateDB.sql` para pasar del esquema viejo (con `Gasto`) al de ERS v4.0.
+
 ### 4.1 Entidades
 
-- [ ] `Plan.cs` en `SGIG.Entidades` — propiedades: `IdPlan`, `Nombre`, `Precio`, `TipoPeriodicidad` (string: "Diario"/"Semanal"/"Mensual"/"Anual"), `Activo`.
-- [ ] `Facturacion.cs` — propiedades: `IdFacturacion`, `IdPersona`, `IdPlan`, `FechaEmision`, `FechaVencimiento`, `MontoTotal`, `Estado`.
-- [ ] `Pago.cs` — propiedades: `IdPago`, `IdFacturacion`, `IdMedioPago`, `FechaPago`, `Monto`.
+- [x] `Plan.cs` en `SGIG.Entidades` — propiedades: `IdPlan`, `Nombre`, `Precio`, `TipoPeriodicidad` (string: "Diario"/"Semanal"/"Mensual"/"Anual"), `Activo`.
+- [x] `Facturacion.cs` — propiedades: `IdFacturacion`, `IdPersona`, `IdPlan`, `FechaEmision`, `FechaVencimiento`, `MontoTotal`, `Estado`.
+- [x] `Pago.cs` — propiedades: `IdPago`, `IdFacturacion`, `IdMedioPago`, `FechaPago`, `Monto`.
 
 ### 4.2 Acceso a datos
 
-- [ ] `RepositorioPlan.cs`: CRUD.
-- [ ] `RepositorioFacturacion.cs`: alta (dentro de la misma transacción del pago, ver 4.5), consulta de la facturación vigente/pendiente de un socio, historial de facturaciones por socio.
-- [ ] `RepositorioPago.cs`: alta (asociado a una `Facturacion`), historial de pagos por socio (join contra `Facturacion` para llegar a `id_persona`, RF#14).
+- [x] `RepositorioPlan.cs`: CRUD.
+- [x] `RepositorioTesoreria.cs` (en vez de `RepositorioFacturacion.cs`/`RepositorioPago.cs` separados): alta transaccional de Facturación + Pago (ver 4.5), historial de pagos por socio (join contra `Facturacion` para llegar a `id_persona`, RF#14).
 
 ### 4.3 Lógica de negocio
 
-- [ ] `ServicioPlan.cs`: CRUD del catálogo (RF#10).
-- [ ] `ServicioFacturacion.cs`: calcula `fecha_vencimiento` a partir de `fecha_emision` y `Plan.tipo_periodicidad` — `Diario` → `+1 día`, `Semanal` → `+7 días`, `Mensual` → `AddMonths(1)`, `Anual` → `AddYears(1)` (RF#12). Copia `Plan.precio` a `Facturacion.monto_total` en el momento de emitir, para no alterar el monto histórico si el plan cambia de precio después (RF#13).
-- [ ] `ServicioPago.cs`: orquesta el alta transaccional (ver 4.5) y actualiza `Socio.fecha_vencimiento_cuota` con la `fecha_vencimiento` de la `Facturacion` recién pagada.
+- [x] `ServicioPlan.cs`: lectura del catálogo (RF#10) — ver nota 4.4, ya no tiene alta/edición/baja.
+- [x] `ServicioTesoreria.cs` (en vez de `ServicioFacturacion.cs`/`ServicioPago.cs` separados): calcula `fecha_vencimiento` a partir de `fecha_emision` (o el vencimiento vigente, si todavía no venció) y `Plan.tipo_periodicidad` — `Diario` → `+1 día`, `Semanal` → `+7 días`, `Mensual` → `AddMonths(1)`, `Anual` → `AddYears(1)` (RF#12). Copia `Plan.precio` a `Facturacion.monto_total` en el momento de emitir (RF#13) y orquesta el alta transaccional actualizando `Socio.fecha_vencimiento_cuota`.
 
-### 4.4 Pantalla `frmPlanes` (RF#10)
+### 4.4 Pantalla `frmPlanes` (RF#10) — pasó a solo lectura
 
-- **Rol de acceso:** Administrador. **Se abre desde:** `mnuPlanes`.
-- **Controles:** `dgvPlanes`, `txtNombre`, `txtPrecio`, `cboTipoPeriodicidad` (Diario/Semanal/Mensual/Anual — reemplaza a `txtDiasVigencia`), `chkActivo`, `btnNuevo`/`btnGuardar`/`btnEliminar`.
+> **Nota (16/09/2026):** decisión del usuario: Plan pasa a ser un catálogo sembrado con la
+> aplicación (ver seed en `docs/SGIG_CreateDB.sql`), sin ABM en la UI —
+> `docs/patrones/catalogos-seed-only.md`. Se eliminó `frmPlanEditor`; `frmPlanes` conserva la
+> grilla de consulta pero oculta `btnNuevo`/`btnEditar`/`btnDarDeBaja`. `RepositorioPlan`/
+> `ServicioPlan` quedaron recortados a `ObtenerTodos`/`Listar`/`ObtenerPorId`.
 
-- [ ] Crear `frmPlanes` con ABM completo.
+- **Rol de acceso:** Administrador. **Se abre desde:** tarjeta "Planes de Membresía" en `frmMDIParent`.
+- **Controles:** `dgvPlanes`, `chkMostrarInactivos`. `btnNuevo`/`btnEditar`/`btnDarDeBaja` siguen en el `.Designer.cs` pero ocultos (nunca se muestran).
 
-### 4.5 Pantalla `frmPagos` (RF#11, RF#12, RF#13)
+- [x] Crear `frmPlanes` — de solo lectura, muestra el catálogo sembrado.
 
-- **Rol de acceso:** Recepcionista. **Se abre desde:** `mnuPagos`.
-- **Controles:** `txtBuscarDocumento`/`btnBuscar`, `lblNombreSocio`, `lblVencimientoActual`, `cboPlan`, `cboMedioPago`, `txtMonto` (autocompletado con `Plan.precio`, editable), `dtpFechaPago`, `btnRegistrarPago`, `lblNuevoVencimiento`.
+### 4.5 y 4.6 Pantalla `frmCobroCuota` (RF#11, RF#12, RF#13, RF#14 — unifica `frmPagos` y `frmHistorialPagos`)
 
-- [ ] Crear `frmPagos` — búsqueda de socio por documento.
-- [ ] `btnRegistrarPago_Click` dispara **una sola transacción** que: (1) crea la `Facturacion` (emisión = `dtpFechaPago`, vencimiento calculado por `ServicioFacturacion`, monto = precio del plan elegido), (2) inserta el `Pago` asociado a esa `Facturacion`, (3) marca la `Facturacion` como `'Pagada'`, (4) actualiza `Socio.fecha_vencimiento_cuota`. Mostrar el resultado en `lblNuevoVencimiento`.
+- **Rol de acceso:** Recepcionista. **Se abre desde:** tarjeta de Tesorería en `frmMDIParent`.
+- **Controles:** `txtDocumento`/`btnBuscarSocio`, `lblNombreSocioValor`, `lblVencimientoActualValor`, `cboPlanes`, `cboMedioPago`, `txtMonto` (autocompletado con `Plan.precio`), `btnRegistrarPago`, `lblNuevoVencimientoValor`, `dgvHistorialPagos`.
 
-### 4.6 Pantalla `frmHistorialPagos` (RF#14)
-
-- **Rol de acceso:** Administrador, Recepcionista. **Se abre desde:** `mnuHistorialPagos`.
-- **Controles:** `txtBuscarDocumento`/`btnBuscar`, `dtpDesde`/`dtpHasta` (filtro opcional), `dgvHistorialPagos` (columnas: fecha de pago, plan, monto, medio de pago, vencimiento generado — sale del join Pago → Facturación).
-
-- [ ] Crear `frmHistorialPagos` con consulta por socio.
+- [x] Crear `frmCobroCuota` — búsqueda de socio por documento.
+- [x] `btnRegistrarPago_Click` dispara **una sola transacción** (`RepositorioTesoreria.RegistrarCobroTransaccional`) que: (1) crea la `Facturacion` (emisión = hoy, vencimiento calculado por `ServicioTesoreria`, monto = precio del plan elegido, estado `'Pagada'`), (2) inserta el `Pago` asociado a esa `Facturacion`, (3) actualiza `Socio.id_plan` y `Socio.fecha_vencimiento_cuota`. Muestra el resultado en `lblNuevoVencimientoValor` y refresca `dgvHistorialPagos` en la misma pantalla.
 
 ## Fase 5 — Control de Acceso: Check-in
 
@@ -276,7 +278,15 @@ Convenciones: `[ ]` = pendiente, `[x]` = hecho. Notación húngara según `Notac
 
 > **Simplificación (31/08/2026 — ERS v4.0):** Mantenimiento ya no genera un `Gasto` asociado (la tabla `Gasto` se eliminó del modelo). RF#23 ("debe generar el Gasto asociado") queda dado de baja. La transacción de alta de Mantenimiento se reduce a 2 tablas: `Mantenimiento` + actualización de `Maquina.estado`.
 
-> **Nota (07/09/2026):** implementada en su totalidad. `dbo.Maquina` no tiene columna `activo` (a diferencia de Socio/Usuario/Plan), así que `btnEliminar` en `frmMaquinas` hace un `DELETE` físico, bloqueado desde `ServicioMaquina.Eliminar` si la máquina ya tiene mantenimientos registrados (para no perder ese historial). El estado `'En Reparacion'` se escribe sin tilde en todo el código porque así está el `CHECK` en `SGIG_CreateDB.sql` (`CK_Maquina_Estado`). `frmMantenimiento` sólo ofrece en `cboMaquina` las máquinas hoy "Operativa" (una "En Reparacion" ya tiene un mantenimiento activo). En el dashboard de `frmMDIParent`, "Máquinas" e "Historial de Mantenimientos" quedaron habilitadas para Administrador y Técnico, y "Mantenimiento" sólo para Técnico, según la matriz de la Fase 2.4.
+> **Nota (07/09/2026):** implementada en su totalidad. El estado `'En Reparacion'` se escribe sin
+> tilde en todo el código porque así está el `CHECK` en `SGIG_CreateDB.sql` (`CK_Maquina_Estado`).
+> `frmMantenimiento` sólo ofrece en `cboMaquina` las máquinas hoy "Operativa" (una "En Reparacion"
+> ya tiene un mantenimiento activo). En el dashboard de `frmMDIParent`, "Máquinas" e "Historial de
+> Mantenimientos" quedaron habilitadas para Administrador y Técnico, y "Mantenimiento" sólo para
+> Técnico, según la matriz de la Fase 2.4. **Actualización (16/09/2026):** Maquina pasó a ser
+> catálogo seed-only y `frmMaquinas` a solo lectura — ver nota en 6.4. El detalle sobre el
+> `DELETE` físico (`dbo.Maquina` no tiene columna `activo`) queda como referencia histórica del
+> repositorio, aunque el botón que lo disparaba ya no es visible desde la UI.
 
 ### 6.1 Entidades
 
@@ -293,12 +303,19 @@ Convenciones: `[ ]` = pendiente, `[x]` = hecho. Notación húngara según `Notac
 - [x] `ServicioMaquina.cs`: cambio de estado automático.
 - [x] `ServicioMantenimiento.cs`: técnico a cargo tomado del usuario logueado.
 
-### 6.4 Pantalla `frmMaquinas` (RF#18)
+### 6.4 Pantalla `frmMaquinas` (RF#18) — pasó a solo lectura
 
-- **Rol de acceso:** Administrador, Técnico. **Se abre desde:** `mnuMaquinas`.
-- **Controles:** `dgvMaquinas`, `txtMarca`, `txtNombre`, `dtpFechaCompra`, `cboEstado`, `btnNuevo`/`btnGuardar`/`btnEliminar`.
+> **Nota (16/09/2026):** decisión del usuario: Maquina pasa a ser un catálogo sembrado con la
+> aplicación (ver seed en `docs/SGIG_CreateDB.sql`), sin ABM en la UI —
+> `docs/patrones/catalogos-seed-only.md`. `frmMaquinas` conserva la grilla de consulta pero oculta
+> `grpDatos` (marca/nombre/fecha de compra/estado) y `btnNuevo`/`btnGuardar`/`btnEliminar`.
+> `RepositorioMaquina`/`ServicioMaquina` quedaron recortados a `ObtenerTodas`/`ObtenerOperativas`
+> (`ObtenerOperativas` la sigue usando `frmMantenimiento` para el combo de máquinas).
 
-- [x] Crear `frmMaquinas` con ABM completo.
+- **Rol de acceso:** Administrador, Técnico. **Se abre desde:** tarjeta "Máquinas" en `frmMDIParent`.
+- **Controles:** `dgvMaquinas`. `grpDatos` y `btnNuevo`/`btnGuardar`/`btnEliminar` siguen en el `.Designer.cs` pero ocultos (nunca se muestran).
+
+- [x] Crear `frmMaquinas` — de solo lectura, muestra el catálogo sembrado.
 
 ### 6.5 Pantalla `frmMantenimiento` (RF#19, RF#20)
 
@@ -351,6 +368,41 @@ Convenciones: `[ ]` = pendiente, `[x]` = hecho. Notación húngara según `Notac
 - [ ] Preparar el guion de la presentación/demo para la cátedra.
 
 ---
+
+## Correcciones post-Fase 4 (16/09/2026)
+
+Ronda de correcciones de UX reportadas por el usuario después de probar la app, transversales a
+varias fases ya cerradas — no es una fase nueva, se documenta acá para no perderla de vista:
+
+- **`frmSocioEditor`**: `cboPlan` estaba deshabilitado con un placeholder ("disponible cuando se
+  implemente Fase 4") que nunca se actualizó al cerrar esa fase — ahora carga `ServicioPlan.Listar()`
+  y persiste `Socio.IdPlan`.
+- **`ucDatosPersona`**: nuevo método `Reiniciar()` (alias de `PrepararParaAlta()`) y nuevo método
+  `BloquearIdentidad()` (deshabilita sólo documento/tipo de documento, para el caso de "editar mis
+  datos" sin tocar la identidad). `frmSocioEditor` y `frmUsuarioEditor` suman un botón "Limpiar
+  datos" (sólo visible en alta nueva) que deshace el autocompletado bloqueado por búsqueda de
+  documento.
+- **`frmCobroCuota`**: `txtMonto` pasa a editable (antes `ReadOnly` fijo al precio del plan, sin
+  forma de aplicar un descuento puntual). `ServicioTesoreria.RegistrarCobro` ahora recibe el monto
+  como parámetro en vez de tomar siempre `Plan.Precio`.
+- **Búsqueda por nombre**: nuevo `frmBuscarSocio` (selector modal por nombre/apellido/documento,
+  `RepositorioSocio.BuscarActivosPorTexto`/`ServicioSocio.BuscarPorTexto`), agregado como botón
+  "Por nombre"/"Buscar por nombre" junto a la búsqueda por documento de `frmCobroCuota` y
+  `frmCheckin`. `frmSocios` no se tocó: su filtro de grilla ya buscaba por nombre/apellido/documento.
+- **Barra superior**: el usuario logueado, "⚙ Configuración" y "Cerrar sesión" se movieron de
+  `stsEstado` (franja inferior, casi invisible) a una barra nueva y persistente arriba a la derecha
+  de `frmMDIParent`, visible tanto en el dashboard como con cualquier módulo abierto (a diferencia
+  de `pnlHeader`, que se oculta al abrir un módulo). `stsEstado` queda oculto pero sin eliminar.
+- **Máquinas**: seed ampliado en `docs/SGIG_CreateDB.sql` (de 12 a ~39 filas) con más variedad —
+  cardio, fuerza selectorizada, free weights (barras, discos, mancuernas, kettlebells) y accesorios,
+  con marcas reales variadas.
+- **Mostrar/ocultar contraseña**: nuevo `Tema.AgregarToggleContrasenia(TextBox)`, aplicado en
+  `frmLogin`, `frmUsuarioEditor` y los 3 campos de contraseña de `frmConfiguracion`.
+- **Nueva pantalla `frmConfiguracion`**: cambio de contraseña propia (`ServicioUsuario.
+  CambiarContrasenia`, valida la actual con `Hash.Coincide` antes de aceptar la nueva) y edición de
+  datos de contacto propios (`ServicioUsuario.ActualizarDatosPropios`, no toca documento/rol/legajo).
+  Disponible para los 3 roles sobre su propia cuenta, desde el botón "⚙ Configuración" de la barra
+  superior.
 
 ## Cómo usar este plan con el agente
 

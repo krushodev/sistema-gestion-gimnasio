@@ -231,6 +231,60 @@ namespace SGIG.Datos
         }
 
         /// <summary>
+        /// Cambia sólo el hash de la contraseña, sin pasar por el Modificar completo
+        /// de Persona+Usuario. Usado por el cambio de contraseña de la propia cuenta
+        /// (frmConfiguracion), que no toca rol/legajo/nombre de usuario.
+        /// </summary>
+        public void ActualizarContrasenia(int idPersona, byte[] hash)
+        {
+            const string sql = "UPDATE dbo.Usuario SET contrasenia_hash = @Hash WHERE id_persona = @IdPersona";
+
+            try
+            {
+                using var connection = Conexion.ObtenerConexionAbierta();
+                connection.Execute(sql, new { IdPersona = idPersona, Hash = hash });
+            }
+            catch (SqlException ex)
+            {
+                throw new AccesoDatosException("No se pudo actualizar la contraseña.", ex);
+            }
+        }
+
+        /// <summary>
+        /// Actualiza sólo los datos de contacto de dbo.Persona (nombre, apellido,
+        /// email, teléfono, localidad), sin tocar documento/tipo de documento (que
+        /// identifican a la persona) ni id_rol/legajo (administrativos). Usado por
+        /// "editar mis datos" en frmConfiguracion, sobre la propia cuenta.
+        /// </summary>
+        public void ActualizarDatosPropios(int idPersona, string nombre, string apellido,
+            string? email, string? telefono, int? idLocalidad)
+        {
+            const string sql = @"
+                UPDATE dbo.Persona
+                SET nombre = @Nombre, apellido = @Apellido, email = @Email,
+                    telefono = @Telefono, id_localidad = @IdLocalidad
+                WHERE id_persona = @IdPersona";
+
+            try
+            {
+                using var connection = Conexion.ObtenerConexionAbierta();
+                connection.Execute(sql, new
+                {
+                    IdPersona = idPersona,
+                    Nombre = nombre,
+                    Apellido = apellido,
+                    Email = email,
+                    Telefono = telefono,
+                    IdLocalidad = idLocalidad
+                });
+            }
+            catch (SqlException ex)
+            {
+                throw new AccesoDatosException("No se pudieron actualizar los datos personales.", ex);
+            }
+        }
+
+        /// <summary>
         /// Existe una fila en dbo.Usuario para esa Persona (fue usuario alguna vez,
         /// activo o dado de baja). Determina si el alta debe insertar o reactivar,
         /// igual que RepositorioSocio.ExisteFilaSocio.

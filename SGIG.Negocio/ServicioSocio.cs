@@ -26,6 +26,19 @@ namespace SGIG.Negocio
         public Socio? ObtenerPorId(int idPersona) => _repositorioSocio.ObtenerPorId(idPersona);
 
         /// <summary>
+        /// Búsqueda por nombre/apellido/documento para el selector de Cobro de Cuotas
+        /// y Check-in (RF#11, RF#15). Exige un mínimo de caracteres para no traer
+        /// medio catálogo de socios con cada tecla.
+        /// </summary>
+        public IEnumerable<Socio> BuscarPorTexto(string texto)
+        {
+            if (string.IsNullOrWhiteSpace(texto) || texto.Trim().Length < 2)
+                return Enumerable.Empty<Socio>();
+
+            return _repositorioSocio.BuscarActivosPorTexto(texto.Trim());
+        }
+
+        /// <summary>
         /// Busca una Persona ya cargada por documento, para reutilizarla al dar de
         /// alta un socio (RF#06) en vez de duplicar sus datos personales.
         /// </summary>

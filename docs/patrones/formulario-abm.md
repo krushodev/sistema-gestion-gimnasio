@@ -5,8 +5,10 @@
 > El ejemplo histórico de panel embebido queda documentado en el historial de git de este archivo
 > si hace falta consultarlo.
 
-Estructura estándar de toda pantalla de alta/baja/modificación (`frmUsuarios`, `frmSocios`,
-`frmTablasParametricas` y las que sigan, como `frmPlanes` en Fase 4). La pantalla de **listado**
+Estructura estándar de toda pantalla de alta/baja/modificación (`frmUsuarios`, `frmSocios`).
+Los catálogos sembrados con la aplicación (Provincia, Localidad, TipoDocumento, MedioPago, Rol,
+Plan, Maquina) no siguen este patrón — no tienen ABM en la UI, ver
+[catalogos-seed-only.md](catalogos-seed-only.md). La pantalla de **listado**
 se abre **dentro de `frmMDIParent`**, nunca como ventana suelta (RNF#02); el **editor** de
 alta/edición es un formulario aparte que se abre como diálogo modal sobre ella.
 

@@ -5,9 +5,10 @@ using SGIG.Entidades;
 namespace SGIG.Datos
 {
     /// <summary>
-    /// Acceso a datos de dbo.Maquina. Sin baja lógica: la tabla no tiene columna
-    /// 'activo' (a diferencia de Socio/Usuario/Plan), así que la baja es DELETE físico,
-    /// bloqueado si la máquina tiene mantenimientos registrados (FK_Mantenimiento_Maquina).
+    /// Acceso a datos de dbo.Maquina. Maquina es un catálogo sembrado con la
+    /// aplicación (ver docs/SGIG_CreateDB.sql) y no tiene ABM en la UI; este
+    /// repositorio solo expone lectura, usada por la consulta de frmMaquinas y
+    /// por los combos de Mantenimiento/Historial de Mantenimientos.
     /// </summary>
     public class RepositorioMaquina
     {
@@ -47,61 +48,5 @@ namespace SGIG.Datos
             }
         }
 
-        public int Alta(Maquina maquina)
-        {
-            const string sql = @"
-                INSERT INTO dbo.Maquina (marca, nombre, fecha_compra, estado)
-                VALUES (@Marca, @Nombre, @FechaCompra, @Estado);
-                SELECT CAST(SCOPE_IDENTITY() AS int);";
-
-            try
-            {
-                using var connection = Conexion.ObtenerConexionAbierta();
-                return connection.ExecuteScalar<int>(sql, maquina);
-            }
-            catch (SqlException ex)
-            {
-                throw new AccesoDatosException("No se pudo dar de alta la máquina.", ex);
-            }
-        }
-
-        public void Modificar(Maquina maquina)
-        {
-            const string sql = @"
-                UPDATE dbo.Maquina
-                SET marca = @Marca, nombre = @Nombre, fecha_compra = @FechaCompra, estado = @Estado
-                WHERE id_maquina = @IdMaquina";
-
-            try
-            {
-                using var connection = Conexion.ObtenerConexionAbierta();
-                connection.Execute(sql, maquina);
-            }
-            catch (SqlException ex)
-            {
-                throw new AccesoDatosException("No se pudo modificar la máquina.", ex);
-            }
-        }
-
-        /// <summary>DELETE físico: dbo.Maquina no tiene baja lógica.</summary>
-        public void Eliminar(int idMaquina)
-        {
-            const string sql = "DELETE FROM dbo.Maquina WHERE id_maquina = @IdMaquina";
-
-            try
-            {
-                using var connection = Conexion.ObtenerConexionAbierta();
-                connection.Execute(sql, new { IdMaquina = idMaquina });
-            }
-            catch (SqlException ex) when (ex.Number == 547)
-            {
-                throw new AccesoDatosException(
-                    "No se puede eliminar la máquina porque tiene mantenimientos registrados.", ex);
-            }
-            catch (SqlException ex)
-            {
-                throw new AccesoDatosException("No se pudo eliminar la máquina.", ex);
-            }
-        }
     }
 }

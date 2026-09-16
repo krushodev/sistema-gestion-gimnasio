@@ -16,10 +16,15 @@ public class ServicioTesoreria
     }
 
     // RF#11 y RF#12: Registro de Facturación, Pago y cálculo por calendario
-    public void RegistrarCobro(int idPersona, int idPlan, int idMedioPago, DateTime? vencimientoActual)
+    public void RegistrarCobro(int idPersona, int idPlan, int idMedioPago, decimal monto, DateTime? vencimientoActual)
     {
         var plan = _repositorioPlan.ObtenerPorId(idPlan)
             ?? throw new NegocioException("El plan seleccionado no existe o no se encuentra disponible.");
+
+        if (monto <= 0)
+        {
+            throw new NegocioException("El monto del cobro debe ser mayor a cero.");
+        }
 
         DateTime emision = DateTime.Today;
         DateTime baseCalculo = (vencimientoActual.HasValue && vencimientoActual.Value > emision)
@@ -41,7 +46,7 @@ public class ServicioTesoreria
             IdPlan = idPlan,
             FechaEmision = emision,
             FechaVencimiento = nuevoVencimiento,
-            MontoTotal = plan.Precio,
+            MontoTotal = monto,
             Estado = "Pagada"
         };
 
@@ -49,7 +54,7 @@ public class ServicioTesoreria
         {
             IdMedioPago = idMedioPago,
             FechaPago = DateTime.Now,
-            Monto = plan.Precio
+            Monto = monto
         };
 
         _repositorioTesoreria.RegistrarCobroTransaccional(facturacion, pago, nuevoVencimiento);

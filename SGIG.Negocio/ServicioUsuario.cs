@@ -68,6 +68,61 @@ namespace SGIG.Negocio
         }
 
         /// <summary>
+        /// Cambia la contraseña de la propia cuenta (frmConfiguracion): valida la
+        /// contraseña actual contra el hash guardado antes de aceptar la nueva, con
+        /// el mismo mecanismo que usa el login (<see cref="Hash.Coincide"/>).
+        /// </summary>
+        public void CambiarContrasenia(int idPersona, string contraseniaActual, string contraseniaNueva)
+        {
+            var usuario = _repositorioUsuario.ObtenerPorId(idPersona)
+                ?? throw new NegocioException("No se encontró el usuario.");
+
+            if (!Hash.Coincide(contraseniaActual, usuario.ContraseniaHash))
+            {
+                throw new NegocioException("La contraseña actual no es correcta.");
+            }
+
+            if (string.IsNullOrWhiteSpace(contraseniaNueva) || contraseniaNueva.Length < 4)
+            {
+                throw new NegocioException("La nueva contraseña debe tener al menos 4 caracteres.");
+            }
+
+            _repositorioUsuario.ActualizarContrasenia(idPersona, Hash.Calcular(contraseniaNueva));
+        }
+
+        /// <summary>
+        /// Actualiza los datos de contacto de la propia cuenta (frmConfiguracion):
+        /// nombre, apellido, email, teléfono, localidad. No permite tocar
+        /// documento/tipo de documento ni rol/legajo desde acá.
+        /// </summary>
+        public void ActualizarDatosPropios(int idPersona, string nombre, string apellido,
+            string? email, string? telefono, int? idLocalidad)
+        {
+            if (string.IsNullOrWhiteSpace(nombre))
+            {
+                throw new NegocioException("El nombre es obligatorio.");
+            }
+
+            if (string.IsNullOrWhiteSpace(apellido))
+            {
+                throw new NegocioException("El apellido es obligatorio.");
+            }
+
+            if (!string.IsNullOrWhiteSpace(email) && !Validaciones.EsEmailValido(email))
+            {
+                throw new NegocioException($"El email \"{email}\" no tiene un formato válido. Debe ser del estilo nombre@dominio.com.");
+            }
+
+            if (!string.IsNullOrWhiteSpace(telefono) && !Validaciones.EsTelefonoValido(telefono))
+            {
+                throw new NegocioException("El teléfono sólo admite números, espacios, guiones y paréntesis.");
+            }
+
+            _repositorioUsuario.ActualizarDatosPropios(idPersona, nombre.Trim(), apellido.Trim(),
+                email, telefono, idLocalidad);
+        }
+
+        /// <summary>
         /// Baja lógica (RNF#03). No permite que un administrador se dé de baja a sí
         /// mismo, para no dejar el sistema sin sesión activa.
         /// </summary>

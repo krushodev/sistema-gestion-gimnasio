@@ -16,10 +16,25 @@ public partial class frmCobroCuota : Form
     private readonly ServicioCatalogo _servicioCatalogo = new();
 
     private Socio? _socioActual;
+    private readonly Button _btnBuscarPorNombre;
 
     public frmCobroCuota()
     {
         InitializeComponent();
+
+        // Autocompletado con el precio del plan elegido, pero editable (por ejemplo
+        // para un descuento puntual) — el Designer lo deja en ReadOnly por defecto.
+        txtMonto.ReadOnly = false;
+
+        _btnBuscarPorNombre = new Button
+        {
+            Text = "Por nombre",
+            Location = new Point(297, 47),
+            Size = new Size(74, 25)
+        };
+        _btnBuscarPorNombre.Click += BtnBuscarPorNombre_Click;
+        grpSocio.Controls.Add(_btnBuscarPorNombre);
+
         ConfigurarGrilla();
     }
 
@@ -96,6 +111,7 @@ public partial class frmCobroCuota : Form
     {
         cboPlanes.Enabled = habilitar;
         cboMedioPago.Enabled = habilitar;
+        txtMonto.Enabled = habilitar;
         btnRegistrarPago.Enabled = habilitar;
 
         if (!habilitar)
@@ -134,40 +150,58 @@ public partial class frmCobroCuota : Form
 
         try
         {
-            _socioActual = _servicioSocio.ObtenerPorDocumento(documento);
+            var socio = _servicioSocio.ObtenerPorDocumento(documento);
 
-            if (_socioActual is null)
+            if (socio is null)
             {
                 HabilitarSeccionCobro(false);
                 MessageBox.Show("No se encontró ningún socio con el documento indicado.", "Información", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
 
-            if (!_socioActual.Activo)
-            {
-                HabilitarSeccionCobro(false);
-                MessageBox.Show("El socio seleccionado se encuentra dado de baja lógica.", "Socio Inactivo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
-
-            lblNombreSocioValor.Text = $"{_socioActual.Apellido}, {_socioActual.Nombre}";
-            lblVencimientoActualValor.Text = _socioActual.FechaVencimientoCuota.HasValue
-                ? _socioActual.FechaVencimientoCuota.Value.ToString("dd/MM/yyyy")
-                : "Sin cuotas previas";
-
-            if (_socioActual.IdPlan.HasValue)
-            {
-                cboPlanes.SelectedValue = _socioActual.IdPlan.Value;
-            }
-
-            HabilitarSeccionCobro(true);
-            CalcularNuevoVencimiento();
-            CargarHistorialPagos();
+            MostrarSocioEncontrado(socio);
         }
         catch (Exception ex)
         {
             MessageBox.Show($"Error al buscar el socio: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
+    }
+
+    private void BtnBuscarPorNombre_Click(object? sender, EventArgs e)
+    {
+        using var selector = new frmBuscarSocio();
+        if (selector.ShowDialog(this) == DialogResult.OK && selector.SocioElegido is not null)
+        {
+            txtDocumento.Text = selector.SocioElegido.Documento;
+            MostrarSocioEncontrado(selector.SocioElegido);
+        }
+    }
+
+    /// <summary>Vuelca en el panel de cobro un socio ya resuelto (por documento o por nombre).</summary>
+    private void MostrarSocioEncontrado(Socio socio)
+    {
+        _socioActual = socio;
+
+        if (!_socioActual.Activo)
+        {
+            HabilitarSeccionCobro(false);
+            MessageBox.Show("El socio seleccionado se encuentra dado de baja lógica.", "Socio Inactivo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return;
+        }
+
+        lblNombreSocioValor.Text = $"{_socioActual.Apellido}, {_socioActual.Nombre}";
+        lblVencimientoActualValor.Text = _socioActual.FechaVencimientoCuota.HasValue
+            ? _socioActual.FechaVencimientoCuota.Value.ToString("dd/MM/yyyy")
+            : "Sin cuotas previas";
+
+        if (_socioActual.IdPlan.HasValue)
+        {
+            cboPlanes.SelectedValue = _socioActual.IdPlan.Value;
+        }
+
+        HabilitarSeccionCobro(true);
+        CalcularNuevoVencimiento();
+        CargarHistorialPagos();
     }
 
     private void cboPlanes_SelectedIndexChanged(object sender, EventArgs e)
@@ -237,8 +271,15 @@ public partial class frmCobroCuota : Form
             return;
         }
 
+        if (!decimal.TryParse(txtMonto.Text, NumberStyles.Any, CultureInfo.InvariantCulture, out decimal monto) || monto <= 0)
+        {
+            MessageBox.Show("Ingrese un monto válido mayor a cero.", "Validación", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            txtMonto.Focus();
+            return;
+        }
+
         var confirmacion = MessageBox.Show(
-            $"¿Confirma el cobro de ${plan.Precio:N2} correspondiente al plan \"{plan.Nombre}\" para el socio {_socioActual.Nombre} {_socioActual.Apellido}?",
+            $"¿Confirma el cobro de ${monto:N2} correspondiente al plan \"{plan.Nombre}\" para el socio {_socioActual.Nombre} {_socioActual.Apellido}?",
             "Confirmación de Cobro",
             MessageBoxButtons.YesNo,
             MessageBoxIcon.Question
@@ -253,6 +294,7 @@ public partial class frmCobroCuota : Form
                 _socioActual.IdPersona,
                 plan.IdPlan,
                 idMedioPago,
+                monto,
                 _socioActual.FechaVencimientoCuota
             );
 

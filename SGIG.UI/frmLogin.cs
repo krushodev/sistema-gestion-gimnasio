@@ -25,6 +25,7 @@ namespace SGIG.UI
         public frmLogin()
         {
             InitializeComponent();
+            Tema.AgregarToggleContrasenia(txtContrasenia);
         }
 
         private void frmLogin_Load(object sender, EventArgs e)

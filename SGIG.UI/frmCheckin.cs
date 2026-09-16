@@ -21,11 +21,22 @@ namespace SGIG.UI
         private static readonly Color ColorTextoRechazado = Color.FromArgb(185, 28, 28);
 
         private readonly ServicioCheckin _servicioCheckin = new();
+        private readonly Button _btnBuscarPorNombre;
 
         public frmCheckin()
         {
             InitializeComponent();
             txtDocumento.KeyPress += Grillas.SoloDigitos;
+
+            _btnBuscarPorNombre = new Button
+            {
+                Text = "Buscar por nombre",
+                Location = new Point(400, 20),
+                Size = new Size(150, 25),
+                Anchor = AnchorStyles.Top | AnchorStyles.Right
+            };
+            _btnBuscarPorNombre.Click += BtnBuscarPorNombre_Click;
+            Controls.Add(_btnBuscarPorNombre);
         }
 
         private void frmCheckin_Load(object sender, EventArgs e)
@@ -41,9 +52,19 @@ namespace SGIG.UI
             ProcesarCheckin();
         }
 
-        private void ProcesarCheckin()
+        private void BtnBuscarPorNombre_Click(object? sender, EventArgs e)
         {
-            var documento = txtDocumento.Text.Trim();
+            using var selector = new frmBuscarSocio();
+            if (selector.ShowDialog(this) == DialogResult.OK && selector.SocioElegido is not null)
+            {
+                ProcesarCheckin(selector.SocioElegido.Documento);
+            }
+        }
+
+        private void ProcesarCheckin() => ProcesarCheckin(txtDocumento.Text.Trim());
+
+        private void ProcesarCheckin(string documento)
+        {
             txtDocumento.Clear();
 
             if (string.IsNullOrWhiteSpace(documento))

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using SGIG.Entidades;
 using SGIG.Negocio;
 
@@ -11,7 +12,7 @@ namespace SGIG.UI
     //
     // ── CONTROLES (ver frmSocioEditor.Designer.cs) ───────────────────────────
     //   ucDatosPersona (campos de Persona + buscar/reutilizar)
-    //   txtAptoMedico, cboPlan (deshabilitado, placeholder Fase 4),
+    //   txtAptoMedico, cboPlan,
     //   lblFechaVencimientoCuota (solo lectura), chkActivo (solo lectura)
     //   btnGuardar, btnCancelar
     // ─────────────────────────────────────────────────────────────────────────
@@ -19,13 +20,38 @@ namespace SGIG.UI
     {
         private readonly ServicioSocio _servicioSocio = new();
         private readonly ServicioCatalogo _servicioCatalogo = new();
+        private readonly ServicioPlan _servicioPlan = new();
         private readonly Socio? _socioExistente;
+        private readonly Button _btnLimpiar;
 
         public frmSocioEditor(Socio? socioExistente)
         {
             InitializeComponent();
+
+            _btnLimpiar = new Button
+            {
+                Text = "Limpiar datos",
+                Location = new Point(16, 266),
+                Size = new Size(120, 28),
+                Anchor = AnchorStyles.Bottom | AnchorStyles.Left
+            };
+            _btnLimpiar.Click += (s, e) =>
+            {
+                ucDatosPersona.Reiniciar();
+                txtAptoMedico.Clear();
+                cboPlan.SelectedValue = 0;
+            };
+            Controls.Add(_btnLimpiar);
+
+            Tema.EstilizarFormulario(this);
+            Tema.EstilizarControles(this);
             _socioExistente = socioExistente;
             Text = socioExistente is null ? "Nuevo socio" : "Editar socio";
+
+            // Sólo tiene sentido en un alta nueva: es lo que deshace el autocompletado
+            // bloqueado por ucDatosPersona.btnBuscar_Click cuando el documento ya
+            // pertenecía a otra Persona (RF#06).
+            _btnLimpiar.Visible = socioExistente is null;
         }
 
         private void frmSocioEditor_Load(object sender, EventArgs e)
@@ -37,15 +63,18 @@ namespace SGIG.UI
                     _servicioCatalogo.ObtenerProvincias(),
                     _servicioCatalogo.ObtenerLocalidades());
 
-                // El módulo de Planes todavía no existe (Fase 4, Tesorería): el combo
-                // se deja deshabilitado con un texto explicativo hasta que se pueda cargar.
-                cboPlan.Items.Add("(disponible cuando se implemente Fase 4 - Tesorería)");
-                cboPlan.SelectedIndex = 0;
+                var planes = new List<Plan> { new() { IdPlan = 0, Nombre = "(sin plan)" } };
+                planes.AddRange(_servicioPlan.Listar());
+                cboPlan.DataSource = planes;
+                cboPlan.DisplayMember = nameof(Plan.Nombre);
+                cboPlan.ValueMember = nameof(Plan.IdPlan);
+                cboPlan.Enabled = true;
 
                 if (_socioExistente is null)
                 {
                     ucDatosPersona.PrepararParaAlta();
                     txtAptoMedico.Clear();
+                    cboPlan.SelectedValue = 0;
                     lblFechaVencimientoCuota.Text = "Sin cuota registrada";
                     chkActivo.Checked = true;
                 }
@@ -53,6 +82,7 @@ namespace SGIG.UI
                 {
                     ucDatosPersona.CargarParaEdicion(_socioExistente);
                     txtAptoMedico.Text = _socioExistente.AptoMedico ?? string.Empty;
+                    cboPlan.SelectedValue = _socioExistente.IdPlan ?? 0;
                     lblFechaVencimientoCuota.Text =
                         _socioExistente.FechaVencimientoCuota?.ToString("dd/MM/yyyy") ?? "Sin cuota registrada";
                     chkActivo.Checked = _socioExistente.Activo;
@@ -77,7 +107,8 @@ namespace SGIG.UI
                 Telefono = ucDatosPersona.Telefono,
                 IdLocalidad = ucDatosPersona.IdLocalidad,
                 FechaNacimiento = ucDatosPersona.FechaNacimiento,
-                AptoMedico = string.IsNullOrWhiteSpace(txtAptoMedico.Text) ? null : txtAptoMedico.Text.Trim()
+                AptoMedico = string.IsNullOrWhiteSpace(txtAptoMedico.Text) ? null : txtAptoMedico.Text.Trim(),
+                IdPlan = cboPlan.SelectedValue is int idPlan && idPlan > 0 ? idPlan : null
             };
 
             try

@@ -210,6 +210,28 @@ namespace SGIG.Datos
             }
         }
 
+        /// <summary>
+        /// Socios activos cuyo nombre, apellido o documento contiene <paramref name="texto"/>.
+        /// Para el selector de búsqueda por nombre de Cobro de Cuotas y Check-in.
+        /// </summary>
+        public IEnumerable<Socio> BuscarActivosPorTexto(string texto)
+        {
+            const string sql = SelectBase + @"
+                WHERE s.activo = 1
+                  AND (p.nombre LIKE @Texto OR p.apellido LIKE @Texto OR p.documento LIKE @Texto)
+                ORDER BY p.apellido, p.nombre";
+
+            try
+            {
+                using var connection = Conexion.ObtenerConexionAbierta();
+                return connection.Query<Socio>(sql, new { Texto = $"%{texto}%" });
+            }
+            catch (SqlException ex)
+            {
+                throw new AccesoDatosException("Error al buscar socios.", ex);
+            }
+        }
+
 
 
         /// <summary>Baja lógica (RNF#03): nunca DELETE físico.</summary>

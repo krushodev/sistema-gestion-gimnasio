@@ -123,6 +123,13 @@ namespace SGIG.UI
         }
 
         /// <summary>
+        /// Alias de <see cref="PrepararParaAlta"/> pensado para un botón "Limpiar"/"Nuevo"
+        /// que el formulario contenedor ofrece después de que <see cref="btnBuscar_Click"/>
+        /// bloqueó los campos con los datos de una Persona reutilizada.
+        /// </summary>
+        public void Reiniciar() => PrepararParaAlta();
+
+        /// <summary>
         /// Precarga los datos de una Persona ya existente para editarla (no pasa por
         /// el flujo de "buscar y bloquear": el registro ya se sabe existente).
         /// </summary>
@@ -141,6 +148,17 @@ namespace SGIG.UI
 
             HabilitarCampos(true);
             btnBuscar.Enabled = false;
+        }
+
+        /// <summary>
+        /// Bloquea documento y tipo de documento sin afectar el resto de los campos
+        /// (que siguen editables). Usado por frmConfiguracion: un usuario puede
+        /// editar sus propios datos de contacto, pero no su documento de identidad.
+        /// </summary>
+        public void BloquearIdentidad()
+        {
+            txtDocumento.Enabled = false;
+            cboTipoDocumento.Enabled = false;
         }
 
         public void Limpiar()

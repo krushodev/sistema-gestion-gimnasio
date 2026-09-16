@@ -22,12 +22,46 @@ namespace SGIG.UI
         private readonly ServicioUsuario _servicioUsuario = new();
         private readonly ServicioCatalogo _servicioCatalogo = new();
         private readonly Usuario? _usuarioExistente;
+        private readonly Button _btnLimpiar;
 
         public frmUsuarioEditor(Usuario? usuarioExistente)
         {
             InitializeComponent();
+
+            _btnLimpiar = new Button
+            {
+                Text = "Limpiar datos",
+                Location = new Point(16, 298),
+                Size = new Size(120, 28),
+                Anchor = AnchorStyles.Bottom | AnchorStyles.Left
+            };
+            _btnLimpiar.Click += (s, e) =>
+            {
+                ucDatosPersona.Reiniciar();
+                txtLegajo.Clear();
+                dtpFechaIngreso.Value = DateTime.Today;
+                txtNombreUsuario.Clear();
+                txtContrasenia.Clear();
+                lblAyudaContrasenia.Text = "Obligatoria.";
+            };
+            Controls.Add(_btnLimpiar);
+
+            // lblAyudaContrasenia vivía pegada a la derecha de txtContrasenia; se baja
+            // debajo de la caja para dejar lugar al botón de mostrar/ocultar contraseña
+            // sin arriesgar que el texto largo ("Dejar vacía para no cambiarla.") quede
+            // tapado por el botón.
+            lblAyudaContrasenia.Location = new Point(txtContrasenia.Left, txtContrasenia.Bottom + 4);
+            Tema.AgregarToggleContrasenia(txtContrasenia);
+
+            Tema.EstilizarFormulario(this);
+            Tema.EstilizarControles(this);
             _usuarioExistente = usuarioExistente;
             Text = usuarioExistente is null ? "Nuevo usuario" : "Editar usuario";
+
+            // Sólo tiene sentido en un alta nueva: es lo que deshace el autocompletado
+            // bloqueado por ucDatosPersona.btnBuscar_Click cuando el documento ya
+            // pertenecía a otra Persona (por ejemplo, ya era Socio).
+            _btnLimpiar.Visible = usuarioExistente is null;
 
             ucDatosPersona.MostrarFechaNacimiento = false;
         }
