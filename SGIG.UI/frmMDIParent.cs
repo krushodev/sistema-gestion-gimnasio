@@ -93,13 +93,11 @@ namespace SGIG.UI
                 Padding = new Padding(0, 20, 0, 0)
             };
 
-            // 4 columnas iguales (25% cada una)
             tlpGrilla.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25f));
             tlpGrilla.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25f));
             tlpGrilla.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25f));
             tlpGrilla.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25f));
 
-            // 2 filas iguales (50% cada una)
             tlpGrilla.RowStyles.Add(new RowStyle(SizeType.Percent, 50f));
             tlpGrilla.RowStyles.Add(new RowStyle(SizeType.Percent, 50f));
 
@@ -146,19 +144,30 @@ namespace SGIG.UI
                 );
             }
 
-            // 4. 💳 Planes y Cobros
+            // 4. 💳 Tesorería: Cobro de Cuotas y Planes
             if (idRol is Roles.Administrador or Roles.Recepcionista)
             {
                 AgregarTarjetaGrilla(
-                    "Planes y Cobros",
-                    "Facturación, cobro de aranceles mensuales y emisión de comprobantes.",
+                    "Cobro de Cuotas",
+                    "Registrar pago de socios, emisión de facturación y cálculo de vencimiento.",
                     "💳",
-                    Color.FromArgb(16, 185, 129),
-                    () => MessageBox.Show("Módulo de Cobros en desarrollo.", "SGIG", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                    Color.FromArgb(5, 150, 105),
+                    () => AbrirFormularioEnPanel(new frmCobroCuota())
                 );
+
+                if (idRol == Roles.Administrador)
+                {
+                    AgregarTarjetaGrilla(
+                        "Planes de Membresía",
+                        "Gestión de tarifas, alta, modificación y baja lógica de planes.",
+                        "📋",
+                        Color.FromArgb(16, 185, 129),
+                        () => AbrirFormularioEnPanel(new frmPlanes())
+                    );
+                }
             }
 
-            // 5. ⏱️ Control de Acceso — sólo Recepcionista según la matriz de permisos (Fase 2.4).
+            // 5. ⏱️ Control de Acceso (Recepcionista)
             if (idRol == Roles.Recepcionista)
             {
                 AgregarTarjetaGrilla(
@@ -170,7 +179,7 @@ namespace SGIG.UI
                 );
             }
 
-            // 6. 🏋️ Activos y Máquinas (RF#18: Administrador y Técnico)
+            // 6. 🏋️ Activos y Máquinas (Administrador y Técnico)
             if (idRol is Roles.Administrador or Roles.Tecnico)
             {
                 AgregarTarjetaGrilla(
@@ -181,7 +190,6 @@ namespace SGIG.UI
                     () => AbrirFormularioEnPanel(new frmMaquinas())
                 );
 
-                // Historial de mantenimientos (RF#21): Administrador y Técnico
                 AgregarTarjetaGrilla(
                     "Historial de Mantenimientos",
                     "Consulta de intervenciones técnicas registradas por máquina.",
@@ -191,7 +199,7 @@ namespace SGIG.UI
                 );
             }
 
-            // Mantenimiento (RF#19, RF#20): sólo Técnico, es quien registra y cierra la intervención.
+            // Mantenimiento (Técnico)
             if (idRol == Roles.Tecnico)
             {
                 AgregarTarjetaGrilla(
@@ -203,7 +211,7 @@ namespace SGIG.UI
                 );
             }
 
-            // 7. 📊 Reportes
+            // 7. 📊 Reportes (Administrador)
             if (idRol == Roles.Administrador)
             {
                 AgregarTarjetaGrilla(
@@ -214,7 +222,7 @@ namespace SGIG.UI
                     () => MessageBox.Show("Módulo de Reportes en desarrollo.", "SGIG", MessageBoxButtons.OK, MessageBoxIcon.Information)
                 );
 
-                // 8. 💾 Copias de Seguridad
+                // 8. 💾 Copias de Seguridad (Administrador)
                 AgregarTarjetaGrilla(
                     "Copia de Seguridad",
                     "Generación y restauración de backups para la base de datos SQL Server.",
@@ -271,7 +279,6 @@ namespace SGIG.UI
 
             card.Controls.AddRange(new Control[] { barraSuperior, lblIcono, lblTitulo, lblDesc });
 
-            // Eventos de clic e interactividad
             void EjecutarAccion(object? s, EventArgs e) => accion();
 
             card.Click += EjecutarAccion;

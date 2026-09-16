@@ -15,6 +15,14 @@ namespace SGIG.Negocio
 
         public IEnumerable<Socio> ObtenerActivos() => _repositorioSocio.ObtenerActivos();
 
+        public Socio? ObtenerPorDocumento(string documento)
+        {
+            if (string.IsNullOrWhiteSpace(documento))
+                return null;
+
+            return _repositorioSocio.ObtenerPorDocumento(documento.Trim());
+        }
+
         public Socio? ObtenerPorId(int idPersona) => _repositorioSocio.ObtenerPorId(idPersona);
 
         /// <summary>

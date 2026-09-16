@@ -1,5 +1,6 @@
 using Dapper;
 using Microsoft.Data.SqlClient;
+using SGIG.Datos;
 using SGIG.Entidades;
 
 namespace SGIG.Datos
@@ -194,6 +195,23 @@ namespace SGIG.Datos
             }
         }
 
+        public Socio? ObtenerPorDocumento(string documento)
+        {
+            const string sql = SelectBase + " WHERE p.documento = @Documento";
+
+            try
+            {
+                using var connection = Conexion.ObtenerConexionAbierta();
+                return connection.QuerySingleOrDefault<Socio>(sql, new { Documento = documento });
+            }
+            catch (SqlException ex)
+            {
+                throw new AccesoDatosException("Error al obtener el socio por documento.", ex);
+            }
+        }
+
+
+
         /// <summary>Baja lógica (RNF#03): nunca DELETE físico.</summary>
         public void BajaLogica(int idPersona)
         {
@@ -239,4 +257,6 @@ namespace SGIG.Datos
             }
         }
     }
-}
+
+
+    }
