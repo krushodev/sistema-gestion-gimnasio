@@ -17,6 +17,7 @@ namespace SGIG.UI
     {
         private readonly ServicioMantenimiento _servicioMantenimiento = new();
         private readonly ServicioMaquina _servicioMaquina = new();
+        private readonly ErrorProvider _errorProvider = new() { BlinkStyle = ErrorBlinkStyle.NeverBlink };
         private readonly Usuario _usuarioLogueado;
 
         public frmMantenimiento(Usuario usuarioLogueado)
@@ -71,6 +72,22 @@ namespace SGIG.UI
         {
             var idMaquina = (int)(cboMaquina.SelectedValue ?? 0);
 
+            var maquinaValida = ValidacionesUI.Marcar(_errorProvider, cboMaquina,
+                idMaquina > 0, "Seleccioná una máquina operativa.");
+
+            var detalleValido = ValidacionesUI.Marcar(_errorProvider, txtDetalleTecnico,
+                !string.IsNullOrWhiteSpace(txtDetalleTecnico.Text),
+                "Ingresá el detalle del mantenimiento a realizar.");
+
+            var fechaValida = ValidacionesUI.Marcar(_errorProvider, dtpFechaInicio,
+                dtpFechaInicio.Value.Date <= DateTime.Today,
+                "La fecha de inicio no puede ser futura.");
+
+            if (!(maquinaValida & detalleValido & fechaValida))
+            {
+                return;
+            }
+
             try
             {
                 Cursor = Cursors.WaitCursor;
@@ -82,6 +99,7 @@ namespace SGIG.UI
                     txtDetalleTecnico.Text);
 
                 txtDetalleTecnico.Clear();
+                _errorProvider.Clear();
                 CargarCombos();
                 CargarGrilla();
             }
@@ -101,6 +119,13 @@ namespace SGIG.UI
             {
                 MessageBox.Show("Seleccioná un mantenimiento activo de la grilla.", "SGIG",
                     MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            if (dtpFechaFin.Value.Date < mantenimiento.FechaInicio.Date)
+            {
+                MessageBox.Show("La fecha de fin no puede ser anterior a la fecha de inicio del mantenimiento.",
+                    "SGIG", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 

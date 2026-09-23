@@ -21,6 +21,7 @@ namespace SGIG.UI
     {
         private readonly ServicioUsuario _servicioUsuario = new();
         private readonly ServicioCatalogo _servicioCatalogo = new();
+        private readonly ErrorProvider _errorProvider = new() { BlinkStyle = ErrorBlinkStyle.NeverBlink };
         private readonly Usuario? _usuarioExistente;
         private readonly Button _btnLimpiar;
 
@@ -38,6 +39,7 @@ namespace SGIG.UI
             _btnLimpiar.Click += (s, e) =>
             {
                 ucDatosPersona.Reiniciar();
+                _errorProvider.Clear();
                 txtLegajo.Clear();
                 dtpFechaIngreso.Value = DateTime.Today;
                 txtNombreUsuario.Clear();
@@ -108,6 +110,11 @@ namespace SGIG.UI
 
         private void btnGuardar_Click(object sender, EventArgs e)
         {
+            if (!ValidarFormulario())
+            {
+                return;
+            }
+
             var usuario = new Usuario
             {
                 IdPersona = _usuarioExistente?.IdPersona ?? ucDatosPersona.IdPersonaActual ?? 0,
@@ -154,6 +161,42 @@ namespace SGIG.UI
         {
             DialogResult = DialogResult.Cancel;
             Close();
+        }
+
+        /// <summary>
+        /// Valida los campos propios de Usuario (además de los de Persona, que
+        /// resuelve <see cref="ucDatosPersona.Validar"/>). La contraseña es
+        /// obligatoria sólo en el alta; en edición, vacía significa "no cambiarla".
+        /// </summary>
+        private bool ValidarFormulario()
+        {
+            var datosPersonaValidos = ucDatosPersona.Validar();
+
+            var legajoValido = ValidacionesUI.Marcar(_errorProvider, txtLegajo,
+                !string.IsNullOrWhiteSpace(txtLegajo.Text),
+                "El legajo es obligatorio.");
+
+            var rolValido = ValidacionesUI.Marcar(_errorProvider, cboRol,
+                (cboRol.SelectedValue as int?) is > 0,
+                "Seleccioná un rol.");
+
+            var fechaIngresoValida = ValidacionesUI.Marcar(_errorProvider, dtpFechaIngreso,
+                dtpFechaIngreso.Value.Date <= DateTime.Today,
+                "La fecha de ingreso no puede ser futura.");
+
+            var nombreUsuarioValido = ValidacionesUI.Marcar(_errorProvider, txtNombreUsuario,
+                !string.IsNullOrWhiteSpace(txtNombreUsuario.Text),
+                "El nombre de usuario es obligatorio.");
+
+            var contraseniaVacia = string.IsNullOrEmpty(txtContrasenia.Text);
+            var contraseniaValida = ValidacionesUI.Marcar(_errorProvider, txtContrasenia,
+                (_usuarioExistente is not null && contraseniaVacia) || txtContrasenia.Text.Length >= 4,
+                _usuarioExistente is null
+                    ? "La contraseña es obligatoria y debe tener al menos 4 caracteres."
+                    : "Si vas a cambiarla, debe tener al menos 4 caracteres.");
+
+            return datosPersonaValidos & legajoValido & rolValido & fechaIngresoValida
+                & nombreUsuarioValido & contraseniaValida;
         }
 
         /// <summary>

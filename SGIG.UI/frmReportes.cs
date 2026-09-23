@@ -69,6 +69,13 @@ namespace SGIG.UI
 
             btnConsultar.Click += (s, e) =>
             {
+                if (dtpDesde.Value.Date > dtpHasta.Value.Date)
+                {
+                    MessageBox.Show("La fecha \"Desde\" no puede ser posterior a la fecha \"Hasta\".",
+                        "Reportes", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
                 Cursor = Cursors.WaitCursor;
                 System.Threading.Thread.Sleep(350); // Simulación de carga
                 Cursor = Cursors.Default;

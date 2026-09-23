@@ -26,6 +26,7 @@ namespace SGIG.UI
     public partial class ucDatosPersona : UserControl
     {
         private readonly ServicioPersona _servicioPersona = new();
+        private readonly ErrorProvider _errorProvider = new() { BlinkStyle = ErrorBlinkStyle.NeverBlink };
 
         /// <summary>Todas las localidades activas, para filtrar en memoria por provincia.</summary>
         private List<Localidad> _todasLasLocalidades = new();
@@ -40,6 +41,8 @@ namespace SGIG.UI
         {
             InitializeComponent();
             txtDocumento.KeyPress += Grillas.SoloDigitos;
+            txtNombre.KeyPress += ValidacionesUI.SoloLetras;
+            txtApellido.KeyPress += ValidacionesUI.SoloLetras;
             cboProvincia.SelectedIndexChanged += cboProvincia_SelectedIndexChanged;
         }
 
@@ -135,6 +138,7 @@ namespace SGIG.UI
         /// </summary>
         public void CargarParaEdicion(Persona persona)
         {
+            _errorProvider.Clear();
             IdPersonaActual = persona.IdPersona;
 
             txtDocumento.Text = persona.Documento;
@@ -163,6 +167,8 @@ namespace SGIG.UI
 
         public void Limpiar()
         {
+            _errorProvider.Clear();
+
             foreach (var caja in new[] { txtDocumento, txtNombre, txtApellido, txtEmail, txtTelefono })
             {
                 caja.Clear();
@@ -201,6 +207,7 @@ namespace SGIG.UI
                 }
 
                 IdPersonaActual = persona.IdPersona;
+                _errorProvider.Clear();
 
                 cboTipoDocumento.SelectedValue = persona.IdTipoDocumento;
                 txtNombre.Text = persona.Nombre;
@@ -235,6 +242,48 @@ namespace SGIG.UI
             cboProvincia.Enabled = habilitados;
             cboLocalidad.Enabled = habilitados;
             dtpFechaNacimiento.Enabled = habilitados;
+        }
+
+        /// <summary>
+        /// Valida los campos propios (formato, obligatoriedad) y marca cada control
+        /// inválido con <see cref="ErrorProvider"/>. El formulario contenedor la llama
+        /// antes de guardar, junto con sus propios campos. No repite las reglas de
+        /// unicidad (documento repetido, etc.): esas siguen resolviéndose contra la
+        /// base en <see cref="SGIG.Negocio"/> al guardar.
+        /// </summary>
+        public bool Validar()
+        {
+            var documentoValido = ValidacionesUI.Marcar(_errorProvider, txtDocumento,
+                Validaciones.EsDocumentoValido(txtDocumento.Text),
+                "Ingresá un documento válido: sólo números, entre 6 y 20 dígitos.");
+
+            var nombreValido = ValidacionesUI.Marcar(_errorProvider, txtNombre,
+                ValidacionesUI.EsSoloLetras(txtNombre.Text),
+                "Ingresá un nombre válido: sólo letras y espacios.");
+
+            var apellidoValido = ValidacionesUI.Marcar(_errorProvider, txtApellido,
+                ValidacionesUI.EsSoloLetras(txtApellido.Text),
+                "Ingresá un apellido válido: sólo letras y espacios.");
+
+            var emailValido = ValidacionesUI.Marcar(_errorProvider, txtEmail,
+                string.IsNullOrWhiteSpace(txtEmail.Text) || Validaciones.EsEmailValido(txtEmail.Text),
+                "El email no tiene un formato válido (ej: nombre@dominio.com).");
+
+            var telefonoValido = ValidacionesUI.Marcar(_errorProvider, txtTelefono,
+                string.IsNullOrWhiteSpace(txtTelefono.Text) || Validaciones.EsTelefonoValido(txtTelefono.Text),
+                "El teléfono sólo admite números, espacios, guiones, paréntesis y un + inicial.");
+
+            var tipoDocumentoValido = ValidacionesUI.Marcar(_errorProvider, cboTipoDocumento,
+                (cboTipoDocumento.SelectedValue as int?) is > 0,
+                "Seleccioná un tipo de documento.");
+
+            var fechaNacimientoValida = !MostrarFechaNacimiento || ValidacionesUI.Marcar(
+                _errorProvider, dtpFechaNacimiento,
+                dtpFechaNacimiento.Value.Date <= DateTime.Today,
+                "La fecha de nacimiento no puede ser futura.");
+
+            return documentoValido & nombreValido & apellidoValido & emailValido
+                & telefonoValido & tipoDocumentoValido & fechaNacimientoValida;
         }
 
         // ── Datos armados para persistir ─────────────────────────────────────

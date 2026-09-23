@@ -96,6 +96,11 @@ namespace SGIG.UI
 
         private void btnGuardar_Click(object sender, EventArgs e)
         {
+            if (!ucDatosPersona.Validar())
+            {
+                return;
+            }
+
             var socio = new Socio
             {
                 IdPersona = _socioExistente?.IdPersona ?? ucDatosPersona.IdPersonaActual ?? 0,

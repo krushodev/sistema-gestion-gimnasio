@@ -131,6 +131,20 @@ public class frmConfiguracion : Form
 
     private void BtnCambiarContrasenia_Click(object? sender, EventArgs e)
     {
+        if (string.IsNullOrWhiteSpace(_txtActual.Text))
+        {
+            MessageBox.Show("Ingresá tu contraseña actual.", "SGIG",
+                MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(_txtNueva.Text) || _txtNueva.Text.Length < 4)
+        {
+            MessageBox.Show("La nueva contraseña debe tener al menos 4 caracteres.", "SGIG",
+                MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return;
+        }
+
         if (_txtNueva.Text != _txtConfirmar.Text)
         {
             MessageBox.Show("La confirmación no coincide con la contraseña nueva.", "SGIG",
@@ -155,6 +169,11 @@ public class frmConfiguracion : Form
 
     private void BtnGuardarDatos_Click(object? sender, EventArgs e)
     {
+        if (!_ucDatosPersona.Validar())
+        {
+            return;
+        }
+
         try
         {
             _servicioUsuario.ActualizarDatosPropios(
