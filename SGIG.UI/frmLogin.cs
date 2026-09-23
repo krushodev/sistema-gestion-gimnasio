@@ -4,22 +4,10 @@ using SGIG.Negocio;
 
 namespace SGIG.UI
 {
-    /// <summary>
-    /// Pantalla de autenticación (RF#01). Primer formulario de la aplicación:
-    /// se abre desde <see cref="Program"/> y, si las credenciales son correctas,
-    /// cierra con <see cref="DialogResult.OK"/> dejando el usuario en
-    /// <see cref="UsuarioAutenticado"/> para que Program abra el contenedor MDI.
-    /// </summary>
-    //
-    // ── CONTROLES (ver frmLogin.Designer.cs) ─────────────────────────────────
-    //   lblUsuario  txtUsuario  lblContrasenia  txtContrasenia (PasswordChar='*')
-    //   btnIngresar  lblMensajeError (oculto)
-    // ─────────────────────────────────────────────────────────────────────────
     public partial class frmLogin : Form
     {
         private readonly ServicioAutenticacion _servicioAutenticacion = new();
 
-        /// <summary>Usuario que inició sesión. Sólo tiene valor si el diálogo cerró con OK.</summary>
         public Usuario? UsuarioAutenticado { get; private set; }
 
         public frmLogin()
@@ -54,7 +42,6 @@ namespace SGIG.UI
 
                 if (usuario is null)
                 {
-                    // Mensaje único a propósito: no se revela si falló el usuario o la contraseña.
                     MostrarError("Usuario o contraseña incorrectos.");
                     txtContrasenia.Clear();
                     txtContrasenia.Focus();
@@ -77,7 +64,6 @@ namespace SGIG.UI
             }
         }
 
-        /// <summary>Oculta el mensaje de error apenas el usuario corrige los campos.</summary>
         private void Campos_TextChanged(object sender, EventArgs e)
         {
             LimpiarError();
