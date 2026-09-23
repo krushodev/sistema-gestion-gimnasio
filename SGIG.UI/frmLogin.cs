@@ -29,7 +29,7 @@ namespace SGIG.UI
             if (string.IsNullOrWhiteSpace(txtUsuario.Text) ||
                 string.IsNullOrWhiteSpace(txtContrasenia.Text))
             {
-                MostrarError("Ingresá usuario y contraseña.");
+                MostrarError("Usuario o contraseña incorrectos.");
                 return;
             }
 
@@ -42,8 +42,12 @@ namespace SGIG.UI
 
                 if (usuario is null)
                 {
-                    MostrarError("Usuario o contraseña incorrectos.");
+                    // Desuscribimos temporalmente TextChanged para que el Clear() no borre el error
+                    txtContrasenia.TextChanged -= Campos_TextChanged;
                     txtContrasenia.Clear();
+                    txtContrasenia.TextChanged += Campos_TextChanged;
+
+                    MostrarError("Usuario o contraseña incorrectos.");
                     txtContrasenia.Focus();
                     return;
                 }
@@ -51,11 +55,9 @@ namespace SGIG.UI
                 UsuarioAutenticado = usuario;
                 DialogResult = DialogResult.OK;
             }
-            catch (AccesoDatosException ex)
+            catch (AccesoDatosException)
             {
-                MessageBox.Show(
-                    $"{ex.Message}\n\nVerificá que el servidor de base de datos esté disponible.",
-                    "SGIG", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MostrarError("Error de conexión al servidor de base de datos.");
             }
             finally
             {
@@ -71,8 +73,10 @@ namespace SGIG.UI
 
         private void MostrarError(string mensaje)
         {
+            lblMensajeError.ForeColor = Tema.Peligro;
             lblMensajeError.Text = mensaje;
             lblMensajeError.Visible = true;
+            lblMensajeError.BringToFront(); // Garantiza que no quede detrás de ningún panel
         }
 
         private void LimpiarError()

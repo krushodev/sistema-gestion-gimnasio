@@ -25,7 +25,7 @@ public partial class frmCobroCuota : Form
         // Autocompletado con el precio del plan elegido, pero editable (por ejemplo
         // para un descuento puntual) — el Designer lo deja en ReadOnly por defecto.
         txtMonto.ReadOnly = false;
-
+        txtMonto.KeyPress += TxtMonto_KeyPress;
         _btnBuscarPorNombre = new Button
         {
             Text = "Por nombre",
@@ -36,6 +36,27 @@ public partial class frmCobroCuota : Form
         grpSocio.Controls.Add(_btnBuscarPorNombre);
 
         ConfigurarGrilla();
+    }
+
+    private void TxtMonto_KeyPress(object? sender, KeyPressEventArgs e)
+    {
+        // 1. Permite dígitos y teclas de control como Backspace o suprimir
+        if (char.IsDigit(e.KeyChar) || char.IsControl(e.KeyChar))
+        {
+            return;
+        }
+
+        // 2. Permite ingresar punto o coma decimal, pero sólo uno
+        if (e.KeyChar is '.' or ',')
+        {
+            if (sender is TextBox txt && !txt.Text.Contains('.') && !txt.Text.Contains(','))
+            {
+                return;
+            }
+        }
+
+        // 3. Descarta cualquier otra tecla (letras, espacios, símbolos)
+        e.Handled = true;
     }
 
     private void frmCobroCuota_Load(object sender, EventArgs e)
