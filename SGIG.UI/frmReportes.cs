@@ -147,7 +147,7 @@ namespace SGIG.UI
             Panel barrita = new() { Dock = DockStyle.Top, Height = 4, BackColor = colorAcento };
             Label lblT = new() { Text = titulo, Font = Tema.FuenteLabel, ForeColor = Tema.SlateTexto, Location = new Point(14, 14), AutoSize = true };
             Label lblV = new() { Text = valor, Font = new Font("Segoe UI", 16f, FontStyle.Bold), ForeColor = Tema.SlateOscuro, Location = new Point(12, 34), AutoSize = true };
-            Label lblD = new() { Text = detalle, Font = new Font("Segoe UI", 7.5f), ForeColor = Color.Gray, Location = new Point(14, 70), AutoSize = true };
+            Label lblD = new() { Text = detalle, Font = new Font("Segoe UI", 7.5f), ForeColor = Color.Gray, Location = new Point(14, 70), AutoSize = true, MaximumSize = new Size(208, 0) };
 
             p.Controls.AddRange(new Control[] { barrita, lblT, lblV, lblD });
             return p;

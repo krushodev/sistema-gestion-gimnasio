@@ -61,7 +61,7 @@ namespace SGIG.UI
             // btnEliminar
             //
             this.btnEliminar.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.btnEliminar.Location = new System.Drawing.Point(482, 244);
+            this.btnEliminar.Location = new System.Drawing.Point(470, 244);
             this.btnEliminar.Name = "btnEliminar";
             this.btnEliminar.Size = new System.Drawing.Size(110, 28);
             this.btnEliminar.TabIndex = 1;
@@ -72,7 +72,7 @@ namespace SGIG.UI
             // btnNuevo
             //
             this.btnNuevo.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.btnNuevo.Location = new System.Drawing.Point(600, 244);
+            this.btnNuevo.Location = new System.Drawing.Point(592, 244);
             this.btnNuevo.Name = "btnNuevo";
             this.btnNuevo.Size = new System.Drawing.Size(86, 28);
             this.btnNuevo.TabIndex = 2;

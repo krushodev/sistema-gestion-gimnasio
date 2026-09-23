@@ -21,6 +21,7 @@ namespace SGIG.UI
         {
             this.ucDatosPersona = new SGIG.UI.ucDatosPersona();
             this.lblLegajo = new System.Windows.Forms.Label();
+            this.lblLegajoPrefijo = new System.Windows.Forms.Label();
             this.txtLegajo = new System.Windows.Forms.TextBox();
             this.lblFechaIngreso = new System.Windows.Forms.Label();
             this.dtpFechaIngreso = new System.Windows.Forms.DateTimePicker();
@@ -31,6 +32,7 @@ namespace SGIG.UI
             this.lblContrasenia = new System.Windows.Forms.Label();
             this.txtContrasenia = new System.Windows.Forms.TextBox();
             this.lblAyudaContrasenia = new System.Windows.Forms.Label();
+            this.btnLimpiar = new System.Windows.Forms.Button();
             this.btnGuardar = new System.Windows.Forms.Button();
             this.btnCancelar = new System.Windows.Forms.Button();
             this.SuspendLayout();
@@ -50,13 +52,22 @@ namespace SGIG.UI
             this.lblLegajo.Size = new System.Drawing.Size(45, 15);
             this.lblLegajo.Text = "Legajo:";
             //
+            // lblLegajoPrefijo
+            //
+            this.lblLegajoPrefijo.AutoSize = true;
+            this.lblLegajoPrefijo.Location = new System.Drawing.Point(100, 197);
+            this.lblLegajoPrefijo.Name = "lblLegajoPrefijo";
+            this.lblLegajoPrefijo.Size = new System.Drawing.Size(32, 15);
+            this.lblLegajoPrefijo.Text = "LEG-";
+            //
             // txtLegajo
             //
-            this.txtLegajo.Location = new System.Drawing.Point(100, 194);
-            this.txtLegajo.MaxLength = 20;
+            this.txtLegajo.Location = new System.Drawing.Point(134, 194);
+            this.txtLegajo.MaxLength = 4;
             this.txtLegajo.Name = "txtLegajo";
-            this.txtLegajo.Size = new System.Drawing.Size(180, 23);
+            this.txtLegajo.Size = new System.Drawing.Size(50, 23);
             this.txtLegajo.TabIndex = 1;
+            this.txtLegajo.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
             //
             // lblFechaIngreso
             //
@@ -132,10 +143,21 @@ namespace SGIG.UI
             this.lblAyudaContrasenia.Size = new System.Drawing.Size(240, 15);
             this.lblAyudaContrasenia.Text = "";
             //
+            // btnLimpiar
+            //
+            this.btnLimpiar.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.btnLimpiar.Location = new System.Drawing.Point(16, 310);
+            this.btnLimpiar.Name = "btnLimpiar";
+            this.btnLimpiar.Size = new System.Drawing.Size(120, 28);
+            this.btnLimpiar.TabIndex = 8;
+            this.btnLimpiar.Text = "Limpiar datos";
+            this.btnLimpiar.UseVisualStyleBackColor = true;
+            this.btnLimpiar.Click += new System.EventHandler(this.btnLimpiar_Click);
+            //
             // btnGuardar
             //
             this.btnGuardar.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.btnGuardar.Location = new System.Drawing.Point(400, 298);
+            this.btnGuardar.Location = new System.Drawing.Point(392, 310);
             this.btnGuardar.Name = "btnGuardar";
             this.btnGuardar.Size = new System.Drawing.Size(86, 28);
             this.btnGuardar.TabIndex = 6;
@@ -146,7 +168,7 @@ namespace SGIG.UI
             // btnCancelar
             //
             this.btnCancelar.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.btnCancelar.Location = new System.Drawing.Point(490, 298);
+            this.btnCancelar.Location = new System.Drawing.Point(490, 310);
             this.btnCancelar.Name = "btnCancelar";
             this.btnCancelar.Size = new System.Drawing.Size(86, 28);
             this.btnCancelar.TabIndex = 7;
@@ -160,9 +182,10 @@ namespace SGIG.UI
             this.CancelButton = this.btnCancelar;
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(592, 342);
+            this.ClientSize = new System.Drawing.Size(592, 354);
             this.Controls.Add(this.ucDatosPersona);
             this.Controls.Add(this.lblLegajo);
+            this.Controls.Add(this.lblLegajoPrefijo);
             this.Controls.Add(this.txtLegajo);
             this.Controls.Add(this.lblFechaIngreso);
             this.Controls.Add(this.dtpFechaIngreso);
@@ -173,6 +196,7 @@ namespace SGIG.UI
             this.Controls.Add(this.lblContrasenia);
             this.Controls.Add(this.txtContrasenia);
             this.Controls.Add(this.lblAyudaContrasenia);
+            this.Controls.Add(this.btnLimpiar);
             this.Controls.Add(this.btnGuardar);
             this.Controls.Add(this.btnCancelar);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
@@ -190,6 +214,7 @@ namespace SGIG.UI
 
         private SGIG.UI.ucDatosPersona ucDatosPersona;
         private System.Windows.Forms.Label lblLegajo;
+        private System.Windows.Forms.Label lblLegajoPrefijo;
         private System.Windows.Forms.TextBox txtLegajo;
         private System.Windows.Forms.Label lblFechaIngreso;
         private System.Windows.Forms.DateTimePicker dtpFechaIngreso;
@@ -200,6 +225,7 @@ namespace SGIG.UI
         private System.Windows.Forms.Label lblContrasenia;
         private System.Windows.Forms.TextBox txtContrasenia;
         private System.Windows.Forms.Label lblAyudaContrasenia;
+        private System.Windows.Forms.Button btnLimpiar;
         private System.Windows.Forms.Button btnGuardar;
         private System.Windows.Forms.Button btnCancelar;
     }

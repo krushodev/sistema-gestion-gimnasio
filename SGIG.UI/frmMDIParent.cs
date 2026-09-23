@@ -45,12 +45,18 @@ namespace SGIG.UI
                 Name = "pnlBarraSuperior"
             };
 
+            // AutoSize=false con ancho fijo y AutoEllipsis: si el nombre+rol es largo,
+            // se trunca con "..." en vez de crecer y arriesgar que el cálculo manual de
+            // posición (más abajo) empuje el label fuera del panel.
             _lblUsuarioSuperior = new Label
             {
                 Text = TextoUsuarioLogueado(),
                 Font = new Font("Segoe UI", 9.5F),
                 ForeColor = Color.FromArgb(226, 232, 240),
-                AutoSize = true
+                AutoSize = false,
+                AutoEllipsis = true,
+                TextAlign = ContentAlignment.MiddleRight,
+                Size = new Size(260, 22)
             };
 
             var btnConfiguracion = new Button
@@ -101,7 +107,7 @@ namespace SGIG.UI
             btnConfiguracion.Location = new Point(
                 btnCerrarSesionSuperior.Left - separacion - btnConfiguracion.Width, 7);
             _lblUsuarioSuperior.Location = new Point(
-                btnConfiguracion.Left - separacion - _lblUsuarioSuperior.Width, 13);
+                btnConfiguracion.Left - separacion - _lblUsuarioSuperior.Width, 11);
         }
 
         private void ConstruirDashboard()
@@ -244,6 +250,14 @@ namespace SGIG.UI
                     "⏱️",
                     Color.FromArgb(245, 158, 11),
                     () => AbrirFormularioEnPanel(new frmCheckin(), "⏱️  Control de Acceso")
+                );
+
+                AgregarTarjetaGrilla(
+                    "Historial de Accesos",
+                    "Seguimiento de quién ingresó y cuántos días le quedan antes de vencer su cuota.",
+                    "🗓️",
+                    Color.FromArgb(202, 138, 4),
+                    () => AbrirFormularioEnPanel(new frmHistorialAccesos(), "🗓️  Historial de Accesos")
                 );
             }
 

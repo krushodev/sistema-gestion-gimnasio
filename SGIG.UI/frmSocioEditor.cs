@@ -14,7 +14,7 @@ namespace SGIG.UI
     //   ucDatosPersona (campos de Persona + buscar/reutilizar)
     //   txtAptoMedico, cboPlan,
     //   lblFechaVencimientoCuota (solo lectura), chkActivo (solo lectura)
-    //   btnGuardar, btnCancelar
+    //   btnLimpiar, btnGuardar, btnCancelar
     // ─────────────────────────────────────────────────────────────────────────
     public partial class frmSocioEditor : Form
     {
@@ -22,26 +22,10 @@ namespace SGIG.UI
         private readonly ServicioCatalogo _servicioCatalogo = new();
         private readonly ServicioPlan _servicioPlan = new();
         private readonly Socio? _socioExistente;
-        private readonly Button _btnLimpiar;
 
         public frmSocioEditor(Socio? socioExistente)
         {
             InitializeComponent();
-
-            _btnLimpiar = new Button
-            {
-                Text = "Limpiar datos",
-                Location = new Point(16, 266),
-                Size = new Size(120, 28),
-                Anchor = AnchorStyles.Bottom | AnchorStyles.Left
-            };
-            _btnLimpiar.Click += (s, e) =>
-            {
-                ucDatosPersona.Reiniciar();
-                txtAptoMedico.Clear();
-                cboPlan.SelectedValue = 0;
-            };
-            Controls.Add(_btnLimpiar);
 
             Tema.EstilizarFormulario(this);
             Tema.EstilizarControles(this);
@@ -51,7 +35,14 @@ namespace SGIG.UI
             // Sólo tiene sentido en un alta nueva: es lo que deshace el autocompletado
             // bloqueado por ucDatosPersona.btnBuscar_Click cuando el documento ya
             // pertenecía a otra Persona (RF#06).
-            _btnLimpiar.Visible = socioExistente is null;
+            btnLimpiar.Visible = socioExistente is null;
+        }
+
+        private void btnLimpiar_Click(object sender, EventArgs e)
+        {
+            ucDatosPersona.Reiniciar();
+            txtAptoMedico.Clear();
+            cboPlan.SelectedValue = 0;
         }
 
         private void frmSocioEditor_Load(object sender, EventArgs e)

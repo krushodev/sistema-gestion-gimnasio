@@ -90,13 +90,13 @@ namespace SGIG.Negocio
                 throw new NegocioException("El documento es obligatorio.");
             }
 
-            // Formato de documento, email y teléfono con expresiones regulares (RF#09, RNF#04).
-            Validaciones.ValidarDatosDePersona(socio.Documento, socio.Email, socio.Telefono);
-
             if (socio.IdTipoDocumento <= 0)
             {
                 throw new NegocioException("Seleccioná un tipo de documento.");
             }
+
+            // Formato de documento, email y teléfono con expresiones regulares (RF#09, RNF#04).
+            Validaciones.ValidarDatosDePersona(socio.Documento, socio.IdTipoDocumento, socio.Email, socio.Telefono);
 
             if (string.IsNullOrWhiteSpace(socio.Nombre))
             {

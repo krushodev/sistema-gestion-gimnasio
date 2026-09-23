@@ -22,6 +22,7 @@ partial class frmCobroCuota
         lblNombreSocioValor = new Label();
         lblNombreSocio = new Label();
         btnBuscarSocio = new Button();
+        btnBuscarPorNombre = new Button();
         txtDocumento = new TextBox();
         lblDocumento = new Label();
         grpCobro = new GroupBox();
@@ -60,6 +61,7 @@ partial class frmCobroCuota
         grpSocio.Controls.Add(lblVencimientoActual);
         grpSocio.Controls.Add(lblNombreSocioValor);
         grpSocio.Controls.Add(lblNombreSocio);
+        grpSocio.Controls.Add(btnBuscarPorNombre);
         grpSocio.Controls.Add(btnBuscarSocio);
         grpSocio.Controls.Add(txtDocumento);
         grpSocio.Controls.Add(lblDocumento);
@@ -84,20 +86,30 @@ partial class frmCobroCuota
         txtDocumento.Location = new Point(16, 48);
         txtDocumento.MaxLength = 12;
         txtDocumento.Name = "txtDocumento";
-        txtDocumento.Size = new Size(180, 23);
+        txtDocumento.Size = new Size(150, 23);
         txtDocumento.TabIndex = 1;
         txtDocumento.KeyPress += txtDocumento_KeyPress;
-        // 
+        //
         // btnBuscarSocio
-        // 
-        btnBuscarSocio.Location = new Point(205, 47);
+        //
+        btnBuscarSocio.Location = new Point(178, 47);
         btnBuscarSocio.Name = "btnBuscarSocio";
-        btnBuscarSocio.Size = new Size(85, 25);
+        btnBuscarSocio.Size = new Size(80, 25);
         btnBuscarSocio.TabIndex = 2;
         btnBuscarSocio.Text = "Buscar";
         btnBuscarSocio.UseVisualStyleBackColor = true;
         btnBuscarSocio.Click += btnBuscarSocio_Click;
-        // 
+        //
+        // btnBuscarPorNombre
+        //
+        btnBuscarPorNombre.Location = new Point(270, 47);
+        btnBuscarPorNombre.Name = "btnBuscarPorNombre";
+        btnBuscarPorNombre.Size = new Size(94, 25);
+        btnBuscarPorNombre.TabIndex = 7;
+        btnBuscarPorNombre.Text = "Por nombre";
+        btnBuscarPorNombre.UseVisualStyleBackColor = true;
+        btnBuscarPorNombre.Click += BtnBuscarPorNombre_Click;
+        //
         // lblNombreSocio
         // 
         lblNombreSocio.AutoSize = true;
@@ -301,6 +313,7 @@ partial class frmCobroCuota
     private Label lblDocumento;
     private TextBox txtDocumento;
     private Button btnBuscarSocio;
+    private Button btnBuscarPorNombre;
     private Label lblNombreSocio;
     private Label lblNombreSocioValor;
     private Label lblVencimientoActual;

@@ -69,7 +69,7 @@ namespace SGIG.UI
             // btnDarDeBaja
             //
             this.btnDarDeBaja.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.btnDarDeBaja.Location = new System.Drawing.Point(482, 456);
+            this.btnDarDeBaja.Location = new System.Drawing.Point(470, 456);
             this.btnDarDeBaja.Name = "btnDarDeBaja";
             this.btnDarDeBaja.Size = new System.Drawing.Size(110, 28);
             this.btnDarDeBaja.TabIndex = 3;
@@ -80,7 +80,7 @@ namespace SGIG.UI
             // btnNuevo
             //
             this.btnNuevo.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.btnNuevo.Location = new System.Drawing.Point(600, 456);
+            this.btnNuevo.Location = new System.Drawing.Point(592, 456);
             this.btnNuevo.Name = "btnNuevo";
             this.btnNuevo.Size = new System.Drawing.Size(86, 28);
             this.btnNuevo.TabIndex = 4;

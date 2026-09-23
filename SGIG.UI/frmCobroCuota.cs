@@ -16,7 +16,6 @@ public partial class frmCobroCuota : Form
     private readonly ServicioCatalogo _servicioCatalogo = new();
 
     private Socio? _socioActual;
-    private readonly Button _btnBuscarPorNombre;
 
     public frmCobroCuota()
     {
@@ -26,14 +25,6 @@ public partial class frmCobroCuota : Form
         // para un descuento puntual) — el Designer lo deja en ReadOnly por defecto.
         txtMonto.ReadOnly = false;
         txtMonto.KeyPress += TxtMonto_KeyPress;
-        _btnBuscarPorNombre = new Button
-        {
-            Text = "Por nombre",
-            Location = new Point(297, 47),
-            Size = new Size(74, 25)
-        };
-        _btnBuscarPorNombre.Click += BtnBuscarPorNombre_Click;
-        grpSocio.Controls.Add(_btnBuscarPorNombre);
 
         ConfigurarGrilla();
     }

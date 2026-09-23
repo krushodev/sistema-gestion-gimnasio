@@ -260,19 +260,36 @@ Convenciones: `[ ]` = pendiente, `[x]` = hecho. Notación húngara según `Notac
 
 - [x] `RepositorioCheckin.cs`: inserción.
 - [x] `RepositorioCheckin.cs`: consulta rápida por documento.
+- [x] `RepositorioCheckin.cs`: `ObtenerHistorial(desde, hasta, documento?)` — historial con JOIN a `Persona`/`Socio`, usa `IX_Checkin_Persona_Fecha` (23/09/2026, ver 5.5).
 
 ### 5.3 Lógica de negocio
 
 - [x] `ServicioCheckin.cs`: lógica Concedido/Rechazado comparando contra `Socio.fecha_vencimiento_cuota` (el campo caché, no consulta `Facturacion` — es lo que mantiene el Check-in rápido, RNF#01) (RF#16).
+- [x] `ServicioCheckin.cs`: `ObtenerHistorial(...)` — valida el rango de fechas y delega en el repositorio (23/09/2026).
+- [x] `ResultadoCheckin.DiasRestantesCuota` — calculado sin consultas extra (el dato ya se lee para decidir el acceso); el mensaje de `frmCheckin` ahora dice "Vence en N día(s)" / "Vencida hace N día(s)" en vez de sólo Concedido/Rechazado (23/09/2026).
 
 ### 5.4 Pantalla `frmCheckin` (RF#15, RF#17, RNF#01)
 
-- **Rol de acceso:** Recepcionista. **Se abre desde:** `mnuCheckin`.
-- **Controles:** `txtDocumento` (foco automático, dispara con Enter), `pnlResultado` (verde/rojo), `lblResultado`, `lblNombreSocio`.
+- **Rol de acceso:** Recepcionista. **Se abre desde:** el dashboard de `frmMDIParent`.
+- **Controles:** `txtDocumento` (foco automático, dispara con Enter), `lblAyuda` (texto guía), `btnBuscarPorNombre`, `btnLimpiar`, `pnlResultado` (verde/rojo), `lblResultado`, `lblNombreSocio`.
 
 - [x] Crear `frmCheckin` — campo único, sin botones intermedios.
 - [x] Feedback visual verde/rojo y registro automático del intento.
+- [x] Buscador por nombre (`btnBuscarPorNombre` → `frmBuscarSocio`) y botón `btnLimpiar`, reordenados en una fila de acciones propia debajo del campo de documento (23/09/2026, corrige el solape de anchors que tenía el botón agregado por código).
 - [ ] Verificar que la respuesta se resuelve en menos de 2 segundos (requiere ejecutar la app — ver nota arriba).
+
+### 5.5 Pantalla `frmHistorialAccesos` (agregado 23/09/2026, fuera del alcance original de RF#15-17)
+
+Pedido explícito: Recepción necesita un registro de qué personas accedieron y cuántos días
+les quedan (o hace cuántos vencieron) antes de la próxima cuota, para seguimiento de gestión
+— `frmCheckin` sólo mostraba el resultado del intento del momento, sin historial.
+
+- **Rol de acceso:** Recepcionista (mismo criterio que `frmCheckin` — ver `CargarTarjetasSegunRol` en `frmMDIParent.cs`). **Se abre desde:** el dashboard de `frmMDIParent`, tarjeta "Historial de Accesos".
+- **Controles:** `dtpDesde`, `dtpHasta` (por defecto últimos 30 días), `txtDocumento` (filtro opcional, parcial), `btnBuscar`, `dgvHistorial` (Documento, Nombre y apellido, Fecha y hora, Resultado, Cuota).
+
+- [x] `Checkin.cs`: campos de sólo lectura resueltos por JOIN (`Documento`, `NombreCompleto`, `DiasRestantesCuota`) y `DescripcionVencimiento` calculado ("Vence en N día(s)" / "Vencida hace N día(s)" / "Sin cuota registrada").
+- [x] Crear `frmHistorialAccesos` siguiendo el mismo patrón que `frmHistorialMantenimientos`.
+- [x] Tarjeta en el dashboard de `frmMDIParent`, junto a "Control de Acceso".
 
 ## Fase 6 — Activos: Máquinas y Mantenimientos (rol Técnico)
 
@@ -361,7 +378,7 @@ Convenciones: `[ ]` = pendiente, `[x]` = hecho. Notación húngara según `Notac
 - [ ] Capturas de pantalla por módulo (Seguridad, Personas, Tesorería, Control de Acceso, Activos, Reportes) — las toma el usuario una vez armado cada formulario.
 - [ ] Insertar capturas en el Manual de Usuario (Anexo A de la ERS).
 - [ ] Completar integrantes del grupo en la portada de la ERS.
-- [ ] Cargar datos de prueba (socios, planes, máquinas) para la demo.
+- [x] Cargar datos de prueba (socios, planes, máquinas) para la demo — `docs/SGIG_CreateDB.sql` seedea 2 Recepcionistas, 2 Técnicos, 10 Socios (5 con cuota al día, 5 vencida) con su Facturación/Pago, y amplió el catálogo de Máquinas (23/09/2026).
 - [ ] Probar flujo completo — rol Administrador.
 - [ ] Probar flujo completo — rol Recepcionista.
 - [ ] Probar flujo completo — rol Técnico.

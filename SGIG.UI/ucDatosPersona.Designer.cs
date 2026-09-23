@@ -50,26 +50,26 @@ namespace SGIG.UI
             //
             // txtDocumento
             //
-            this.txtDocumento.Location = new System.Drawing.Point(80, 6);
+            this.txtDocumento.Location = new System.Drawing.Point(96, 6);
             this.txtDocumento.MaxLength = 20;
             this.txtDocumento.Name = "txtDocumento";
-            this.txtDocumento.Size = new System.Drawing.Size(120, 23);
+            this.txtDocumento.Size = new System.Drawing.Size(140, 23);
             this.txtDocumento.TabIndex = 0;
             //
             // btnBuscar
             //
-            this.btnBuscar.Location = new System.Drawing.Point(206, 5);
+            this.btnBuscar.Location = new System.Drawing.Point(248, 5);
             this.btnBuscar.Name = "btnBuscar";
-            this.btnBuscar.Size = new System.Drawing.Size(110, 25);
+            this.btnBuscar.Size = new System.Drawing.Size(90, 25);
             this.btnBuscar.TabIndex = 1;
-            this.btnBuscar.Text = "&Buscar / reutilizar";
+            this.btnBuscar.Text = "&Buscar";
             this.btnBuscar.UseVisualStyleBackColor = true;
             this.btnBuscar.Click += new System.EventHandler(this.btnBuscar_Click);
             //
             // lblTipoDocumento
             //
             this.lblTipoDocumento.AutoSize = true;
-            this.lblTipoDocumento.Location = new System.Drawing.Point(330, 9);
+            this.lblTipoDocumento.Location = new System.Drawing.Point(354, 9);
             this.lblTipoDocumento.Name = "lblTipoDocumento";
             this.lblTipoDocumento.Size = new System.Drawing.Size(64, 15);
             this.lblTipoDocumento.Text = "Tipo doc.:";
@@ -77,9 +77,9 @@ namespace SGIG.UI
             // cboTipoDocumento
             //
             this.cboTipoDocumento.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.cboTipoDocumento.Location = new System.Drawing.Point(400, 6);
+            this.cboTipoDocumento.Location = new System.Drawing.Point(424, 6);
             this.cboTipoDocumento.Name = "cboTipoDocumento";
-            this.cboTipoDocumento.Size = new System.Drawing.Size(150, 23);
+            this.cboTipoDocumento.Size = new System.Drawing.Size(126, 23);
             this.cboTipoDocumento.TabIndex = 2;
             //
             // lblNombre
@@ -119,8 +119,8 @@ namespace SGIG.UI
             this.lblEmail.AutoSize = true;
             this.lblEmail.Location = new System.Drawing.Point(8, 73);
             this.lblEmail.Name = "lblEmail";
-            this.lblEmail.Size = new System.Drawing.Size(39, 15);
-            this.lblEmail.Text = "Email:";
+            this.lblEmail.Size = new System.Drawing.Size(50, 15);
+            this.lblEmail.Text = "Correo:";
             //
             // txtEmail
             //

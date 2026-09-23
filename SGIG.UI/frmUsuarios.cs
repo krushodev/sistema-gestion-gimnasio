@@ -52,7 +52,7 @@ namespace SGIG.UI
                 (nameof(Usuario.NombreUsuario), "Usuario", 90),
                 (nameof(Usuario.NombreRol), "Rol", 90),
                 (nameof(Usuario.Legajo), "Legajo", 70),
-                (nameof(Usuario.Email), "Email", 130));
+                (nameof(Usuario.Email), "Correo electrónico", 150));
         }
 
         private void CargarGrilla()

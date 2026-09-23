@@ -41,13 +41,13 @@ public class frmConfiguracion : Form
         };
 
         var lblActual = new Label { Text = "Contraseña actual:", Location = new Point(16, 30), AutoSize = true };
-        _txtActual = new TextBox { Location = new Point(160, 27), Size = new Size(200, 23), UseSystemPasswordChar = true };
+        _txtActual = new TextBox { Location = new Point(160, 27), Size = new Size(200, 23), PasswordChar = '●' };
 
         var lblNueva = new Label { Text = "Contraseña nueva:", Location = new Point(16, 66), AutoSize = true };
-        _txtNueva = new TextBox { Location = new Point(160, 63), Size = new Size(200, 23), UseSystemPasswordChar = true };
+        _txtNueva = new TextBox { Location = new Point(160, 63), Size = new Size(200, 23), PasswordChar = '●' };
 
         var lblConfirmar = new Label { Text = "Confirmar nueva:", Location = new Point(16, 102), AutoSize = true };
-        _txtConfirmar = new TextBox { Location = new Point(160, 99), Size = new Size(200, 23), UseSystemPasswordChar = true };
+        _txtConfirmar = new TextBox { Location = new Point(160, 99), Size = new Size(200, 23), PasswordChar = '●' };
 
         var btnCambiarContrasenia = new Button
         {

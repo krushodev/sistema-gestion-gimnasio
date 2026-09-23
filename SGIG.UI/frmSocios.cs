@@ -46,7 +46,7 @@ namespace SGIG.UI
                 (nameof(Socio.Nombre), "Nombre", 100),
                 (nameof(Socio.Documento), "Documento", 80),
                 (nameof(Socio.Telefono), "Teléfono", 90),
-                (nameof(Socio.Email), "Email", 130),
+                (nameof(Socio.Email), "Correo electrónico", 150),
                 (nameof(Socio.FechaVencimientoCuota), "Vencim. cuota", 90));
         }
 

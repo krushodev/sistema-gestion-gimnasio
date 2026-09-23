@@ -80,7 +80,7 @@ public class frmBuscarSocio : Form
         _btnSeleccionar = new Button
         {
             Text = "Seleccionar",
-            Location = new Point(322, 336),
+            Location = new Point(312, 336),
             Size = new Size(90, 28),
             Anchor = AnchorStyles.Bottom | AnchorStyles.Right
         };

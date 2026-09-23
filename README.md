@@ -18,8 +18,10 @@ Sistema de Gestión Integral para Gimnasios (SGIG) — C# / WinForms sobre .NET 
      ```powershell
      sqlcmd -S "(localdb)\MSSQLLocalDB" -i "docs\SGIG_CreateDB.sql"
      ```
-   - El script crea la base `SGIG` si no existe, las 14 tablas del DER, y siembra los catálogos (Provincia, Localidad, TipoDocumento, MedioPago, Rol, Plan, Maquina) más un usuario administrador inicial.
-   - **Usuario admin sembrado:** `admin` / `admin1234` (rol Administrador). Cambiarlo desde `frmUsuarios` antes de un uso real.
+   - El script crea la base `SGIG` si no existe, las 14 tablas del DER, siembra los catálogos (Provincia, Localidad, TipoDocumento, MedioPago, Rol, Plan, Maquina) y carga datos de prueba para poder probar la app de entrada: 1 usuario administrador, 2 Recepcionistas, 2 Técnicos, y 10 Socios (5 con cuota al día, 5 con cuota vencida, cada uno con su Facturación y Pago) para poder ver el flujo de Check-in concedido/rechazado sin cargar nada a mano.
+   - **Usuario admin sembrado:** `admin` / `admin1234` (rol Administrador).
+   - **Personal sembrado (rol Recepcionista/Técnico):** `aibarra`, `cmedina`, `lferreyra`, `dparedes` — todos con contraseña `Gimnasio2026!`.
+   - Cambiar estas contraseñas desde `frmUsuarios`/`frmConfiguracion` antes de un uso real.
 4. **Verificá que `SGIG.UI/App.config` apunte a tu instancia.** Por defecto:
    ```xml
    <add name="SGIG"
@@ -32,16 +34,16 @@ Sistema de Gestión Integral para Gimnasios (SGIG) — C# / WinForms sobre .NET 
 ### Verificación rápida de que los seeders cargaron bien
 
 ```powershell
-sqlcmd -S "(localdb)\MSSQLLocalDB" -d SGIG -Q "SELECT (SELECT COUNT(*) FROM sys.tables) AS Tablas, (SELECT COUNT(*) FROM dbo.Usuario) AS Usuarios, (SELECT nombre_usuario FROM dbo.Usuario) AS AdminUser, (SELECT COUNT(*) FROM dbo.[Plan]) AS Planes, (SELECT COUNT(*) FROM dbo.Maquina) AS Maquinas, (SELECT COUNT(*) FROM dbo.Localidad) AS Localidades" -W
+sqlcmd -S "(localdb)\MSSQLLocalDB" -d SGIG -Q "SELECT (SELECT COUNT(*) FROM sys.tables) AS Tablas, (SELECT COUNT(*) FROM dbo.Usuario) AS Usuarios, (SELECT COUNT(*) FROM dbo.Socio) AS Socios, (SELECT COUNT(*) FROM dbo.[Plan]) AS Planes, (SELECT COUNT(*) FROM dbo.Maquina) AS Maquinas, (SELECT COUNT(*) FROM dbo.Localidad) AS Localidades" -W
 ```
-Debería devolver: `Tablas = 14`, `Usuarios = 1` (`admin`), `Planes = 4`, `Maquinas = 41`, `Localidades = 103`.
+Debería devolver: `Tablas = 14`, `Usuarios = 5` (admin + 2 Recepcionistas + 2 Técnicos), `Socios = 10`, `Planes = 4`, `Maquinas = 49`, `Localidades = 103`. Este mismo ciclo (reset + create) se probó contra una instancia LocalDB real el 23/09/2026: compiló sin errores (`dotnet build SGIG.slnx`) y los 10 Socios quedaron 5 con cuota al día / 5 vencida según la fecha del sistema, listos para probar el Check-in sin cargar nada a mano.
 
 ## Resetear la base desde cero
 
 El script `SGIG_CreateDB.sql` **no es idempotente**: si la base `SGIG` ya existe con las tablas creadas, volver a correrlo falla (`There is already an object named '...'`). Para simular exactamente el escenario de "bajar el proyecto por primera vez" (por ejemplo, para validar que el paso 3 de arriba funciona sin pasos ocultos):
 
 1. Corré **`docs/SGIG_ResetDB.sql`** — dropea la base `SGIG` por completo (todas las tablas y datos).
-2. Volvé a correr **`docs/SGIG_CreateDB.sql`** — recrea el esquema y vuelve a cargar los seeders (catálogos + usuario `admin`/`admin1234`).
+2. Volvé a correr **`docs/SGIG_CreateDB.sql`** — recrea el esquema y vuelve a cargar los seeders (catálogos + usuarios + socios de prueba, ver arriba).
 
 Por línea de comandos con `sqlcmd` (ajustar `-S` a tu instancia):
 
@@ -49,8 +51,6 @@ Por línea de comandos con `sqlcmd` (ajustar `-S` a tu instancia):
 sqlcmd -S "(localdb)\MSSQLLocalDB" -i "docs\SGIG_ResetDB.sql"
 sqlcmd -S "(localdb)\MSSQLLocalDB" -i "docs\SGIG_CreateDB.sql"
 ```
-
-Este ciclo (reset + create) ya fue probado contra una instancia LocalDB local: el reset dropea la base sin errores y el create vuelve a dejar las 14 tablas y los seeders (catálogos + admin) en el mismo estado que una instalación nueva.
 
 Usar solo en entornos de desarrollo/pruebas — el reset elimina todos los datos sin confirmación adicional.
 

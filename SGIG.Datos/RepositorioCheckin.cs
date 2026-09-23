@@ -38,6 +38,45 @@ namespace SGIG.Datos
             }
         }
 
+        /// <summary>
+        /// Historial de accesos entre <paramref name="desde"/> y <paramref name="hasta"/>
+        /// (inclusive), opcionalmente filtrado por documento (búsqueda parcial). Usa
+        /// <c>IX_Checkin_Persona_Fecha</c> vía el rango de fecha_hora, ordenado del más
+        /// reciente al más antiguo. Incluye los días restantes a la cuota vigente de
+        /// cada socio, calculados al momento de la consulta (no al momento del acceso).
+        /// </summary>
+        public IEnumerable<Checkin> ObtenerHistorial(DateTime desde, DateTime hasta, string? documento = null)
+        {
+            const string sql = @"
+                SELECT c.id_checkin AS IdCheckin, c.id_persona AS IdPersona,
+                       c.fecha_hora AS FechaHora, c.resultado AS Resultado,
+                       p.documento AS Documento,
+                       p.nombre + ' ' + p.apellido AS NombreCompleto,
+                       DATEDIFF(DAY, CAST(GETDATE() AS DATE), s.fecha_vencimiento_cuota) AS DiasRestantesCuota
+                FROM dbo.Checkin c
+                INNER JOIN dbo.Persona p ON p.id_persona = c.id_persona
+                INNER JOIN dbo.Socio s ON s.id_persona = c.id_persona
+                WHERE c.fecha_hora >= @Desde
+                  AND c.fecha_hora < DATEADD(DAY, 1, @Hasta)
+                  AND (@Documento IS NULL OR p.documento LIKE '%' + @Documento + '%')
+                ORDER BY c.fecha_hora DESC";
+
+            try
+            {
+                using var connection = Conexion.ObtenerConexionAbierta();
+                return connection.Query<Checkin>(sql, new
+                {
+                    Desde = desde.Date,
+                    Hasta = hasta.Date,
+                    Documento = string.IsNullOrWhiteSpace(documento) ? null : documento.Trim()
+                }).ToList();
+            }
+            catch (SqlException ex)
+            {
+                throw new AccesoDatosException("Error al consultar el historial de accesos.", ex);
+            }
+        }
+
         /// <summary>Registra el intento de acceso, sea Concedido o Rechazado (RF#17).</summary>
         public void Registrar(Checkin checkin)
         {

@@ -28,7 +28,7 @@ namespace SGIG.UI
             {
                 MessageBox.Show(
                     $"Copia de seguridad generada con éxito en:\n\n{sfd.FileName}",
-                    "Backup Completado", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    "Copia de Seguridad Completada", MessageBoxButtons.OK, MessageBoxIcon.Information);
             });
         }
 

@@ -34,6 +34,7 @@ namespace SGIG.Negocio
             var vencimiento = socio.FechaVencimientoCuota;
             var cuotaAlDia = vencimiento.HasValue && vencimiento.Value.Date >= DateTime.Today;
             var concedido = socio.Activo && cuotaAlDia;
+            var diasRestantes = vencimiento.HasValue ? (int?)(vencimiento.Value.Date - DateTime.Today).Days : null;
 
             _repositorioCheckin.Registrar(new Checkin
             {
@@ -43,19 +44,37 @@ namespace SGIG.Negocio
             });
 
             var mensaje = concedido
-                ? "Acceso concedido."
+                ? diasRestantes == 0
+                    ? "Acceso concedido. La cuota vence hoy."
+                    : $"Acceso concedido. Vence en {diasRestantes} día(s)."
                 : !socio.Activo
                     ? "El socio está dado de baja."
                     : !vencimiento.HasValue
                         ? "El socio no tiene ninguna cuota registrada."
-                        : "La cuota está vencida.";
+                        : $"La cuota está vencida hace {-diasRestantes} día(s).";
 
             return new ResultadoCheckin
             {
                 Concedido = concedido,
                 NombreCompleto = $"{socio.Nombre} {socio.Apellido}",
-                Mensaje = mensaje
+                Mensaje = mensaje,
+                DiasRestantesCuota = diasRestantes
             };
+        }
+
+        /// <summary>
+        /// Historial de accesos para seguimiento de recepción (fuera del alcance
+        /// original de RF#15-17, agregado para poder ver quién entró y cuántos días
+        /// le quedan antes de vencer su cuota). Valida que el rango no esté invertido.
+        /// </summary>
+        public IEnumerable<Checkin> ObtenerHistorial(DateTime desde, DateTime hasta, string? documento = null)
+        {
+            if (desde.Date > hasta.Date)
+            {
+                throw new NegocioException("La fecha \"Desde\" no puede ser posterior a la fecha \"Hasta\".");
+            }
+
+            return _repositorioCheckin.ObtenerHistorial(desde, hasta, documento);
         }
     }
 }

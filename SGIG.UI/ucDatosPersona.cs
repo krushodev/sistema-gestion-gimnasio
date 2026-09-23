@@ -40,11 +40,33 @@ namespace SGIG.UI
         public ucDatosPersona()
         {
             InitializeComponent();
-            txtDocumento.KeyPress += Grillas.SoloDigitos;
+            txtDocumento.KeyPress += TxtDocumento_KeyPress;
             txtNombre.KeyPress += ValidacionesUI.SoloLetras;
             txtApellido.KeyPress += ValidacionesUI.SoloLetras;
             txtTelefono.KeyPress += Grillas.SoloDigitos;
             cboProvincia.SelectedIndexChanged += cboProvincia_SelectedIndexChanged;
+        }
+
+        /// <summary>
+        /// El DNI es siempre numérico, pero Pasaporte y Cédula pueden incluir
+        /// letras (ver <see cref="Validaciones.EsDocumentoValido(string, int)"/>):
+        /// el filtro de tecleo se ajusta según el tipo elegido en cboTipoDocumento.
+        /// </summary>
+        private void TxtDocumento_KeyPress(object? sender, KeyPressEventArgs e)
+        {
+            if (char.IsControl(e.KeyChar)) return;
+
+            var idTipoDocumento = (int)(cboTipoDocumento.SelectedValue ?? 0);
+            var soloDigitos = idTipoDocumento == Validaciones.IdTipoDocumentoDni || idTipoDocumento <= 0;
+
+            if (soloDigitos && !char.IsDigit(e.KeyChar))
+            {
+                e.Handled = true;
+            }
+            else if (!soloDigitos && !char.IsLetterOrDigit(e.KeyChar))
+            {
+                e.Handled = true;
+            }
         }
 
         /// <summary>Oculta el campo de fecha de nacimiento (no aplica al alta de Usuario).</summary>
@@ -64,6 +86,11 @@ namespace SGIG.UI
             cboTipoDocumento.DisplayMember = nameof(TipoDocumento.Descripcion);
             cboTipoDocumento.ValueMember = nameof(TipoDocumento.IdTipoDocumento);
             cboTipoDocumento.DataSource = tiposDocumento.ToList();
+
+            // DNI por defecto: el combo se llena ordenado alfabéticamente (Cédula,
+            // DNI, Pasaporte), así que sin esto quedaría "Cédula" preseleccionado.
+            // La gran mayoría de los socios/usuarios se dan de alta con DNI.
+            cboTipoDocumento.SelectedValue = Validaciones.IdTipoDocumentoDni;
 
             // Se guarda la lista completa para filtrar cboLocalidad en memoria
             // cada vez que cambia la provincia elegida, sin volver a consultar la base.
@@ -175,7 +202,7 @@ namespace SGIG.UI
                 caja.Clear();
             }
 
-            if (cboTipoDocumento.Items.Count > 0) cboTipoDocumento.SelectedIndex = 0;
+            if (cboTipoDocumento.Items.Count > 0) cboTipoDocumento.SelectedValue = Validaciones.IdTipoDocumentoDni;
             if (cboProvincia.Items.Count > 0) cboProvincia.SelectedIndex = 0;
             ActualizarLocalidadesSegunProvincia();
             dtpFechaNacimiento.Value = DateTime.Today.AddYears(-18);
@@ -254,9 +281,14 @@ namespace SGIG.UI
         /// </summary>
         public bool Validar()
         {
+            var idTipoDocumento = (int)(cboTipoDocumento.SelectedValue ?? 0);
+            var esDni = idTipoDocumento == Validaciones.IdTipoDocumentoDni;
+
             var documentoValido = ValidacionesUI.Marcar(_errorProvider, txtDocumento,
-                Validaciones.EsDocumentoValido(txtDocumento.Text),
-                "Ingresá un documento válido: sólo números, entre 6 y 20 dígitos.");
+                Validaciones.EsDocumentoValido(txtDocumento.Text, idTipoDocumento),
+                esDni
+                    ? "Ingresá un DNI válido: sólo números, 7 u 8 dígitos."
+                    : "Ingresá un documento válido: alfanumérico, entre 6 y 20 caracteres.");
 
             var nombreValido = ValidacionesUI.Marcar(_errorProvider, txtNombre,
                 ValidacionesUI.EsSoloLetras(txtNombre.Text),
@@ -272,7 +304,7 @@ namespace SGIG.UI
 
             var telefonoValido = ValidacionesUI.Marcar(_errorProvider, txtTelefono,
                 string.IsNullOrWhiteSpace(txtTelefono.Text) || Validaciones.EsTelefonoValido(txtTelefono.Text),
-                "El teléfono sólo admite números, espacios, guiones, paréntesis y un + inicial.");
+                "El teléfono no es válido: entre 8 y 13 dígitos (podés usar espacios, guiones, paréntesis y un + inicial).");
 
             var tipoDocumentoValido = ValidacionesUI.Marcar(_errorProvider, cboTipoDocumento,
                 (cboTipoDocumento.SelectedValue as int?) is > 0,

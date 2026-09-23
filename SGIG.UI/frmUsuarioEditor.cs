@@ -13,9 +13,9 @@ namespace SGIG.UI
     //
     // ── CONTROLES (ver frmUsuarioEditor.Designer.cs) ─────────────────────────
     //   ucDatosPersona (campos de Persona + buscar/reutilizar, sin fecha de nacimiento)
-    //   txtLegajo, dtpFechaIngreso, cboRol, txtNombreUsuario, txtContrasenia,
-    //   lblAyudaContrasenia
-    //   btnGuardar, btnCancelar
+    //   lblLegajoPrefijo ("LEG-", fijo), txtLegajo (4 dígitos), dtpFechaIngreso, cboRol,
+    //   txtNombreUsuario, txtContrasenia, lblAyudaContrasenia
+    //   btnLimpiar, btnGuardar, btnCancelar
     // ─────────────────────────────────────────────────────────────────────────
     public partial class frmUsuarioEditor : Form
     {
@@ -23,35 +23,21 @@ namespace SGIG.UI
         private readonly ServicioCatalogo _servicioCatalogo = new();
         private readonly ErrorProvider _errorProvider = new() { BlinkStyle = ErrorBlinkStyle.NeverBlink };
         private readonly Usuario? _usuarioExistente;
-        private readonly Button _btnLimpiar;
 
         public frmUsuarioEditor(Usuario? usuarioExistente)
         {
             InitializeComponent();
 
-            _btnLimpiar = new Button
-            {
-                Text = "Limpiar datos",
-                Location = new Point(16, 298),
-                Size = new Size(120, 28),
-                Anchor = AnchorStyles.Bottom | AnchorStyles.Left
-            };
-            _btnLimpiar.Click += (s, e) =>
-            {
-                ucDatosPersona.Reiniciar();
-                _errorProvider.Clear();
-                txtLegajo.Clear();
-                dtpFechaIngreso.Value = DateTime.Today;
-                txtNombreUsuario.Clear();
-                txtContrasenia.Clear();
-                lblAyudaContrasenia.Text = "Obligatoria.";
-            };
-            Controls.Add(_btnLimpiar);
+            // El legajo se arma como "LEG-" + 4 dígitos (ver ArmarLegajo/ExtraerNumeroLegajo
+            // más abajo): txtLegajo sólo captura los 4 dígitos, "LEG-" es un label fijo.
+            txtLegajo.KeyPress += Grillas.SoloDigitos;
 
             // lblAyudaContrasenia vivía pegada a la derecha de txtContrasenia; se baja
             // debajo de la caja para dejar lugar al botón de mostrar/ocultar contraseña
             // sin arriesgar que el texto largo ("Dejar vacía para no cambiarla.") quede
-            // tapado por el botón.
+            // tapado por el botón. Se calcula relativo a txtContrasenia (ya escalado
+            // por AutoScaleMode) en vez de un valor fijo, para que no se desalinee
+            // en pantallas con DPI/escalado de texto distinto al de diseño.
             lblAyudaContrasenia.Location = new Point(txtContrasenia.Left, txtContrasenia.Bottom + 4);
             Tema.AgregarToggleContrasenia(txtContrasenia);
 
@@ -63,9 +49,20 @@ namespace SGIG.UI
             // Sólo tiene sentido en un alta nueva: es lo que deshace el autocompletado
             // bloqueado por ucDatosPersona.btnBuscar_Click cuando el documento ya
             // pertenecía a otra Persona (por ejemplo, ya era Socio).
-            _btnLimpiar.Visible = usuarioExistente is null;
+            btnLimpiar.Visible = usuarioExistente is null;
 
             ucDatosPersona.MostrarFechaNacimiento = false;
+        }
+
+        private void btnLimpiar_Click(object sender, EventArgs e)
+        {
+            ucDatosPersona.Reiniciar();
+            _errorProvider.Clear();
+            txtLegajo.Clear();
+            dtpFechaIngreso.Value = DateTime.Today;
+            txtNombreUsuario.Clear();
+            txtContrasenia.Clear();
+            lblAyudaContrasenia.Text = "Obligatoria.";
         }
 
         private void frmUsuarioEditor_Load(object sender, EventArgs e)
@@ -94,7 +91,7 @@ namespace SGIG.UI
                 else
                 {
                     ucDatosPersona.CargarParaEdicion(_usuarioExistente);
-                    txtLegajo.Text = _usuarioExistente.Legajo;
+                    txtLegajo.Text = ExtraerNumeroLegajo(_usuarioExistente.Legajo);
                     dtpFechaIngreso.Value = _usuarioExistente.FechaIngreso ?? DateTime.Today;
                     cboRol.SelectedValue = _usuarioExistente.IdRol;
                     txtNombreUsuario.Text = _usuarioExistente.NombreUsuario;
@@ -125,7 +122,7 @@ namespace SGIG.UI
                 Email = ucDatosPersona.Email,
                 Telefono = ucDatosPersona.Telefono,
                 IdLocalidad = ucDatosPersona.IdLocalidad,
-                Legajo = txtLegajo.Text.Trim(),
+                Legajo = ArmarLegajo(txtLegajo.Text),
                 FechaIngreso = dtpFechaIngreso.Value.Date,
                 IdRol = (int)(cboRol.SelectedValue ?? 0),
                 NombreUsuario = txtNombreUsuario.Text.Trim()
@@ -174,7 +171,7 @@ namespace SGIG.UI
 
             var legajoValido = ValidacionesUI.Marcar(_errorProvider, txtLegajo,
                 !string.IsNullOrWhiteSpace(txtLegajo.Text),
-                "El legajo es obligatorio.");
+                "Ingresá el número de legajo (hasta 4 dígitos).");
 
             var rolValido = ValidacionesUI.Marcar(_errorProvider, cboRol,
                 (cboRol.SelectedValue as int?) is > 0,
@@ -198,6 +195,19 @@ namespace SGIG.UI
             return datosPersonaValidos & legajoValido & rolValido & fechaIngresoValida
                 & nombreUsuarioValido & contraseniaValida;
         }
+
+        /// <summary>
+        /// Arma el legajo final ("LEG-0007") a partir de los dígitos tipeados en
+        /// txtLegajo, rellenando con ceros a la izquierda hasta 4 dígitos.
+        /// </summary>
+        private static string ArmarLegajo(string digitos) => "LEG-" + digitos.Trim().PadLeft(4, '0');
+
+        /// <summary>
+        /// Inversa de <see cref="ArmarLegajo"/>: separa el número de un legajo
+        /// existente ("LEG-0007" → "0007") para precargarlo en txtLegajo al editar.
+        /// </summary>
+        private static string ExtraerNumeroLegajo(string legajo) =>
+            legajo.StartsWith("LEG-", StringComparison.OrdinalIgnoreCase) ? legajo[4..] : legajo;
 
         /// <summary>
         /// Los errores de negocio se muestran como advertencia (el usuario puede

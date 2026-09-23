@@ -27,6 +27,7 @@ namespace SGIG.UI
             this.lblCaptionVencimiento = new System.Windows.Forms.Label();
             this.lblFechaVencimientoCuota = new System.Windows.Forms.Label();
             this.chkActivo = new System.Windows.Forms.CheckBox();
+            this.btnLimpiar = new System.Windows.Forms.Button();
             this.btnGuardar = new System.Windows.Forms.Button();
             this.btnCancelar = new System.Windows.Forms.Button();
             this.SuspendLayout();
@@ -101,10 +102,21 @@ namespace SGIG.UI
             this.chkActivo.Text = "Activo";
             this.chkActivo.UseVisualStyleBackColor = true;
             //
+            // btnLimpiar
+            //
+            this.btnLimpiar.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.btnLimpiar.Location = new System.Drawing.Point(16, 266);
+            this.btnLimpiar.Name = "btnLimpiar";
+            this.btnLimpiar.Size = new System.Drawing.Size(120, 28);
+            this.btnLimpiar.TabIndex = 6;
+            this.btnLimpiar.Text = "Limpiar datos";
+            this.btnLimpiar.UseVisualStyleBackColor = true;
+            this.btnLimpiar.Click += new System.EventHandler(this.btnLimpiar_Click);
+            //
             // btnGuardar
             //
             this.btnGuardar.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.btnGuardar.Location = new System.Drawing.Point(400, 266);
+            this.btnGuardar.Location = new System.Drawing.Point(392, 266);
             this.btnGuardar.Name = "btnGuardar";
             this.btnGuardar.Size = new System.Drawing.Size(86, 28);
             this.btnGuardar.TabIndex = 4;
@@ -138,6 +150,7 @@ namespace SGIG.UI
             this.Controls.Add(this.lblCaptionVencimiento);
             this.Controls.Add(this.lblFechaVencimientoCuota);
             this.Controls.Add(this.chkActivo);
+            this.Controls.Add(this.btnLimpiar);
             this.Controls.Add(this.btnGuardar);
             this.Controls.Add(this.btnCancelar);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
@@ -161,6 +174,7 @@ namespace SGIG.UI
         private System.Windows.Forms.Label lblCaptionVencimiento;
         private System.Windows.Forms.Label lblFechaVencimientoCuota;
         private System.Windows.Forms.CheckBox chkActivo;
+        private System.Windows.Forms.Button btnLimpiar;
         private System.Windows.Forms.Button btnGuardar;
         private System.Windows.Forms.Button btnCancelar;
     }

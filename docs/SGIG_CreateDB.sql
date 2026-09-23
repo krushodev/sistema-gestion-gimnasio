@@ -482,7 +482,17 @@ INSERT INTO dbo.Maquina (marca, nombre, fecha_compra, estado) VALUES
     ('Rogue', 'Barra fija (dominadas/paralelas)', '2024-01-18', 'Operativa'),
     ('TRX', 'Bandas de suspension', '2024-04-02', 'Operativa'),
     ('Rogue', 'Cuerda de battle rope', '2024-01-18', 'Operativa'),
-    ('Rogue', 'Trineo de arrastre (sled)', '2024-01-18', 'Operativa');
+    ('Rogue', 'Trineo de arrastre (sled)', '2024-01-18', 'Operativa'),
+    -- Ampliacion de equipamiento (23/09/2026): mas variedad de discos y
+    -- mancuernas, y un par de maquinas de fuerza adicionales.
+    ('Eleiko', 'Set de discos olimpicos (0.5-2.5kg, cambio fino)', '2024-09-05', 'Operativa'),
+    ('Rogue', 'Set de discos de goma (10-20kg)', '2024-09-05', 'Operativa'),
+    ('Body-Solid', 'Set de mancuernas hexagonales (1-25kg)', '2024-09-05', 'Operativa'),
+    ('Eleiko', 'Set de mancuernas ajustables (5-50kg)', '2024-09-05', 'En Reparacion'),
+    ('Hammer Strength', 'Maquina Smith', '2024-09-05', 'Operativa'),
+    ('Matrix', 'Prensa horizontal (Leg Press)', '2024-09-05', 'Operativa'),
+    ('Rogue', 'Banco Scott (curl predicador)', '2024-09-05', 'Operativa'),
+    ('Rogue', 'Rack de discos (arbol)', '2024-09-05', 'Operativa');
 
 /* Persona + Usuario administrador inicial.
 
@@ -511,5 +521,164 @@ VALUES (
     'LEG-0001',
     GETDATE()
 );
+
+/* ────────────────────────────────────────────────────────────────────────
+   Datos de prueba para demo (23/09/2026): 2 Recepcionistas, 2 Tecnicos y
+   10 Socios (5 con cuota al dia, 5 con cuota vencida) con su Facturacion y
+   Pago correspondientes, para poder mostrar en Check-in el flujo de acceso
+   concedido/rechazado y en Tesoreria un historial de cobros real.
+
+   Todas las contrasenias de personal usan el mismo hash SHA256 (32 bytes)
+   de "Gimnasio2026!", calculado con SGIG.Negocio.Hash.Calcular igual que el
+   admin de arriba. Cambiar estas contrasenias antes de un uso real. */
+
+DECLARE @IdPersona INT;
+DECLARE @IdFacturacion INT;
+
+-- ── Personal: 2 Recepcionistas ───────────────────────────────────────────
+
+INSERT INTO dbo.Persona (documento, id_tipo_documento, nombre, apellido, email, telefono)
+VALUES ('33111222', 1, 'Ana', 'Ibarra', 'ana.ibarra@sgig.local', '3794112233');
+SET @IdPersona = SCOPE_IDENTITY();
+INSERT INTO dbo.Usuario (id_persona, nombre_usuario, contrasenia_hash, id_rol, legajo, fecha_ingreso)
+VALUES (@IdPersona, 'aibarra', 0xCDC1A94BF99D376CE5C13715E5FC4CE3CD6E8248CB4B397B20A92721CC648C48,
+    (SELECT id_rol FROM dbo.Rol WHERE nombre_rol = 'Recepcionista'), 'LEG-0002', '2024-03-01');
+
+INSERT INTO dbo.Persona (documento, id_tipo_documento, nombre, apellido, email, telefono)
+VALUES ('33222333', 1, 'Carlos', 'Medina', 'carlos.medina@sgig.local', '3794223344');
+SET @IdPersona = SCOPE_IDENTITY();
+INSERT INTO dbo.Usuario (id_persona, nombre_usuario, contrasenia_hash, id_rol, legajo, fecha_ingreso)
+VALUES (@IdPersona, 'cmedina', 0xCDC1A94BF99D376CE5C13715E5FC4CE3CD6E8248CB4B397B20A92721CC648C48,
+    (SELECT id_rol FROM dbo.Rol WHERE nombre_rol = 'Recepcionista'), 'LEG-0003', '2024-06-15');
+
+-- ── Personal: 2 Tecnicos ─────────────────────────────────────────────────
+
+INSERT INTO dbo.Persona (documento, id_tipo_documento, nombre, apellido, email, telefono)
+VALUES ('33333444', 1, 'Lucia', 'Ferreyra', 'lucia.ferreyra@sgig.local', '3794334455');
+SET @IdPersona = SCOPE_IDENTITY();
+INSERT INTO dbo.Usuario (id_persona, nombre_usuario, contrasenia_hash, id_rol, legajo, fecha_ingreso)
+VALUES (@IdPersona, 'lferreyra', 0xCDC1A94BF99D376CE5C13715E5FC4CE3CD6E8248CB4B397B20A92721CC648C48,
+    (SELECT id_rol FROM dbo.Rol WHERE nombre_rol = 'Tecnico'), 'LEG-0004', '2023-11-10');
+
+INSERT INTO dbo.Persona (documento, id_tipo_documento, nombre, apellido, email, telefono)
+VALUES ('33444555', 1, 'Diego', 'Paredes', 'diego.paredes@sgig.local', '3794445566');
+SET @IdPersona = SCOPE_IDENTITY();
+INSERT INTO dbo.Usuario (id_persona, nombre_usuario, contrasenia_hash, id_rol, legajo, fecha_ingreso)
+VALUES (@IdPersona, 'dparedes', 0xCDC1A94BF99D376CE5C13715E5FC4CE3CD6E8248CB4B397B20A92721CC648C48,
+    (SELECT id_rol FROM dbo.Rol WHERE nombre_rol = 'Tecnico'), 'LEG-0005', '2025-02-20');
+
+-- ── Socios con cuota AL DIA (Check-in debe conceder el acceso) ───────────
+
+INSERT INTO dbo.Persona (documento, id_tipo_documento, nombre, apellido, email, telefono, id_localidad, fecha_nacimiento)
+VALUES ('34567890', 1, 'Martina', 'Gomez', 'martina.gomez@gmail.com', '3794456789',
+    (SELECT id_localidad FROM dbo.Localidad WHERE nombre = 'Corrientes' AND id_provincia = (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Corrientes')),
+    '1998-05-14');
+SET @IdPersona = SCOPE_IDENTITY();
+INSERT INTO dbo.Socio (id_persona, id_plan, fecha_vencimiento_cuota, activo) VALUES (@IdPersona, 3, '2026-10-20', 1);
+INSERT INTO dbo.Facturacion (id_persona, id_plan, fecha_emision, fecha_vencimiento, monto_total, estado)
+VALUES (@IdPersona, 3, '2026-09-20', '2026-10-20', 35000.00, 'Pagada');
+SET @IdFacturacion = SCOPE_IDENTITY();
+INSERT INTO dbo.Pago (id_facturacion, id_medio_pago, fecha_pago, monto) VALUES (@IdFacturacion, 1, '2026-09-20', 35000.00);
+
+INSERT INTO dbo.Persona (documento, id_tipo_documento, nombre, apellido, email, telefono, id_localidad, fecha_nacimiento)
+VALUES ('35678901', 1, 'Lucas', 'Fernandez', 'lucas.fernandez@gmail.com', '3794567890',
+    (SELECT id_localidad FROM dbo.Localidad WHERE nombre = 'Resistencia' AND id_provincia = (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Chaco')),
+    '1995-11-02');
+SET @IdPersona = SCOPE_IDENTITY();
+INSERT INTO dbo.Socio (id_persona, id_plan, fecha_vencimiento_cuota, activo) VALUES (@IdPersona, 4, '2027-09-15', 1);
+INSERT INTO dbo.Facturacion (id_persona, id_plan, fecha_emision, fecha_vencimiento, monto_total, estado)
+VALUES (@IdPersona, 4, '2026-09-15', '2027-09-15', 350000.00, 'Pagada');
+SET @IdFacturacion = SCOPE_IDENTITY();
+INSERT INTO dbo.Pago (id_facturacion, id_medio_pago, fecha_pago, monto) VALUES (@IdFacturacion, 2, '2026-09-15', 350000.00);
+
+INSERT INTO dbo.Persona (documento, id_tipo_documento, nombre, apellido, email, telefono, id_localidad, fecha_nacimiento)
+VALUES ('36789012', 1, 'Sofia', 'Rodriguez', 'sofia.rodriguez@gmail.com', '3794678901',
+    (SELECT id_localidad FROM dbo.Localidad WHERE nombre = 'Corrientes' AND id_provincia = (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Corrientes')),
+    '2001-02-27');
+SET @IdPersona = SCOPE_IDENTITY();
+INSERT INTO dbo.Socio (id_persona, id_plan, fecha_vencimiento_cuota, activo) VALUES (@IdPersona, 1, '2026-09-24', 1);
+INSERT INTO dbo.Facturacion (id_persona, id_plan, fecha_emision, fecha_vencimiento, monto_total, estado)
+VALUES (@IdPersona, 1, '2026-09-23', '2026-09-24', 3500.00, 'Pagada');
+SET @IdFacturacion = SCOPE_IDENTITY();
+INSERT INTO dbo.Pago (id_facturacion, id_medio_pago, fecha_pago, monto) VALUES (@IdFacturacion, 1, '2026-09-23', 3500.00);
+
+INSERT INTO dbo.Persona (documento, id_tipo_documento, nombre, apellido, email, telefono, id_localidad, fecha_nacimiento)
+VALUES ('37890123', 1, 'Mateo', 'Lopez', 'mateo.lopez@gmail.com', '3794789012',
+    (SELECT id_localidad FROM dbo.Localidad WHERE nombre = 'Resistencia' AND id_provincia = (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Chaco')),
+    '2000-08-19');
+SET @IdPersona = SCOPE_IDENTITY();
+INSERT INTO dbo.Socio (id_persona, id_plan, fecha_vencimiento_cuota, activo) VALUES (@IdPersona, 2, '2026-09-27', 1);
+INSERT INTO dbo.Facturacion (id_persona, id_plan, fecha_emision, fecha_vencimiento, monto_total, estado)
+VALUES (@IdPersona, 2, '2026-09-20', '2026-09-27', 12000.00, 'Pagada');
+SET @IdFacturacion = SCOPE_IDENTITY();
+INSERT INTO dbo.Pago (id_facturacion, id_medio_pago, fecha_pago, monto) VALUES (@IdFacturacion, 3, '2026-09-20', 12000.00);
+
+INSERT INTO dbo.Persona (documento, id_tipo_documento, nombre, apellido, email, telefono, id_localidad, fecha_nacimiento)
+VALUES ('38901234', 1, 'Valentina', 'Diaz', 'valentina.diaz@gmail.com', '3794890123',
+    (SELECT id_localidad FROM dbo.Localidad WHERE nombre = 'Cordoba' AND id_provincia = (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Cordoba')),
+    '1997-04-30');
+SET @IdPersona = SCOPE_IDENTITY();
+INSERT INTO dbo.Socio (id_persona, id_plan, fecha_vencimiento_cuota, activo) VALUES (@IdPersona, 3, '2026-10-18', 1);
+INSERT INTO dbo.Facturacion (id_persona, id_plan, fecha_emision, fecha_vencimiento, monto_total, estado)
+VALUES (@IdPersona, 3, '2026-09-18', '2026-10-18', 35000.00, 'Pagada');
+SET @IdFacturacion = SCOPE_IDENTITY();
+INSERT INTO dbo.Pago (id_facturacion, id_medio_pago, fecha_pago, monto) VALUES (@IdFacturacion, 2, '2026-09-18', 35000.00);
+
+-- ── Socios con cuota VENCIDA (Check-in debe rechazar el acceso) ──────────
+
+INSERT INTO dbo.Persona (documento, id_tipo_documento, nombre, apellido, email, telefono, id_localidad, fecha_nacimiento)
+VALUES ('39012345', 1, 'Benjamin', 'Torres', 'benjamin.torres@gmail.com', '3794901234',
+    (SELECT id_localidad FROM dbo.Localidad WHERE nombre = 'Rosario' AND id_provincia = (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Santa Fe')),
+    '1993-01-09');
+SET @IdPersona = SCOPE_IDENTITY();
+INSERT INTO dbo.Socio (id_persona, id_plan, fecha_vencimiento_cuota, activo) VALUES (@IdPersona, 3, '2026-09-08', 1);
+INSERT INTO dbo.Facturacion (id_persona, id_plan, fecha_emision, fecha_vencimiento, monto_total, estado)
+VALUES (@IdPersona, 3, '2026-08-08', '2026-09-08', 35000.00, 'Pagada');
+SET @IdFacturacion = SCOPE_IDENTITY();
+INSERT INTO dbo.Pago (id_facturacion, id_medio_pago, fecha_pago, monto) VALUES (@IdFacturacion, 1, '2026-08-08', 35000.00);
+
+INSERT INTO dbo.Persona (documento, id_tipo_documento, nombre, apellido, email, telefono, id_localidad, fecha_nacimiento)
+VALUES ('40123456', 1, 'Camila', 'Sosa', 'camila.sosa@gmail.com', '3794012345',
+    (SELECT id_localidad FROM dbo.Localidad WHERE nombre = 'La Plata' AND id_provincia = (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Buenos Aires')),
+    '1990-07-23');
+SET @IdPersona = SCOPE_IDENTITY();
+INSERT INTO dbo.Socio (id_persona, id_plan, fecha_vencimiento_cuota, activo) VALUES (@IdPersona, 4, '2026-08-24', 1);
+INSERT INTO dbo.Facturacion (id_persona, id_plan, fecha_emision, fecha_vencimiento, monto_total, estado)
+VALUES (@IdPersona, 4, '2025-08-24', '2026-08-24', 350000.00, 'Pagada');
+SET @IdFacturacion = SCOPE_IDENTITY();
+INSERT INTO dbo.Pago (id_facturacion, id_medio_pago, fecha_pago, monto) VALUES (@IdFacturacion, 3, '2025-08-24', 350000.00);
+
+INSERT INTO dbo.Persona (documento, id_tipo_documento, nombre, apellido, email, telefono, id_localidad, fecha_nacimiento)
+VALUES ('41234567', 1, 'Joaquin', 'Romero', 'joaquin.romero@gmail.com', '3794123321',
+    (SELECT id_localidad FROM dbo.Localidad WHERE nombre = 'Mendoza' AND id_provincia = (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Mendoza')),
+    '2002-12-05');
+SET @IdPersona = SCOPE_IDENTITY();
+INSERT INTO dbo.Socio (id_persona, id_plan, fecha_vencimiento_cuota, activo) VALUES (@IdPersona, 1, '2026-09-18', 1);
+INSERT INTO dbo.Facturacion (id_persona, id_plan, fecha_emision, fecha_vencimiento, monto_total, estado)
+VALUES (@IdPersona, 1, '2026-09-17', '2026-09-18', 3500.00, 'Pagada');
+SET @IdFacturacion = SCOPE_IDENTITY();
+INSERT INTO dbo.Pago (id_facturacion, id_medio_pago, fecha_pago, monto) VALUES (@IdFacturacion, 1, '2026-09-17', 3500.00);
+
+INSERT INTO dbo.Persona (documento, id_tipo_documento, nombre, apellido, email, telefono, id_localidad, fecha_nacimiento)
+VALUES ('42345678', 1, 'Isabella', 'Flores', 'isabella.flores@gmail.com', '3794234321',
+    (SELECT id_localidad FROM dbo.Localidad WHERE nombre = 'Rosario' AND id_provincia = (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Santa Fe')),
+    '1999-03-16');
+SET @IdPersona = SCOPE_IDENTITY();
+INSERT INTO dbo.Socio (id_persona, id_plan, fecha_vencimiento_cuota, activo) VALUES (@IdPersona, 2, '2026-09-13', 1);
+INSERT INTO dbo.Facturacion (id_persona, id_plan, fecha_emision, fecha_vencimiento, monto_total, estado)
+VALUES (@IdPersona, 2, '2026-09-06', '2026-09-13', 12000.00, 'Pagada');
+SET @IdFacturacion = SCOPE_IDENTITY();
+INSERT INTO dbo.Pago (id_facturacion, id_medio_pago, fecha_pago, monto) VALUES (@IdFacturacion, 2, '2026-09-06', 12000.00);
+
+INSERT INTO dbo.Persona (documento, id_tipo_documento, nombre, apellido, email, telefono, id_localidad, fecha_nacimiento)
+VALUES ('43456789', 1, 'Thiago', 'Acosta', 'thiago.acosta@gmail.com', '3794345432',
+    (SELECT id_localidad FROM dbo.Localidad WHERE nombre = 'Cordoba' AND id_provincia = (SELECT id_provincia FROM dbo.Provincia WHERE nombre = 'Cordoba')),
+    '1996-10-11');
+SET @IdPersona = SCOPE_IDENTITY();
+INSERT INTO dbo.Socio (id_persona, id_plan, fecha_vencimiento_cuota, activo) VALUES (@IdPersona, 3, '2026-09-21', 1);
+INSERT INTO dbo.Facturacion (id_persona, id_plan, fecha_emision, fecha_vencimiento, monto_total, estado)
+VALUES (@IdPersona, 3, '2026-08-21', '2026-09-21', 35000.00, 'Pagada');
+SET @IdFacturacion = SCOPE_IDENTITY();
+INSERT INTO dbo.Pago (id_facturacion, id_medio_pago, fecha_pago, monto) VALUES (@IdFacturacion, 1, '2026-08-21', 35000.00);
 
 GO
