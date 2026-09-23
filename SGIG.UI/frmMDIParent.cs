@@ -280,6 +280,7 @@ namespace SGIG.UI
             }
 
             // 7. 📊 Reportes (Administrador)
+            // 7. 📊 Reportes (Administrador)
             if (idRol == Roles.Administrador)
             {
                 AgregarTarjetaGrilla(
@@ -287,7 +288,7 @@ namespace SGIG.UI
                     "Métricas de concurrencia, balance financiero, altas y bajas periódicas.",
                     "📊",
                     Color.FromArgb(14, 165, 233),
-                    () => MessageBox.Show("Módulo de Reportes en desarrollo.", "SGIG", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                    () => AbrirFormularioEnPanel(new frmReportes(), "📊  Reportes e Ingresos")
                 );
 
                 // 8. 💾 Copias de Seguridad (Administrador)
@@ -296,7 +297,7 @@ namespace SGIG.UI
                     "Generación y restauración de backups para la base de datos SQL Server.",
                     "💾",
                     Color.FromArgb(100, 116, 139),
-                    () => MessageBox.Show("Módulo de Backup en desarrollo.", "SGIG", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                    () => AbrirFormularioEnPanel(new frmBackup(), "💾  Copia de Seguridad")
                 );
             }
         }
