@@ -43,6 +43,7 @@ namespace SGIG.UI
             txtDocumento.KeyPress += Grillas.SoloDigitos;
             txtNombre.KeyPress += ValidacionesUI.SoloLetras;
             txtApellido.KeyPress += ValidacionesUI.SoloLetras;
+            txtTelefono.KeyPress += Grillas.SoloDigitos;
             cboProvincia.SelectedIndexChanged += cboProvincia_SelectedIndexChanged;
         }
 
