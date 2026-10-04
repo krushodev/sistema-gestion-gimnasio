@@ -1,15 +1,38 @@
 ﻿using System;
 using System.Drawing;
+using System.IO;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 using System.Windows.Forms;
+using SGIG.Entidades;
+using SGIG.Negocio;
 
 namespace SGIG.UI
 {
     public partial class frmReportes : Form
     {
+        private readonly ServicioReporte _servicioReporte;
+
+        // Referencias a los controles dinámicos para actualización
+        private Label _lblValorIngresos = null!;
+        private Label _lblDetalleIngresos = null!;
+        private Label _lblValorSocios = null!;
+        private Label _lblDetalleSocios = null!;
+        private Label _lblValorCheckins = null!;
+        private Label _lblDetalleCheckins = null!;
+        private DateTimePicker _dtpDesde = null!;
+        private DateTimePicker _dtpHasta = null!;
+        private Button _btnConsultar = null!;
+        private Button _btnExportar = null!;
+        private DataGridView _dgv = null!;
+
         public frmReportes()
         {
+            _servicioReporte = new ServicioReporte();
+
             Text = "SGIG — Métricas y Reportes de Ingresos";
-            Size = new Size(820, 520);
+            Size = new Size(820, 530);
             StartPosition = FormStartPosition.CenterParent;
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = false;
@@ -17,6 +40,10 @@ namespace SGIG.UI
 
             Tema.EstilizarFormulario(this);
             InicializarComponentes();
+            ConfigurarColumnasGrilla();
+
+            // Cargar datos reales al abrir
+            this.Shown += async (s, e) => await CargarDatosAsync();
         }
 
         private void InicializarComponentes()
@@ -41,11 +68,11 @@ namespace SGIG.UI
             };
 
             // Contenedores de KPIs (Tarjetas estadísticas)
-            Panel kpi1 = CrearTarjetaKpi("Ingresos del Mes", "$ 1.845.000", "+12.4% vs mes anterior", Tema.Exito, 24, 90);
-            Panel kpi2 = CrearTarjetaKpi("Socios Activos", "318", "14 nuevas altas este mes", Tema.Primario, 284, 90);
-            Panel kpi3 = CrearTarjetaKpi("Check-ins Promedio", "142 / día", "Pico habitual: 19:00 a 21:00 hs", Tema.SlateOscuro, 544, 90);
+            Panel kpi1 = CrearTarjetaKpi("Ingresos del Mes", "$ 0", "Calculando...", Tema.Exito, 24, 90, out _lblValorIngresos, out _lblDetalleIngresos);
+            Panel kpi2 = CrearTarjetaKpi("Socios Activos", "0", "Calculando...", Tema.Primario, 284, 90, out _lblValorSocios, out _lblDetalleSocios);
+            Panel kpi3 = CrearTarjetaKpi("Check-ins Promedio", "0 / día", "Últimos 30 días", Tema.SlateOscuro, 544, 90, out _lblValorCheckins, out _lblDetalleCheckins);
 
-            // Filtro simulado
+            // Filtro de fechas
             GroupBox grpPeriodo = new()
             {
                 Text = " Rango de consulta ",
@@ -56,36 +83,28 @@ namespace SGIG.UI
             };
 
             Label lblDesde = new() { Text = "Desde:", Location = new Point(20, 30), AutoSize = true };
-            DateTimePicker dtpDesde = new() { Location = new Point(70, 26), Width = 130, Value = DateTime.Today.AddDays(-30) };
-            Label lblHasta = new() { Text = "Hasta:", Location = new Point(230, 30), AutoSize = true };
-            DateTimePicker dtpHasta = new() { Location = new Point(280, 26), Width = 130, Value = DateTime.Today };
+            _dtpDesde = new() { Location = new Point(70, 26), Width = 130, Value = DateTime.Today.AddDays(-30) };
 
-            Button btnConsultar = new()
+            Label lblHasta = new() { Text = "Hasta:", Location = new Point(230, 30), AutoSize = true };
+            _dtpHasta = new() { Location = new Point(280, 26), Width = 130, Value = DateTime.Today };
+
+            _btnConsultar = new()
             {
                 Text = "Generar Vista",
                 Location = new Point(440, 24),
-                Size = new Size(130, 30)
+                Size = new Size(130, 30),
+                BackColor = Tema.Primario,
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Cursor = Cursors.Hand
             };
+            _btnConsultar.FlatAppearance.BorderSize = 0;
+            _btnConsultar.Click += async (s, e) => await ActualizarGrillaAsync();
 
-            btnConsultar.Click += (s, e) =>
-            {
-                if (dtpDesde.Value.Date > dtpHasta.Value.Date)
-                {
-                    MessageBox.Show("La fecha \"Desde\" no puede ser posterior a la fecha \"Hasta\".",
-                        "Reportes", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    return;
-                }
+            grpPeriodo.Controls.AddRange(new Control[] { lblDesde, _dtpDesde, lblHasta, _dtpHasta, _btnConsultar });
 
-                Cursor = Cursors.WaitCursor;
-                System.Threading.Thread.Sleep(350); // Simulación de carga
-                Cursor = Cursors.Default;
-                MessageBox.Show("Métricas actualizadas para el rango seleccionado.", "Reportes", MessageBoxButtons.OK, MessageBoxIcon.Information);
-            };
-
-            grpPeriodo.Controls.AddRange(new Control[] { lblDesde, dtpDesde, lblHasta, dtpHasta, btnConsultar });
-
-            // Grilla mockeada de movimientos
-            DataGridView dgv = new()
+            // Grilla de movimientos
+            _dgv = new()
             {
                 Location = new Point(24, 295),
                 Size = new Size(756, 130),
@@ -94,47 +113,72 @@ namespace SGIG.UI
                 RowHeadersVisible = false,
                 AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
                 BackgroundColor = Color.White,
-                BorderStyle = BorderStyle.FixedSingle
+                BorderStyle = BorderStyle.FixedSingle,
+                SelectionMode = DataGridViewSelectionMode.FullRowSelect
             };
 
-            dgv.Columns.Add("Concepto", "Concepto");
-            dgv.Columns.Add("Periodo", "Período");
-            dgv.Columns.Add("Cantidad", "Cantidad / Registros");
-            dgv.Columns.Add("Total", "Monto Total");
-
-            dgv.Rows.Add("Cuotas Plan Full Libre", "Septiembre 2026", "210", "$ 1.260.000");
-            dgv.Rows.Add("Cuotas Plan 3 Días", "Septiembre 2026", "84", "$ 420.000");
-            dgv.Rows.Add("Pases Diarios / Visitas", "Septiembre 2026", "55", "$ 165.000");
-
-            // Botón de exportación simulada
-            Button btnExportar = new()
+            // Botón de exportación
+            _btnExportar = new()
             {
-                Text = "Exportar Reporte (PDF / Excel)",
+                Text = "Exportar Reporte (CSV / Excel)",
                 Location = new Point(540, 438),
-                Size = new Size(240, 34)
+                Size = new Size(240, 34),
+                BackColor = Tema.SlateOscuro,
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Cursor = Cursors.Hand
             };
+            _btnExportar.FlatAppearance.BorderSize = 0;
+            _btnExportar.Click += btnExportar_Click;
 
-            btnExportar.Click += (s, e) =>
-            {
-                SaveFileDialog sfd = new()
-                {
-                    Filter = "Archivo PDF (*.pdf)|*.pdf|Documento Excel (*.xlsx)|*.xlsx",
-                    FileName = $"Reporte_Ingresos_{DateTime.Now:yyyyMM}"
-                };
-
-                if (sfd.ShowDialog() == DialogResult.OK)
-                {
-                    Cursor = Cursors.WaitCursor;
-                    System.Threading.Thread.Sleep(400);
-                    Cursor = Cursors.Default;
-                    MessageBox.Show($"Reporte simulado generado con éxito en:\n{sfd.FileName}", "Exportación Completa", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                }
-            };
-
-            Controls.AddRange(new Control[] { lblTitulo, lblSub, kpi1, kpi2, kpi3, grpPeriodo, dgv, btnExportar });
+            Controls.AddRange(new Control[] { lblTitulo, lblSub, kpi1, kpi2, kpi3, grpPeriodo, _dgv, _btnExportar });
         }
 
-        private Panel CrearTarjetaKpi(string titulo, string valor, string detalle, Color colorAcento, int x, int y)
+        private void ConfigurarColumnasGrilla()
+        {
+            _dgv.AutoGenerateColumns = false;
+            _dgv.Columns.Clear();
+
+            _dgv.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                DataPropertyName = nameof(FilaReporteConceptoDTO.Concepto),
+                HeaderText = "Concepto",
+                FillWeight = 40
+            });
+
+            _dgv.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                DataPropertyName = nameof(FilaReporteConceptoDTO.Periodo),
+                HeaderText = "Período",
+                FillWeight = 25
+            });
+
+            _dgv.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                DataPropertyName = nameof(FilaReporteConceptoDTO.CantidadRegistros),
+                HeaderText = "Cantidad / Registros",
+                FillWeight = 20,
+                DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleRight }
+            });
+
+            _dgv.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                DataPropertyName = nameof(FilaReporteConceptoDTO.MontoTotal),
+                HeaderText = "Monto Total",
+                FillWeight = 25,
+                DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleRight, Format = "C2" }
+            });
+        }
+
+        private Panel CrearTarjetaKpi(
+            string titulo,
+            string valorInicial,
+            string detalleInicial,
+            Color colorAcento,
+            int x,
+            int y,
+            out Label lblValor,
+            out Label lblDetalle)
         {
             Panel p = new()
             {
@@ -146,11 +190,115 @@ namespace SGIG.UI
 
             Panel barrita = new() { Dock = DockStyle.Top, Height = 4, BackColor = colorAcento };
             Label lblT = new() { Text = titulo, Font = Tema.FuenteLabel, ForeColor = Tema.SlateTexto, Location = new Point(14, 14), AutoSize = true };
-            Label lblV = new() { Text = valor, Font = new Font("Segoe UI", 16f, FontStyle.Bold), ForeColor = Tema.SlateOscuro, Location = new Point(12, 34), AutoSize = true };
-            Label lblD = new() { Text = detalle, Font = new Font("Segoe UI", 7.5f), ForeColor = Color.Gray, Location = new Point(14, 70), AutoSize = true, MaximumSize = new Size(208, 0) };
+            lblValor = new() { Text = valorInicial, Font = new Font("Segoe UI", 16f, FontStyle.Bold), ForeColor = Tema.SlateOscuro, Location = new Point(12, 34), AutoSize = true };
+            lblDetalle = new() { Text = detalleInicial, Font = new Font("Segoe UI", 7.5f), ForeColor = Color.Gray, Location = new Point(14, 70), AutoSize = true, MaximumSize = new Size(208, 0) };
 
-            p.Controls.AddRange(new Control[] { barrita, lblT, lblV, lblD });
+            p.Controls.AddRange(new Control[] { barrita, lblT, lblValor, lblDetalle });
             return p;
+        }
+
+        private async Task CargarDatosAsync()
+        {
+            await CargarMetricasKpiAsync();
+            await ActualizarGrillaAsync();
+        }
+
+        private async Task CargarMetricasKpiAsync()
+        {
+            try
+            {
+                var metricas = await Task.Run(() => _servicioReporte.ObtenerMetricas());
+
+                _lblValorIngresos.Text = $"$ {metricas.IngresosMes:N0}";
+                _lblDetalleIngresos.Text = "Total facturado este mes";
+
+                _lblValorSocios.Text = metricas.SociosActivos.ToString();
+                _lblDetalleSocios.Text = $"{metricas.NuevasAltasMes} nuevas altas este mes";
+
+                _lblValorCheckins.Text = $"{metricas.CheckinsPromedioDia:F1} / día";
+                _lblDetalleCheckins.Text = "Promedio últimos 30 días";
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error al cargar métricas del panel: {ex.Message}", "Reportes", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private async Task ActualizarGrillaAsync()
+        {
+            if (_dtpDesde.Value.Date > _dtpHasta.Value.Date)
+            {
+                MessageBox.Show("La fecha \"Desde\" no puede ser posterior a la fecha \"Hasta\".",
+                    "Reportes", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            try
+            {
+                Cursor = Cursors.WaitCursor;
+                _btnConsultar.Enabled = false;
+
+                DateTime desde = _dtpDesde.Value.Date;
+                DateTime hasta = _dtpHasta.Value.Date;
+
+                var datos = await Task.Run(() => _servicioReporte.GenerarReporte(desde, hasta).ToList());
+                _dgv.DataSource = datos;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error al generar el reporte: {ex.Message}", "Reportes", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                _btnConsultar.Enabled = true;
+                Cursor = Cursors.Default;
+            }
+        }
+
+        private void btnExportar_Click(object? sender, EventArgs e)
+        {
+            if (_dgv.Rows.Count == 0)
+            {
+                MessageBox.Show("No hay datos en la grilla para exportar.", "Atención", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            using SaveFileDialog sfd = new()
+            {
+                Filter = "Archivo CSV compatible con Excel (*.csv)|*.csv",
+                FileName = $"Reporte_Ingresos_{DateTime.Now:yyyyMMdd_HHmm}.csv",
+                Title = "Guardar Reporte"
+            };
+
+            if (sfd.ShowDialog() != DialogResult.OK) return;
+
+            try
+            {
+                var sb = new StringBuilder();
+
+                // Encabezados
+                var columnas = _dgv.Columns.Cast<DataGridViewColumn>().Select(c => $"\"{c.HeaderText}\"");
+                sb.AppendLine(string.Join(";", columnas));
+
+                // Filas
+                foreach (DataGridViewRow fila in _dgv.Rows)
+                {
+                    if (fila.IsNewRow) continue;
+                    var celdas = fila.Cells.Cast<DataGridViewCell>().Select(c =>
+                    {
+                        string val = c.FormattedValue?.ToString() ?? string.Empty;
+                        return $"\"{val.Replace("\"", "\"\"")}\"";
+                    });
+                    sb.AppendLine(string.Join(";", celdas));
+                }
+
+                File.WriteAllText(sfd.FileName, sb.ToString(), Encoding.UTF8);
+                MessageBox.Show($"Reporte exportado exitosamente en:\n{sfd.FileName}", "Exportación Exitosa", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ocurrió un error al exportar el archivo: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
     }
 }
