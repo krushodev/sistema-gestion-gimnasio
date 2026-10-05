@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Dapper;
+using Microsoft.Data.SqlClient;
 using SGIG.Entidades;
 
 namespace SGIG.Datos
@@ -41,11 +42,11 @@ namespace SGIG.Datos
                 {
                     IngresosMes = ingresos,
                     SociosActivos = (int)socios.Activos,
-                    NuevasAltasMes = (int)socios.AlDia, // Representa socios con cuota al día
+                    SociosAlDia = (int)socios.AlDia,
                     CheckinsPromedioDia = Math.Round(checkinsProm, 1)
                 };
             }
-            catch (Exception ex)
+            catch (SqlException ex)
             {
                 throw new AccesoDatosException("Error al obtener las métricas del dashboard: " + ex.Message, ex);
             }
@@ -75,7 +76,7 @@ namespace SGIG.Datos
                     Hasta = hasta.Date.AddDays(1).AddTicks(-1)
                 });
             }
-            catch (Exception ex)
+            catch (SqlException ex)
             {
                 throw new AccesoDatosException("Error al consultar el reporte financiero: " + ex.Message, ex);
             }

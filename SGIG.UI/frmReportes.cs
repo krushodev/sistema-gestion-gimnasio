@@ -213,7 +213,7 @@ namespace SGIG.UI
                 _lblDetalleIngresos.Text = "Total facturado este mes";
 
                 _lblValorSocios.Text = metricas.SociosActivos.ToString();
-                _lblDetalleSocios.Text = $"{metricas.NuevasAltasMes} nuevas altas este mes";
+                _lblDetalleSocios.Text = $"{metricas.SociosAlDia} con cuota al día";
 
                 _lblValorCheckins.Text = $"{metricas.CheckinsPromedioDia:F1} / día";
                 _lblDetalleCheckins.Text = "Promedio últimos 30 días";

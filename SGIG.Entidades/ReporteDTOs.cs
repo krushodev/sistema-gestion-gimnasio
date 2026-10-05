@@ -6,7 +6,7 @@ namespace SGIG.Entidades
     {
         public decimal IngresosMes { get; set; }
         public int SociosActivos { get; set; }
-        public int NuevasAltasMes { get; set; }
+        public int SociosAlDia { get; set; }
         public double CheckinsPromedioDia { get; set; }
     }
 

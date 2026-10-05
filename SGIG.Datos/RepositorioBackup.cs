@@ -1,12 +1,27 @@
 ﻿using System;
+using System.Text.RegularExpressions;
 using Microsoft.Data.SqlClient;
 
 namespace SGIG.Datos
 {
     public class RepositorioBackup
     {
+        // SQL Server no permite parametrizar nombres de base de datos en BACKUP/ALTER DATABASE,
+        // asi que se valida el identificador antes de interpolarlo para evitar inyeccion SQL.
+        private static readonly Regex PatronIdentificadorValido = new(@"^[A-Za-z_][A-Za-z0-9_]*$", RegexOptions.Compiled);
+
+        private static void ValidarNombreBaseDatos(string nombreBaseDatos)
+        {
+            if (string.IsNullOrWhiteSpace(nombreBaseDatos) || !PatronIdentificadorValido.IsMatch(nombreBaseDatos))
+            {
+                throw new AccesoDatosException($"Nombre de base de datos inválido: '{nombreBaseDatos}'.");
+            }
+        }
+
         public void RealizarBackup(string rutaDestino, string nombreBaseDatos)
         {
+            ValidarNombreBaseDatos(nombreBaseDatos);
+
             try
             {
                 var builder = new SqlConnectionStringBuilder(Conexion.ObtenerCadena())
@@ -18,8 +33,8 @@ namespace SGIG.Datos
                 {
                     conn.Open();
                     string query = $@"
-                        BACKUP DATABASE [{nombreBaseDatos}] 
-                        TO DISK = @Ruta 
+                        BACKUP DATABASE [{nombreBaseDatos}]
+                        TO DISK = @Ruta
                         WITH FORMAT, INIT, NAME = 'SGIG_Full_Backup', SKIP, NOREWIND, NOUNLOAD, STATS = 10;";
 
                     using (var cmd = new SqlCommand(query, conn))
@@ -30,7 +45,7 @@ namespace SGIG.Datos
                     }
                 }
             }
-            catch (Exception ex)
+            catch (SqlException ex)
             {
                 throw new AccesoDatosException("Error al generar el backup: " + ex.Message, ex);
             }
@@ -38,6 +53,8 @@ namespace SGIG.Datos
 
         public void RealizarRestore(string rutaOrigen, string nombreBaseDatos)
         {
+            ValidarNombreBaseDatos(nombreBaseDatos);
+
             try
             {
                 var builder = new SqlConnectionStringBuilder(Conexion.ObtenerCadena())
@@ -61,7 +78,7 @@ namespace SGIG.Datos
                     }
                 }
             }
-            catch (Exception ex)
+            catch (SqlException ex)
             {
                 throw new AccesoDatosException("Error al restaurar la base de datos: " + ex.Message, ex);
             }
