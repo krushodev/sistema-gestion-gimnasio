@@ -15,6 +15,9 @@ namespace SGIG.Negocio
 
         public IEnumerable<Socio> ObtenerActivos() => _repositorioSocio.ObtenerActivos();
 
+        /// <summary>Activos y dados de baja, para que la grilla del ABM muestre el estado.</summary>
+        public IEnumerable<Socio> ObtenerTodos() => _repositorioSocio.ObtenerTodos();
+
         public Socio? ObtenerPorDocumento(string documento)
         {
             if (string.IsNullOrWhiteSpace(documento))
@@ -82,6 +85,23 @@ namespace SGIG.Negocio
 
         /// <summary>Baja lógica (RNF#03).</summary>
         public void DarDeBaja(int idPersona) => _repositorioSocio.BajaLogica(idPersona);
+
+        /// <summary>
+        /// Reactiva a un socio dado de baja, sin pasar por el diálogo de alta
+        /// (los datos ya están cargados: sólo se vuelve a poner activo = 1).
+        /// </summary>
+        public void Reactivar(int idPersona)
+        {
+            var socio = _repositorioSocio.ObtenerPorId(idPersona)
+                ?? throw new NegocioException("No se encontró el socio.");
+
+            if (socio.Activo)
+            {
+                throw new NegocioException("El socio ya está activo.");
+            }
+
+            _repositorioSocio.Reactivar(socio);
+        }
 
         private static void Validar(Socio socio)
         {

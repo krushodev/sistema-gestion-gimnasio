@@ -15,6 +15,9 @@ namespace SGIG.Negocio
 
         public IEnumerable<Usuario> ObtenerActivos() => _repositorioUsuario.ObtenerActivos();
 
+        /// <summary>Activos y dados de baja, para que la grilla del ABM muestre el estado.</summary>
+        public IEnumerable<Usuario> ObtenerTodos() => _repositorioUsuario.ObtenerTodos();
+
         public Usuario? ObtenerPorId(int idPersona) => _repositorioUsuario.ObtenerPorId(idPersona);
 
         public IEnumerable<Rol> ObtenerRoles() => _repositorioRol.ObtenerActivos();
@@ -134,6 +137,23 @@ namespace SGIG.Negocio
             }
 
             _repositorioUsuario.BajaLogica(idPersona);
+        }
+
+        /// <summary>
+        /// Reactiva a un usuario dado de baja, sin pasar por el diálogo de alta
+        /// (los datos ya están cargados: sólo se vuelve a poner activo = 1).
+        /// </summary>
+        public void Reactivar(int idPersona)
+        {
+            var usuario = _repositorioUsuario.ObtenerPorId(idPersona)
+                ?? throw new NegocioException("No se encontró el usuario.");
+
+            if (usuario.Activo)
+            {
+                throw new NegocioException("El usuario ya está activo.");
+            }
+
+            _repositorioUsuario.Reactivar(usuario);
         }
 
         private static void Validar(Usuario usuario, string contrasenia, bool esAlta)

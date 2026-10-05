@@ -6,11 +6,15 @@ namespace SGIG.UI
     /// <summary>
     /// Listado de usuarios del sistema (RF#03, RNF#03). Sólo accesible para el rol
     /// Administrador. El alta y la edición se hacen en el diálogo modal
-    /// <see cref="frmUsuarioEditor"/>; esta pantalla sólo lista y filtra.
+    /// <see cref="frmUsuarioEditor"/>; esta pantalla lista a todos (activos y dados
+    /// de baja, distinguidos por estado) y permite reactivar sin pasar por el editor.
     /// </summary>
     //
     // ── CONTROLES (ver frmUsuarios.Designer.cs) ──────────────────────────────
     //   txtBuscar (filtro rápido), dgvUsuarios, btnNuevo, btnEditar, btnDarDeBaja
+    //   (btnDarDeBaja alterna su texto y acción según el estado de la fila
+    //   seleccionada: "Dar de baja" para un usuario activo, "Dar de alta" para uno
+    //   dado de baja — no hace falta agregar un botón nuevo)
     // ─────────────────────────────────────────────────────────────────────────
     public partial class frmUsuarios : Form
     {
@@ -23,6 +27,9 @@ namespace SGIG.UI
         {
             InitializeComponent();
             _usuarioLogueado = usuarioLogueado;
+            dgvUsuarios.CellFormatting += DgvUsuarios_CellFormatting;
+            dgvUsuarios.DataBindingComplete += DgvUsuarios_DataBindingComplete;
+            dgvUsuarios.SelectionChanged += (s, e) => ActualizarBotonBaja();
         }
 
         private void frmUsuarios_Load(object sender, EventArgs e)
@@ -41,7 +48,8 @@ namespace SGIG.UI
         /// <summary>
         /// Columnas explícitas: la grilla muestra sólo lo que le sirve al administrador.
         /// Sin esto se autogeneraría una columna por propiedad, incluido el hash de la
-        /// contraseña y todos los ids internos.
+        /// contraseña y todos los ids internos. Se incluye el estado (Activo/Dado de
+        /// baja) para que un usuario dado de baja siga siendo visible y se pueda reactivar.
         /// </summary>
         private void ConfigurarGrilla()
         {
@@ -52,13 +60,15 @@ namespace SGIG.UI
                 (nameof(Usuario.NombreUsuario), "Usuario", 90),
                 (nameof(Usuario.NombreRol), "Rol", 90),
                 (nameof(Usuario.Legajo), "Legajo", 70),
-                (nameof(Usuario.Email), "Correo electrónico", 150));
+                (nameof(Usuario.Email), "Correo electrónico", 150),
+                (nameof(Usuario.Activo), "Estado", 70));
         }
 
         private void CargarGrilla()
         {
-            _usuarios = _servicioUsuario.ObtenerActivos().ToList();
+            _usuarios = _servicioUsuario.ObtenerTodos().ToList();
             AplicarFiltro();
+            ActualizarBotonBaja();
         }
 
         /// <summary>Filtro rápido en memoria por apellido, nombre, documento, legajo o usuario.</summary>
@@ -104,25 +114,50 @@ namespace SGIG.UI
             }
         }
 
+        /// <summary>
+        /// Alterna entre dar de baja y reactivar según el estado del usuario
+        /// seleccionado (ver <see cref="ActualizarBotonBaja"/>).
+        /// </summary>
         private void btnDarDeBaja_Click(object sender, EventArgs e)
         {
             var usuario = UsuarioSeleccionado();
             if (usuario is null) return;
 
-            var respuesta = MessageBox.Show(
-                $"¿Confirmás dar de baja al usuario {usuario.Apellido}, {usuario.Nombre} ({usuario.NombreUsuario})?",
-                "Confirmar baja", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-
-            if (respuesta != DialogResult.Yes) return;
-
-            try
+            if (usuario.Activo)
             {
-                _servicioUsuario.DarDeBaja(usuario.IdPersona, _usuarioLogueado.IdPersona);
-                CargarGrilla();
+                var respuesta = MessageBox.Show(
+                    $"¿Confirmás dar de baja al usuario {usuario.Apellido}, {usuario.Nombre} ({usuario.NombreUsuario})?",
+                    "Confirmar baja", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+
+                if (respuesta != DialogResult.Yes) return;
+
+                try
+                {
+                    _servicioUsuario.DarDeBaja(usuario.IdPersona, _usuarioLogueado.IdPersona);
+                    CargarGrilla();
+                }
+                catch (Exception ex)
+                {
+                    MostrarError(ex);
+                }
             }
-            catch (Exception ex)
+            else
             {
-                MostrarError(ex);
+                var respuesta = MessageBox.Show(
+                    $"¿Confirmás dar de alta nuevamente al usuario {usuario.Apellido}, {usuario.Nombre} ({usuario.NombreUsuario})?",
+                    "Confirmar alta", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+
+                if (respuesta != DialogResult.Yes) return;
+
+                try
+                {
+                    _servicioUsuario.Reactivar(usuario.IdPersona);
+                    CargarGrilla();
+                }
+                catch (Exception ex)
+                {
+                    MostrarError(ex);
+                }
             }
         }
 
@@ -138,6 +173,38 @@ namespace SGIG.UI
             MessageBox.Show("Seleccioná un usuario de la grilla.", "SGIG",
                 MessageBoxButtons.OK, MessageBoxIcon.Information);
             return null;
+        }
+
+        /// <summary>Cambia el texto de btnDarDeBaja según el estado de la fila seleccionada.</summary>
+        private void ActualizarBotonBaja()
+        {
+            var usuario = dgvUsuarios.CurrentRow?.DataBoundItem as Usuario;
+            btnDarDeBaja.Text = usuario is { Activo: false } ? "Dar de &alta" : "Dar de &baja";
+        }
+
+        /// <summary>Convierte la columna booleana Activo en un texto legible.</summary>
+        private void DgvUsuarios_CellFormatting(object? sender, DataGridViewCellFormattingEventArgs e)
+        {
+            if (dgvUsuarios.Columns[e.ColumnIndex].Name != "col" + nameof(Usuario.Activo)) return;
+
+            if (e.Value is bool activo)
+            {
+                e.Value = activo ? "Activo" : "Dado de baja";
+                e.FormattingApplied = true;
+            }
+        }
+
+        /// <summary>Atenúa visualmente las filas de usuarios dados de baja.</summary>
+        private void DgvUsuarios_DataBindingComplete(object? sender, DataGridViewBindingCompleteEventArgs e)
+        {
+            foreach (DataGridViewRow fila in dgvUsuarios.Rows)
+            {
+                if (fila.DataBoundItem is Usuario { Activo: false })
+                {
+                    fila.DefaultCellStyle.ForeColor = Tema.SlateTexto;
+                    fila.DefaultCellStyle.Font = new Font(dgvUsuarios.Font, FontStyle.Italic);
+                }
+            }
         }
 
         /// <summary>

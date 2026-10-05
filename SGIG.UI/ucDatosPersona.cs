@@ -17,11 +17,12 @@ namespace SGIG.UI
     //   provincia elegida en cboProvincia), dtpFechaNacimiento (ocultable con
     //   MostrarFechaNacimiento)
     //
-    //   Control nuevo a agregar con el diseñador: lblProvincia (Label, texto
-    //   "Provincia:") + cboProvincia (ComboBox, DropDownStyle = DropDownList),
-    //   ubicado arriba de cboLocalidad. El evento SelectedIndexChanged de
-    //   cboProvincia se suscribe por código en el constructor, no hace falta
-    //   tocarlo desde el diseñador.
+    //   El DropDownStyle de cboProvincia/cboLocalidad que fije el diseñador no
+    //   importa: el constructor lo pisa a DropDown y activa autocompletado
+    //   (ConfigurarComboBusqueda) para poder escribir y filtrar en vez de
+    //   desplazarse por el combo cerrado. El evento SelectedIndexChanged de
+    //   cboProvincia también se suscribe por código, no hace falta tocarlo
+    //   desde el diseñador.
     // ──────────────────────────────────────────────────────────────────────────
     public partial class ucDatosPersona : UserControl
     {
@@ -45,6 +46,42 @@ namespace SGIG.UI
             txtApellido.KeyPress += ValidacionesUI.SoloLetras;
             txtTelefono.KeyPress += Grillas.SoloDigitos;
             cboProvincia.SelectedIndexChanged += cboProvincia_SelectedIndexChanged;
+
+            ConfigurarComboBusqueda(cboProvincia);
+            ConfigurarComboBusqueda(cboLocalidad);
+            cboProvincia.Validating += (s, e) => ForzarSeleccionValida(cboProvincia);
+            cboLocalidad.Validating += (s, e) => ForzarSeleccionValida(cboLocalidad);
+        }
+
+        /// <summary>
+        /// Habilita escribir para filtrar en cboProvincia/cboLocalidad: Argentina tiene
+        /// 24 provincias y cientos de localidades, así que buscar por teclado es mucho
+        /// más rápido que desplazarse por un combo cerrado. También se acota la altura
+        /// del desplegable para que no tape media pantalla al abrirse.
+        /// </summary>
+        private static void ConfigurarComboBusqueda(ComboBox combo)
+        {
+            combo.DropDownStyle = ComboBoxStyle.DropDown;
+            combo.AutoCompleteMode = AutoCompleteMode.SuggestAppend;
+            combo.AutoCompleteSource = AutoCompleteSource.ListItems;
+            combo.MaxDropDownItems = 6;
+        }
+
+        /// <summary>
+        /// Como cboProvincia/cboLocalidad pasan a ser editables (DropDown) para poder
+        /// escribir una búsqueda, hay que validar al salir del campo que el texto
+        /// tipeado corresponda a un ítem real; si no, se revierte a la última
+        /// selección válida en vez de dejar un texto suelto sin IdProvincia/IdLocalidad.
+        /// </summary>
+        private static void ForzarSeleccionValida(ComboBox combo)
+        {
+            if (combo.SelectedIndex >= 0) return;
+
+            var texto = combo.Text;
+            var itemCoincidente = combo.Items.Cast<object>().FirstOrDefault(item =>
+                string.Equals(combo.GetItemText(item), texto, StringComparison.OrdinalIgnoreCase));
+
+            combo.SelectedItem = itemCoincidente ?? (combo.Items.Count > 0 ? combo.Items[0] : null);
         }
 
         /// <summary>

@@ -54,6 +54,25 @@ namespace SGIG.Datos
         }
 
         /// <summary>
+        /// Todos los socios, activos y dados de baja, para que la grilla del ABM
+        /// pueda mostrar el estado y permitir reactivar desde la UI.
+        /// </summary>
+        public IEnumerable<Socio> ObtenerTodos()
+        {
+            const string sql = SelectBase + " ORDER BY p.apellido, p.nombre";
+
+            try
+            {
+                using var connection = Conexion.ObtenerConexionAbierta();
+                return connection.Query<Socio>(sql);
+            }
+            catch (SqlException ex)
+            {
+                throw new AccesoDatosException("Error al obtener los socios.", ex);
+            }
+        }
+
+        /// <summary>
         /// Alta completa: inserta Persona + Socio en una sola transacción. Se usa
         /// cuando el documento no pertenecía a ninguna Persona ya cargada.
         /// </summary>

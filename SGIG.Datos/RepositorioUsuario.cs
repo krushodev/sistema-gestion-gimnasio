@@ -110,6 +110,36 @@ namespace SGIG.Datos
         }
 
         /// <summary>
+        /// Todos los usuarios, activos y dados de baja, para que la grilla del ABM
+        /// pueda mostrar el estado y permitir reactivar desde la UI.
+        /// </summary>
+        public IEnumerable<Usuario> ObtenerTodos()
+        {
+            const string sql = @"
+                SELECT p.id_persona AS IdPersona, p.documento AS Documento,
+                       p.id_tipo_documento AS IdTipoDocumento, p.nombre AS Nombre,
+                       p.apellido AS Apellido, p.email AS Email, p.telefono AS Telefono,
+                       p.id_localidad AS IdLocalidad, p.fecha_nacimiento AS FechaNacimiento,
+                       u.nombre_usuario AS NombreUsuario, u.contrasenia_hash AS ContraseniaHash,
+                       u.id_rol AS IdRol, u.legajo AS Legajo, u.fecha_ingreso AS FechaIngreso,
+                       u.activo AS Activo, r.nombre_rol AS NombreRol
+                FROM dbo.Usuario u
+                INNER JOIN dbo.Persona p ON p.id_persona = u.id_persona
+                INNER JOIN dbo.Rol r ON r.id_rol = u.id_rol
+                ORDER BY p.apellido, p.nombre";
+
+            try
+            {
+                using var connection = Conexion.ObtenerConexionAbierta();
+                return connection.Query<Usuario>(sql);
+            }
+            catch (SqlException ex)
+            {
+                throw new AccesoDatosException("Error al obtener los usuarios.", ex);
+            }
+        }
+
+        /// <summary>
         /// Alta unificada de Persona + Usuario en una sola transacción: si falla el insert
         /// del Usuario, la Persona tampoco queda registrada. Devuelve el id_persona nuevo.
         /// </summary>
