@@ -54,3 +54,26 @@ ver [notacion-hungara.md](notacion-hungara.md)): `btnEliminar`/`btnDarDeBaja`/`b
 rojo peligro, `btnCancelar`/`btnCerrar`/`btnVolver` → gris neutro, `btnGuardar`/`btnRegistrar*`/
 `btnConfirmar` → verde éxito, cualquier otro → azul primario. Si un botón nuevo necesita otro
 color, nombralo siguiendo esta convención en vez de hardcodear un color aparte.
+
+---
+
+## Actualización (18/10/2026) — Fase 9: sistema de diseño
+
+`Tema.cs` pasó de "paleta + pintura" a un sistema de diseño (detalle y plan en la Fase 9 de
+`docs/Plan_Trabajo_SGIG.md`):
+
+- **Tokens de color únicos**: `SidebarFondo`, `SidebarTexto`, `SidebarActivoFondo`, `Fondo`,
+  `Superficie`, `Borde`, `TextoPrimario`, `TextoSecundario`, `Acento`/`AcentoHover`, `Exito`,
+  `Peligro`, `Aviso`, `FilaAlterna`. No usar `Color.FromArgb` sueltos en formularios. Los nombres
+  viejos (`SlateOscuro`, `Primario`, `FondoClaro`...) siguen como alias hasta migrar cada pantalla.
+- **Tipografía**: `Tema.Fuente(tamaño, estilo)` y las `Fuente*` estándar usan Segoe UI Variable
+  con fallback a Segoe UI.
+- **Íconos**: clase `Iconos` (glifos de Segoe Fluent Icons / MDL2 Assets, sin imágenes ni NuGet)
+  + `Tema.FuenteIconos(tamaño)`. Reemplaza a los emojis. Los códigos de glifo se ajustan en un solo
+  lugar; si alguno no se ve bien en la máquina de uso, cambiar el código en `Iconos`.
+- **Botones**: `Tema.EstilizarBoton` elige la variante por nombre del control — `eliminar`/
+  `dardebaja`/`rechazar` → peligro; `cancelar`/`cerrar`/`volver`/`limpiar` → secundario (borde,
+  sin relleno); `guardar`/`registrar*`/`confirmar` → éxito; otro → primario. Con hover y pressed.
+- **Grillas**: `Tema.EstilizarGrilla` (aplicada automáticamente por `EstilizarControles`) unifica
+  filas altas, sin líneas verticales, cabecera sin relleno y fila alterna sutil.
+- **`RoundedPanel`**: panel con esquinas redondeadas y borde de 1 px dibujado por código.

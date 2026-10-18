@@ -458,13 +458,13 @@ varias fases ya cerradas — no es una fase nueva, se documenta acá para no per
 
 ### 9.2 Sistema de diseño en `Tema.cs` (base de todo lo demás)
 
-- [ ] Reemplazar la paleta actual por los tokens de 9.1 (mantener los nombres viejos como alias `[Obsolete]` durante la migración para no romper pantallas).
-- [ ] Escala tipográfica y helper de fuente con *fallback* (`Tema.Fuente(tamaño, estilo)`).
-- [ ] Clase `Iconos` con el mapa de glifos + helper `Tema.FuenteIconos(tamaño)` con *fallback* Fluent → MDL2.
-- [ ] Extender `Tema.EstilizarControles`: variantes de botón por convención de nombre (ya existe `ColorSegunNombre`), `ComboBox`/`DateTimePicker`/`TextBox` con borde y foco coherentes, y `Tema.EstilizarGrilla(DataGridView)` (unifica y reemplaza lo que hoy hace `Grillas.cs` donde corresponda).
-- [ ] Control propio `RoundedPanel` (borde redondeado + borde de 1 px) para tarjetas y bloques de formulario. Escrito en código (`OnPaint`), sin `.Designer.cs` involucrado.
-- [ ] Soporte High-DPI: confirmar `ApplicationConfiguration.Initialize()` en `Program.cs` y `AutoScaleMode.Dpi` en los formularios nuevos.
-- [ ] Actualizar `docs/patrones/estilo-visual.md` con el sistema nuevo (tokens, íconos, reglas de uso) y registrar la decisión en `CLAUDE.md` como nota histórica #6.
+- [x] Reemplazar la paleta actual por los tokens de 9.1 (mantener los nombres viejos como alias `[Obsolete]` durante la migración para no romper pantallas).
+- [x] Escala tipográfica y helper de fuente con *fallback* (`Tema.Fuente(tamaño, estilo)`).
+- [x] Clase `Iconos` con el mapa de glifos + helper `Tema.FuenteIconos(tamaño)` con *fallback* Fluent → MDL2.
+- [x] Extender `Tema.EstilizarControles`: variantes de botón por convención de nombre (ya existe `ColorSegunNombre`), `ComboBox`/`DateTimePicker`/`TextBox` con borde y foco coherentes, y `Tema.EstilizarGrilla(DataGridView)` (unifica y reemplaza lo que hoy hace `Grillas.cs` donde corresponda).
+- [x] Control propio `RoundedPanel` (borde redondeado + borde de 1 px) para tarjetas y bloques de formulario. Escrito en código (`OnPaint`), sin `.Designer.cs` involucrado.
+- [x] Soporte High-DPI: `ApplicationConfiguration.Initialize()` ya está en `Program.cs`; los formularios nuevos usarán `AutoScaleMode.Dpi`.
+- [x] Actualizar `docs/patrones/estilo-visual.md` con el sistema nuevo (tokens, íconos, reglas de uso) y registrar la decisión en `CLAUDE.md` como nota histórica #6.
 
 ### 9.3 Contenedor principal: sidebar + barra superior (`frmMDIParent`)
 
