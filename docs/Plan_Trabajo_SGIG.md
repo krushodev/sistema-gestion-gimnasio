@@ -488,10 +488,12 @@ varias fases ya cerradas — no es una fase nueva, se documenta acá para no per
 
 ### 9.5 Login (`frmLogin`)
 
-- [ ] Layout partido en dos paneles: marca minimalista a la izquierda (fondo `SidebarFondo`) y formulario a la derecha sobre `Superficie`; en ventana angosta se oculta el panel de marca.
-- [ ] Campos con ícono de línea, mensaje de error inline (en vez de `MessageBox`) y botón principal con estado de carga.
-- [ ] Reemplazar el emoji del toggle de contraseña (`👁`/`🙈`) en `Tema.AgregarToggleContrasenia` por glifos de `Iconos` (ojo / ojo tachado).
-- [ ] **Se conserva** el flujo de autenticación tal cual (`ServicioUsuario`, hash SHA256, `Hash.Coincide`): sólo cambia la presentación.
+- [x] Layout partido en dos paneles: marca minimalista a la izquierda (fondo `SidebarFondo`) y formulario a la derecha sobre `Superficie`; en ventana angosta se oculta el panel de marca.
+- [x] Campos con ícono de línea, mensaje de error inline (en vez de `MessageBox`) y botón principal con estado de carga.
+- [x] Reemplazar el emoji del toggle de contraseña (`👁`/`🙈`) en `Tema.AgregarToggleContrasenia` por glifos de `Iconos` (ojo / ojo tachado).
+- [x] **Se conserva** el flujo de autenticación tal cual (`ServicioUsuario`, hash SHA256, `Hash.Coincide`): sólo cambia la presentación.
+
+> **Implementado (18/10/2026):** el rediseño vive en `frmLogin.cs` (`ConstruirLayout`/`Reubicar`): reubica por código los controles que ya declara el `.Designer.cs` (mismos nombres), así que el diseñador de Visual Studio seguirá mostrando el layout viejo; es esperable. La ventana pasa a redimensionable (mínimo 480×480) y el panel de marca se oculta por debajo de 680 px de ancho. El toggle de contraseña ya usaba glifos desde la 9.2. Pendiente de revisión visual por el usuario.
 
 ### 9.6 Módulos (herencia del nuevo look, de mayor a menor visibilidad)
 

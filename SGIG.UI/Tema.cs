@@ -26,6 +26,7 @@ namespace SGIG.UI
         public static readonly Color AcentoHover = Color.FromArgb(29, 78, 216);        // #1D4ED8
         public static readonly Color Exito = Color.FromArgb(22, 163, 74);              // #16A34A
         public static readonly Color Peligro = Color.FromArgb(220, 38, 38);            // #DC2626
+        public static readonly Color PeligroFondo = Color.FromArgb(254, 242, 242);     // #FEF2F2
         public static readonly Color Aviso = Color.FromArgb(217, 119, 6);              // #D97706
 
         // Fila alterna de las grillas y hover de superficies: apenas más oscuro que Fondo.
