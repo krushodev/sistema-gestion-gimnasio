@@ -421,6 +421,99 @@ varias fases ya cerradas — no es una fase nueva, se documenta acá para no per
   Disponible para los 3 roles sobre su propia cuenta, desde el botón "⚙ Configuración" de la barra
   superior.
 
+## Fase 9 — Rediseño visual (UI moderna, minimalista y adaptable)
+
+> **Origen (18/10/2026):** pedido del usuario tras cerrar el desarrollo funcional. Objetivo: una app más intuitiva, con paleta definida, sidebar de navegación, íconos minimalistas y layout que se adapte al tamaño de la ventana. **Es un cambio de presentación: no toca entidades, datos, negocio, la ERS ni el modelo de roles.** Extiende la decisión de `docs/patrones/estilo-visual.md` (hoy `Tema.cs` sólo pinta; esta fase lo convierte en un sistema de diseño).
+
+### Diagnóstico del estado actual
+
+- **Navegación:** dashboard de 8 tarjetas (grilla 4×2) + botón "Volver al Inicio" en cada módulo. Para cambiar de módulo hay que volver al inicio: 2 clics de más en cada cambio.
+- **Íconos:** emojis a color (`Segoe UI Emoji`, 34 pt en las tarjetas, ~26 usos en `frmMDIParent.cs` más `frmCheckin`, `frmBackup`, `frmConfiguracion`, `Tema.cs`). Son el principal motivo de lo "grotesco": tamaño fijo, colores que no responden a la paleta y aspecto distinto según la versión de Windows.
+- **Color:** cada tarjeta tiene su propio color de acento (8 distintos) y los colores están hardcodeados (`Color.FromArgb(...)`) en `frmMDIParent`, `frmLogin` y `Tema`, con valores casi iguales pero no idénticos (ej. `241,245,249` vs `Tema.FondoClaro 247,250,252`).
+- **Barra superior:** "Configuración" y "Cerrar sesión" como botones sólidos con texto; el título de sección vive en otra barra distinta (`pnlBarraVolver`).
+- **Adaptabilidad:** la grilla de tarjetas escala por porcentajes, pero la barra superior posiciona los botones a mano (`Location` calculada una sola vez, no se recalcula al redimensionar) y no hay ancho mínimo ni comportamiento definido en ventanas chicas.
+
+### 9.1 Decisiones de diseño (a confirmar antes de implementar)
+
+- **Paleta (tokens únicos en `Tema.cs`; ningún `Color.FromArgb` suelto fuera de ahí).** Neutros slate + **un solo** acento; los colores por módulo desaparecen.
+
+  | Token | Valor | Uso |
+  |---|---|---|
+  | `SidebarFondo` | `#0F172A` | fondo del sidebar |
+  | `SidebarTexto` / `SidebarActivoFondo` | `#94A3B8` / `#1E293B` | ítem normal / ítem seleccionado (con barra de acento a la izquierda) |
+  | `Fondo` | `#F8FAFC` | fondo del área de contenido |
+  | `Superficie` | `#FFFFFF` | tarjetas, grillas, formularios |
+  | `Borde` | `#E2E8F0` | separadores y bordes de 1 px (reemplazan sombras) |
+  | `TextoPrimario` / `TextoSecundario` | `#0F172A` / `#64748B` | títulos y cuerpo / descripciones |
+  | `Acento` / `AcentoHover` | `#2563EB` / `#1D4ED8` | botón principal, ítem activo, foco |
+  | `Exito` / `Peligro` / `Aviso` | `#16A34A` / `#DC2626` / `#D97706` | estados (cuota al día / vencida / por vencer; máquina operativa / en mantenimiento) |
+
+  Contraste mínimo AA (4.5:1) para texto sobre `Fondo` y `Superficie`; verificarlo al fijar los valores finales.
+- **Tipografía:** `Segoe UI Variable` con *fallback* a `Segoe UI` (Windows 10). Escala fija en `Tema`: Título 20, Subtítulo 12, Cuerpo 10, Detalle 9. Se eliminan las fuentes sueltas de 26/34 pt.
+- **Íconos:** glifos de **`Segoe Fluent Icons`** (Windows 11) con *fallback* a `Segoe MDL2 Assets` (Windows 10). Son monocromos, de línea fina, se tiñen con el color del texto (activo/inactivo/hover) y escalan nítidos a cualquier DPI. **Sin paquetes NuGet ni archivos de imagen.** Alternativa descartada por ahora: SVG con librería externa (más control visual, pero suma dependencia y recursos). El mapa de glifos se centraliza en una clase `Iconos` (`Iconos.Socios`, `Iconos.Cobro`, ...) para poder cambiar la fuente en un único lugar.
+- **Layout general:** sidebar fijo a la izquierda (232 px) + barra superior liviana (título de la sección actual a la izquierda; usuario/rol a la derecha) + área de contenido con padding uniforme de 24 px.
+- **Adaptabilidad:** por debajo de ~1100 px de ancho el sidebar se **colapsa a sólo íconos** (64 px, con *tooltip*); un botón de hamburguesa lo expande/contrae a mano. `MinimumSize` definido en `frmMDIParent`. Dashboard con `FlowLayoutPanel` (tarjetas de ancho mínimo que se reacomodan en 4/3/2/1 columnas) en vez de la grilla fija 4×2.
+- **Tarjetas y controles:** esquinas redondeadas (radio 10) con borde de 1 px en vez de la barra de color superior; botones en 3 variantes (primario relleno / secundario con borde / peligro) con estado hover/pressed; foco visible en campos de texto; grillas (`dgv`) con filas altas, sin líneas verticales, cabecera sin relleno y fila alterna muy sutil.
+- **Alcance:** *no* se reordenan los controles internos de los ~21 formularios (riesgo de solapamientos que no se pueden verificar sin ver la pantalla — ver `estilo-visual.md`). Los módulos heredan el nuevo look por pintura central (`Tema`) y por el nuevo contenedor; sólo Login, Dashboard y Check-in se rehacen a fondo. El ajuste fino del resto queda para el diseñador de Visual Studio.
+
+### 9.2 Sistema de diseño en `Tema.cs` (base de todo lo demás)
+
+- [ ] Reemplazar la paleta actual por los tokens de 9.1 (mantener los nombres viejos como alias `[Obsolete]` durante la migración para no romper pantallas).
+- [ ] Escala tipográfica y helper de fuente con *fallback* (`Tema.Fuente(tamaño, estilo)`).
+- [ ] Clase `Iconos` con el mapa de glifos + helper `Tema.FuenteIconos(tamaño)` con *fallback* Fluent → MDL2.
+- [ ] Extender `Tema.EstilizarControles`: variantes de botón por convención de nombre (ya existe `ColorSegunNombre`), `ComboBox`/`DateTimePicker`/`TextBox` con borde y foco coherentes, y `Tema.EstilizarGrilla(DataGridView)` (unifica y reemplaza lo que hoy hace `Grillas.cs` donde corresponda).
+- [ ] Control propio `RoundedPanel` (borde redondeado + borde de 1 px) para tarjetas y bloques de formulario. Escrito en código (`OnPaint`), sin `.Designer.cs` involucrado.
+- [ ] Soporte High-DPI: confirmar `ApplicationConfiguration.Initialize()` en `Program.cs` y `AutoScaleMode.Dpi` en los formularios nuevos.
+- [ ] Actualizar `docs/patrones/estilo-visual.md` con el sistema nuevo (tokens, íconos, reglas de uso) y registrar la decisión en `CLAUDE.md` como nota histórica #6.
+
+### 9.3 Contenedor principal: sidebar + barra superior (`frmMDIParent`)
+
+- [ ] Control `ucSidebar` (UserControl en código): logo/nombre "SGIG" arriba, ítems de navegación filtrados por rol (misma matriz de permisos de 2.4, **sin cambiarla**), ítem activo resaltado, "Configuración" y "Cerrar sesión" fijados abajo.
+- [ ] Agrupar los ítems por sección: **Gestión** (Socios, Cobro de cuotas), **Acceso** (Control de acceso, Historial de accesos), **Activos** (Máquinas, Mantenimiento, Historial de mantenimientos), **Administración** (Usuarios, Reportes, Copia de seguridad) — cada rol ve sólo las secciones e ítems que le corresponden.
+- [ ] Barra superior nueva: título de la sección actual + usuario y rol (avatar con iniciales) a la derecha. **Se elimina `pnlBarraVolver` y el botón "Volver al Inicio"**: navegar es hacer clic en el sidebar.
+- [ ] `AbrirFormularioEnPanel` pasa a ser `NavegarA(...)`: reemplaza el formulario hijo actual (cerrándolo y liberándolo) en vez de apilarlo, y marca el ítem activo del sidebar.
+- [ ] Colapso adaptable del sidebar (< 1100 px → sólo íconos con *tooltip*; botón de hamburguesa manual) y `MinimumSize` del formulario.
+- [ ] Mantener la confirmación `MessageBox` Sí/No al cerrar sesión.
+
+### 9.4 Dashboard de inicio
+
+- [ ] Reemplazar las 8 tarjetas de acceso (redundantes con el sidebar) por un panel de **resumen según el rol**: Administrador → ingresos del mes, socios activos / con cuota al día, check-ins promedio (reutiliza `ServicioReporte.ObtenerMetricas()`); Recepcionista → atajos a Check-in y Cobro de cuota + últimos accesos; Técnico → máquinas en mantenimiento y atajo a registrar falla.
+- [ ] Tarjetas de métrica con `RoundedPanel`, ícono de línea, valor grande y detalle en `TextoSecundario`; distribución con `FlowLayoutPanel` adaptable (4/3/2/1 columnas).
+- [ ] Saludo contextual ("Buen día, Nombre") y fecha actual.
+- [ ] Si algún dato del resumen requiere una consulta nueva en `SGIG.Datos`/`SGIG.Negocio`, documentarla acá antes de escribirla (por ahora se espera reutilizar lo existente).
+
+### 9.5 Login (`frmLogin`)
+
+- [ ] Layout partido en dos paneles: marca minimalista a la izquierda (fondo `SidebarFondo`) y formulario a la derecha sobre `Superficie`; en ventana angosta se oculta el panel de marca.
+- [ ] Campos con ícono de línea, mensaje de error inline (en vez de `MessageBox`) y botón principal con estado de carga.
+- [ ] Reemplazar el emoji del toggle de contraseña (`👁`/`🙈`) en `Tema.AgregarToggleContrasenia` por glifos de `Iconos` (ojo / ojo tachado).
+- [ ] **Se conserva** el flujo de autenticación tal cual (`ServicioUsuario`, hash SHA256, `Hash.Coincide`): sólo cambia la presentación.
+
+### 9.6 Módulos (herencia del nuevo look, de mayor a menor visibilidad)
+
+Para cada pantalla: aplicar `Tema.EstilizarGrilla`, botones por variante, reemplazar emojis por `Iconos`, agrupar filtros/acciones en una barra superior de la pantalla y confirmar que redimensionar la ventana no corta ni solapa controles.
+
+- [ ] `frmCheckin` (la pantalla de uso más frecuente en recepción): resultado con estado de color grande (al día / vencido / por vencer), legible a distancia.
+- [ ] `frmCobroCuota`.
+- [ ] `frmSocios` y `frmSocioEditor` (+ `ucDatosPersona`).
+- [ ] `frmUsuarios` y `frmUsuarioEditor`.
+- [ ] `frmMantenimiento`, `frmHistorialMantenimientos`, `frmMaquinas`, `frmPlanes`.
+- [ ] `frmHistorialAccesos`, `frmBuscarSocio`.
+- [ ] `frmReportes` (tarjetas de métrica coherentes con el dashboard) y `frmBackup`.
+- [ ] `frmConfiguracion`.
+
+### 9.7 Verificación y cierre
+
+- [ ] `dotnet build SGIG.slnx` sin errores ni warnings tras cada subfase.
+- [ ] Revisión visual por el usuario en su máquina (el agente no puede renderizar la app): 100 %, 125 % y 150 % de escala de pantalla; ventana maximizada y a ~1000 px de ancho; monitor chico (1366×768).
+- [ ] Recorrido de cada rol (Administrador / Recepcionista / Técnico) para confirmar que el sidebar muestra sólo lo permitido.
+- [ ] Retomar las capturas de pantalla de la Fase 8 **después** de esta fase, para que el Manual de Usuario muestre la UI definitiva.
+- [ ] *(Opcional)* modo oscuro con un segundo juego de tokens (`Tema.Aplicar(Modo)`); WinForms en .NET 10 lo soporta de forma experimental, por eso queda fuera del alcance base.
+
+**Orden recomendado:** 9.2 → 9.3 → 9.4 → 9.5 → 9.6 → 9.7. Cada subfase compila y se puede revisar por separado; si el tiempo apremia se puede cortar después de 9.3–9.5 y la app ya se ve rediseñada en lo más visible.
+
+---
+
 ## Cómo usar este plan con el agente
 
 1. Seguir las fases en el orden en que aparecen; dentro de una fase, las subsecciones también van en orden de dependencia (entidad → datos → negocio → pantalla).
