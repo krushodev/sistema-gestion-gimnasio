@@ -16,17 +16,52 @@ namespace SGIG.UI
     // ───────────────────────────────────────────────────────────────────────────
     public partial class frmCheckin : Form
     {
-        private static readonly Color ColorConcedido = Color.FromArgb(220, 252, 231);
-        private static readonly Color ColorRechazado = Color.FromArgb(254, 226, 226);
-        private static readonly Color ColorTextoConcedido = Color.FromArgb(21, 128, 61);
-        private static readonly Color ColorTextoRechazado = Color.FromArgb(185, 28, 28);
-
         private readonly ServicioCheckin _servicioCheckin = new();
+
+        // Ícono grande del resultado (check / cruz), creado por código sobre pnlResultado.
+        private Label lblIconoResultado = null!;
 
         public frmCheckin()
         {
             InitializeComponent();
             txtDocumento.KeyPress += Grillas.SoloDigitos;
+            ConfigurarResultado();
+        }
+
+        /// <summary>
+        /// Estado neutro inicial del panel de resultado (blanco con borde fino) y el ícono
+        /// grande que acompaña al texto, legible a distancia desde el mostrador.
+        /// </summary>
+        private void ConfigurarResultado()
+        {
+            lblIconoResultado = new Label
+            {
+                AutoSize = false,
+                Font = Tema.FuenteIconos(26F),
+                Size = new Size(48, 40),
+                Location = new Point(16, 0),
+                BackColor = Color.Transparent,
+                TextAlign = ContentAlignment.MiddleLeft
+            };
+            pnlResultado.Controls.Add(lblIconoResultado);
+
+            pnlResultado.Paint += (s, e) =>
+            {
+                using var lapiz = new Pen(Tema.Borde);
+                e.Graphics.DrawRectangle(lapiz, 0, 0, pnlResultado.Width - 1, pnlResultado.Height - 1);
+            };
+
+            MostrarEstadoNeutro();
+        }
+
+        private void MostrarEstadoNeutro()
+        {
+            pnlResultado.BackColor = Tema.Superficie;
+            lblIconoResultado.Text = string.Empty;
+            lblResultado.ForeColor = Tema.TextoSecundario;
+            lblResultado.Text = "Esperando lectura...";
+            lblNombreSocio.ForeColor = Tema.TextoPrimario;
+            lblNombreSocio.Text = string.Empty;
         }
 
         private void frmCheckin_Load(object sender, EventArgs e)
@@ -54,11 +89,7 @@ namespace SGIG.UI
         private void BtnLimpiar_Click(object? sender, EventArgs e)
         {
             txtDocumento.Clear();
-            pnlResultado.BackColor = SystemColors.Control;
-            lblResultado.ForeColor = SystemColors.ControlText;
-            lblResultado.Text = "Esperando lectura...";
-            lblNombreSocio.ForeColor = SystemColors.ControlText;
-            lblNombreSocio.Text = string.Empty;
+            MostrarEstadoNeutro();
             txtDocumento.Focus();
         }
 
@@ -95,12 +126,16 @@ namespace SGIG.UI
 
         private void MostrarResultado(bool concedido, string nombreSocio, string mensaje)
         {
-            pnlResultado.BackColor = concedido ? ColorConcedido : ColorRechazado;
+            Color colorTexto = concedido ? Tema.ExitoTexto : Tema.PeligroTexto;
+            pnlResultado.BackColor = concedido ? Tema.ExitoFondo : Tema.PeligroFondo;
 
-            lblResultado.ForeColor = concedido ? ColorTextoConcedido : ColorTextoRechazado;
+            lblIconoResultado.ForeColor = colorTexto;
+            lblIconoResultado.Text = concedido ? Iconos.Ok : Iconos.Cancelar;
+
+            lblResultado.ForeColor = colorTexto;
             lblResultado.Text = concedido ? "ACCESO CONCEDIDO" : "ACCESO RECHAZADO";
 
-            lblNombreSocio.ForeColor = concedido ? ColorTextoConcedido : ColorTextoRechazado;
+            lblNombreSocio.ForeColor = colorTexto;
             lblNombreSocio.Text = $"{nombreSocio}\n{mensaje}";
         }
     }

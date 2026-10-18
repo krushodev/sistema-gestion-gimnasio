@@ -499,14 +499,16 @@ varias fases ya cerradas — no es una fase nueva, se documenta acá para no per
 
 Para cada pantalla: aplicar `Tema.EstilizarGrilla`, botones por variante, reemplazar emojis por `Iconos`, agrupar filtros/acciones en una barra superior de la pantalla y confirmar que redimensionar la ventana no corta ni solapa controles.
 
-- [ ] `frmCheckin` (la pantalla de uso más frecuente en recepción): resultado con estado de color grande (al día / vencido / por vencer), legible a distancia.
+- [x] `frmCheckin` (la pantalla de uso más frecuente en recepción): resultado con estado de color grande (al día / vencido / por vencer), legible a distancia.
 - [ ] `frmCobroCuota`.
 - [ ] `frmSocios` y `frmSocioEditor` (+ `ucDatosPersona`).
 - [ ] `frmUsuarios` y `frmUsuarioEditor`.
 - [ ] `frmMantenimiento`, `frmHistorialMantenimientos`, `frmMaquinas`, `frmPlanes`.
-- [ ] `frmHistorialAccesos`, `frmBuscarSocio`.
-- [ ] `frmReportes` (tarjetas de métrica coherentes con el dashboard) y `frmBackup`.
+- [ ] `frmHistorialAccesos`, `frmBuscarSocio` (el emoji del botón Buscar ya se limpia por `Tema`; falta la revisión visual).
+- [x] `frmReportes` (tarjetas de métrica coherentes con el dashboard) y `frmBackup`.
 - [ ] `frmConfiguracion`.
+
+> **Avance (18/10/2026):** además de las pantallas tildadas, `Tema` aplica a **todos** los módulos, de forma central y sin tocar sus diseñadores: botones por variante (con hover), grillas nuevas, `ComboBox` planos, grises de sistema → `TextoSecundario`, y se recorta el emoji inicial de los textos de botón (`SinEmojiInicial`: "💾 Crear copia…" → "Crear copia…"); `btnBuscarPorNombre` pasa a variante secundaria. Detalle de lo hecho a mano: `frmCheckin` (estado neutro + verde/rojo con tokens y un ícono grande de check/cruz sobre el panel de resultado) y `frmReportes` (layout por `Dock` en vez de posiciones fijas, ya no es un diálogo de tamaño fijo, tarjetas = `TarjetaMetrica` igual que el Inicio, barra de filtro con Exportar a la derecha). **Pendiente:** las pantallas sin tilde no tuvieron revisión de layout; hay que abrirlas con la ventana redimensionada y avisar cuál se corta o solapa para ajustarla caso por caso.
 
 ### 9.7 Verificación y cierre
 

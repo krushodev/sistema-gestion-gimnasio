@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Drawing;
 using System.IO;
 using System.Linq;
@@ -15,12 +15,9 @@ namespace SGIG.UI
         private readonly ServicioReporte _servicioReporte;
 
         // Referencias a los controles dinámicos para actualización
-        private Label _lblValorIngresos = null!;
-        private Label _lblDetalleIngresos = null!;
-        private Label _lblValorSocios = null!;
-        private Label _lblDetalleSocios = null!;
-        private Label _lblValorCheckins = null!;
-        private Label _lblDetalleCheckins = null!;
+        private TarjetaMetrica _tarjetaIngresos = null!;
+        private TarjetaMetrica _tarjetaSocios = null!;
+        private TarjetaMetrica _tarjetaCheckins = null!;
         private DateTimePicker _dtpDesde = null!;
         private DateTimePicker _dtpHasta = null!;
         private Button _btnConsultar = null!;
@@ -32,11 +29,8 @@ namespace SGIG.UI
             _servicioReporte = new ServicioReporte();
 
             Text = "SGIG — Métricas y Reportes de Ingresos";
-            Size = new Size(820, 530);
+            Size = new Size(900, 600);
             StartPosition = FormStartPosition.CenterParent;
-            FormBorderStyle = FormBorderStyle.FixedDialog;
-            MaximizeBox = false;
-            MinimizeBox = false;
 
             Tema.EstilizarFormulario(this);
             InicializarComponentes();
@@ -46,92 +40,88 @@ namespace SGIG.UI
             this.Shown += async (s, e) => await CargarDatosAsync();
         }
 
+        /// <summary>
+        /// Layout por Dock (sin posiciones fijas): encabezado, fila de tarjetas, barra de
+        /// filtro con las acciones y, ocupando el resto, la grilla. Así se adapta a
+        /// cualquier tamaño del área de contenido.
+        /// </summary>
         private void InicializarComponentes()
         {
+            Padding = new Padding(0);
+
             // Encabezado
-            Label lblTitulo = new()
+            var pnlEncabezado = new Panel { Dock = DockStyle.Top, Height = 64, BackColor = Tema.Fondo };
+            pnlEncabezado.Controls.Add(new Label
             {
-                Text = "Reportes Financieros y Concurrencia",
-                Font = Tema.FuenteTitulo,
-                ForeColor = Tema.SlateOscuro,
-                Location = new Point(24, 20),
+                Text = "Reportes financieros y concurrencia",
+                Font = Tema.Fuente(16F, FontStyle.Bold),
+                ForeColor = Tema.TextoPrimario,
+                Location = new Point(0, 0),
                 AutoSize = true
-            };
-
-            Label lblSub = new()
+            });
+            pnlEncabezado.Controls.Add(new Label
             {
-                Text = "Métricas mensuales estimadas, altas/bajas de membresías y balance general.",
+                Text = "Métricas del mes y detalle de ingresos por período.",
                 Font = Tema.FuenteSubtitulo,
-                ForeColor = Tema.SlateTexto,
-                Location = new Point(25, 52),
+                ForeColor = Tema.TextoSecundario,
+                Location = new Point(2, 34),
                 AutoSize = true
-            };
+            });
 
-            // Contenedores de KPIs (Tarjetas estadísticas)
-            Panel kpi1 = CrearTarjetaKpi("Ingresos del Mes", "$ 0", "Calculando...", Tema.Exito, 24, 90, out _lblValorIngresos, out _lblDetalleIngresos);
-            Panel kpi2 = CrearTarjetaKpi("Socios Activos", "0", "Calculando...", Tema.Primario, 284, 90, out _lblValorSocios, out _lblDetalleSocios);
-            Panel kpi3 = CrearTarjetaKpi("Check-ins Promedio", "0 / día", "Últimos 30 días", Tema.SlateOscuro, 544, 90, out _lblValorCheckins, out _lblDetalleCheckins);
-
-            // Filtro de fechas
-            GroupBox grpPeriodo = new()
+            // Tarjetas de métricas (mismo componente que el inicio)
+            var flpTarjetas = new FlowLayoutPanel
             {
-                Text = " Rango de consulta ",
-                Font = Tema.FuenteLabel,
-                ForeColor = Tema.SlateTexto,
-                Location = new Point(24, 210),
-                Size = new Size(756, 70)
+                Dock = DockStyle.Top,
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                WrapContents = true,
+                BackColor = Tema.Fondo
             };
+            _tarjetaIngresos = new TarjetaMetrica(Iconos.Cobro, "Ingresos del mes", "$ 0", "Calculando...", Tema.TextoPrimario);
+            _tarjetaSocios = new TarjetaMetrica(Iconos.Socios, "Socios activos", "0", "Calculando...", Tema.TextoPrimario);
+            _tarjetaCheckins = new TarjetaMetrica(Iconos.Acceso, "Check-ins promedio", "0 / día", "Últimos 30 días", Tema.TextoPrimario);
+            flpTarjetas.Controls.AddRange(new Control[] { _tarjetaIngresos, _tarjetaSocios, _tarjetaCheckins });
 
-            Label lblDesde = new() { Text = "Desde:", Location = new Point(20, 30), AutoSize = true };
-            _dtpDesde = new() { Location = new Point(70, 26), Width = 130, Value = DateTime.Today.AddDays(-30) };
+            // Barra de filtro: rango de fechas a la izquierda, exportar a la derecha
+            var pnlFiltro = new Panel { Dock = DockStyle.Top, Height = 56, BackColor = Tema.Fondo };
 
-            Label lblHasta = new() { Text = "Hasta:", Location = new Point(230, 30), AutoSize = true };
-            _dtpHasta = new() { Location = new Point(280, 26), Width = 130, Value = DateTime.Today };
+            var lblDesde = new Label { Text = "Desde", Font = Tema.Fuente(9F, FontStyle.Bold), ForeColor = Tema.TextoSecundario, Location = new Point(2, 18), AutoSize = true };
+            _dtpDesde = new DateTimePicker { Location = new Point(52, 14), Width = 130, Value = DateTime.Today.AddDays(-30) };
+            var lblHasta = new Label { Text = "Hasta", Font = Tema.Fuente(9F, FontStyle.Bold), ForeColor = Tema.TextoSecundario, Location = new Point(204, 18), AutoSize = true };
+            _dtpHasta = new DateTimePicker { Location = new Point(252, 14), Width = 130, Value = DateTime.Today };
 
-            _btnConsultar = new()
-            {
-                Text = "Generar Vista",
-                Location = new Point(440, 24),
-                Size = new Size(130, 30),
-                BackColor = Tema.Primario,
-                ForeColor = Color.White,
-                FlatStyle = FlatStyle.Flat,
-                Cursor = Cursors.Hand
-            };
-            _btnConsultar.FlatAppearance.BorderSize = 0;
+            _btnConsultar = new Button { Name = "btnGenerar", Text = "Generar vista", Location = new Point(402, 10), Size = new Size(130, 34) };
             _btnConsultar.Click += async (s, e) => await ActualizarGrillaAsync();
 
-            grpPeriodo.Controls.AddRange(new Control[] { lblDesde, _dtpDesde, lblHasta, _dtpHasta, _btnConsultar });
-
-            // Grilla de movimientos
-            _dgv = new()
+            _btnExportar = new Button
             {
-                Location = new Point(24, 295),
-                Size = new Size(756, 130),
-                ReadOnly = true,
-                AllowUserToAddRows = false,
-                RowHeadersVisible = false,
-                AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
-                BackgroundColor = Color.White,
-                BorderStyle = BorderStyle.FixedSingle,
-                SelectionMode = DataGridViewSelectionMode.FullRowSelect
+                Name = "btnExportarCerrar", // variante secundaria por convención de nombre
+                Text = "Exportar a CSV",
+                Size = new Size(150, 34),
+                Anchor = AnchorStyles.Top | AnchorStyles.Right
             };
-
-            // Botón de exportación
-            _btnExportar = new()
-            {
-                Text = "Exportar Reporte (CSV / Excel)",
-                Location = new Point(540, 438),
-                Size = new Size(240, 34),
-                BackColor = Tema.SlateOscuro,
-                ForeColor = Color.White,
-                FlatStyle = FlatStyle.Flat,
-                Cursor = Cursors.Hand
-            };
-            _btnExportar.FlatAppearance.BorderSize = 0;
             _btnExportar.Click += btnExportar_Click;
 
-            Controls.AddRange(new Control[] { lblTitulo, lblSub, kpi1, kpi2, kpi3, grpPeriodo, _dgv, _btnExportar });
+            pnlFiltro.Controls.AddRange(new Control[] { lblDesde, _dtpDesde, lblHasta, _dtpHasta, _btnConsultar, _btnExportar });
+            pnlFiltro.Resize += (s, e) => _btnExportar.Location = new Point(pnlFiltro.ClientSize.Width - _btnExportar.Width, 10);
+
+            // Grilla de movimientos (ocupa el resto)
+            _dgv = new DataGridView
+            {
+                Dock = DockStyle.Fill,
+                ReadOnly = true,
+                AllowUserToAddRows = false,
+                AllowUserToResizeRows = false,
+                AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
+                SelectionMode = DataGridViewSelectionMode.FullRowSelect
+            };
+            Tema.EstilizarGrilla(_dgv);
+
+            Controls.Add(pnlEncabezado);
+            Controls.Add(flpTarjetas);
+            Controls.Add(pnlFiltro);
+            Controls.Add(_dgv);
+            _dgv.BringToFront();
         }
 
         private void ConfigurarColumnasGrilla()
@@ -170,33 +160,6 @@ namespace SGIG.UI
             });
         }
 
-        private Panel CrearTarjetaKpi(
-            string titulo,
-            string valorInicial,
-            string detalleInicial,
-            Color colorAcento,
-            int x,
-            int y,
-            out Label lblValor,
-            out Label lblDetalle)
-        {
-            Panel p = new()
-            {
-                Location = new Point(x, y),
-                Size = new Size(236, 100),
-                BackColor = Color.White,
-                BorderStyle = BorderStyle.FixedSingle
-            };
-
-            Panel barrita = new() { Dock = DockStyle.Top, Height = 4, BackColor = colorAcento };
-            Label lblT = new() { Text = titulo, Font = Tema.FuenteLabel, ForeColor = Tema.SlateTexto, Location = new Point(14, 14), AutoSize = true };
-            lblValor = new() { Text = valorInicial, Font = new Font("Segoe UI", 16f, FontStyle.Bold), ForeColor = Tema.SlateOscuro, Location = new Point(12, 34), AutoSize = true };
-            lblDetalle = new() { Text = detalleInicial, Font = new Font("Segoe UI", 7.5f), ForeColor = Color.Gray, Location = new Point(14, 70), AutoSize = true, MaximumSize = new Size(208, 0) };
-
-            p.Controls.AddRange(new Control[] { barrita, lblT, lblValor, lblDetalle });
-            return p;
-        }
-
         private async Task CargarDatosAsync()
         {
             await CargarMetricasKpiAsync();
@@ -209,14 +172,9 @@ namespace SGIG.UI
             {
                 var metricas = await Task.Run(() => _servicioReporte.ObtenerMetricas());
 
-                _lblValorIngresos.Text = $"$ {metricas.IngresosMes:N0}";
-                _lblDetalleIngresos.Text = "Total facturado este mes";
-
-                _lblValorSocios.Text = metricas.SociosActivos.ToString();
-                _lblDetalleSocios.Text = $"{metricas.SociosAlDia} con cuota al día";
-
-                _lblValorCheckins.Text = $"{metricas.CheckinsPromedioDia:F1} / día";
-                _lblDetalleCheckins.Text = "Promedio últimos 30 días";
+                _tarjetaIngresos.Actualizar($"$ {metricas.IngresosMes:N0}", "Total facturado este mes");
+                _tarjetaSocios.Actualizar(metricas.SociosActivos.ToString(), $"{metricas.SociosAlDia} con cuota al día");
+                _tarjetaCheckins.Actualizar($"{metricas.CheckinsPromedioDia:F1} / día", "Promedio últimos 30 días");
             }
             catch (Exception ex)
             {

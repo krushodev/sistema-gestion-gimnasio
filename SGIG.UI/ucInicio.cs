@@ -289,13 +289,15 @@ namespace SGIG.UI
     /// </summary>
     internal sealed class TarjetaMetrica : RoundedPanel
     {
+        private readonly Label _lblValor;
+        private readonly Label _lblDetalle;
         private readonly Font _fuenteIcono = Tema.FuenteIconos(12F);
         private readonly Font _fuenteTitulo = Tema.Fuente(9.5F);
         private readonly Font _fuenteValor = Tema.Fuente(24F, FontStyle.Bold);
         private readonly Font _fuenteDetalle = Tema.Fuente(9F);
 
         public TarjetaMetrica(string icono, string titulo, string valor, string detalle,
-            Color colorValor, Action? alHacerClick)
+            Color colorValor, Action? alHacerClick = null)
         {
             Size = new Size(260, 124);
             Margin = new Padding(0, 0, 16, 16);
@@ -343,6 +345,8 @@ namespace SGIG.UI
                 BackColor = Color.Transparent
             };
             Controls.AddRange(new Control[] { lblIcono, lblTitulo, lblValor, lblDetalle });
+            _lblValor = lblValor;
+            _lblDetalle = lblDetalle;
 
             if (alHacerClick == null) return;
 
@@ -355,6 +359,13 @@ namespace SGIG.UI
                 c.MouseLeave += (s, e) =>
                     Resaltar(ClientRectangle.Contains(PointToClient(Cursor.Position)));
             }
+        }
+
+        /// <summary>Cambia el valor y el detalle una vez que llegan los datos.</summary>
+        public void Actualizar(string valor, string detalle)
+        {
+            _lblValor.Text = valor;
+            _lblDetalle.Text = detalle;
         }
 
         private void Resaltar(bool encendido)

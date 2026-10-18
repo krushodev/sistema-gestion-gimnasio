@@ -27,6 +27,9 @@ namespace SGIG.UI
         public static readonly Color Exito = Color.FromArgb(22, 163, 74);              // #16A34A
         public static readonly Color Peligro = Color.FromArgb(220, 38, 38);            // #DC2626
         public static readonly Color PeligroFondo = Color.FromArgb(254, 242, 242);     // #FEF2F2
+        public static readonly Color ExitoFondo = Color.FromArgb(220, 252, 231);       // #DCFCE7
+        public static readonly Color ExitoTexto = Color.FromArgb(21, 128, 61);         // #15803D
+        public static readonly Color PeligroTexto = Color.FromArgb(185, 28, 28);       // #B91C1C
         public static readonly Color Aviso = Color.FromArgb(217, 119, 6);              // #D97706
 
         // Fila alterna de las grillas y hover de superficies: apenas más oscuro que Fondo.
@@ -96,6 +99,12 @@ namespace SGIG.UI
                 {
                     EstilizarBoton(btn);
                 }
+                else if (c is Label lbl)
+                {
+                    // Los grises "de sistema" de los diseñadores viejos pasan al token secundario.
+                    if (lbl.ForeColor == Color.Gray || lbl.ForeColor == SystemColors.GrayText)
+                        lbl.ForeColor = TextoSecundario;
+                }
                 else if (c is TextBox txt)
                 {
                     txt.BorderStyle = BorderStyle.FixedSingle;
@@ -132,7 +141,8 @@ namespace SGIG.UI
             string n = nombre.ToLowerInvariant();
             if (n.Contains("eliminar") || n.Contains("dardebaja") || n.Contains("rechazar"))
                 return VarianteBoton.Peligro;
-            if (n.Contains("cancelar") || n.Contains("cerrar") || n.Contains("volver") || n.Contains("limpiar"))
+            if (n.Contains("cancelar") || n.Contains("cerrar") || n.Contains("volver") || n.Contains("limpiar")
+                || n.Contains("pornombre"))
                 return VarianteBoton.Secundario;
             if (n.Contains("guardar") || n.Contains("registrar") || n.Contains("confirmar"))
                 return VarianteBoton.Exito;
@@ -142,6 +152,7 @@ namespace SGIG.UI
         public static void EstilizarBoton(Button btn)
         {
             var variante = VarianteSegunNombre(btn.Name);
+            btn.Text = SinEmojiInicial(btn.Text);
 
             btn.FlatStyle = FlatStyle.Flat;
             btn.Font = FuenteBoton;
@@ -171,6 +182,26 @@ namespace SGIG.UI
             btn.FlatAppearance.BorderSize = 0;
             btn.FlatAppearance.MouseOverBackColor = Oscurecer(baseColor, 0.12f);
             btn.FlatAppearance.MouseDownBackColor = Oscurecer(baseColor, 0.22f);
+        }
+
+        /// <summary>
+        /// Quita el emoji decorativo con el que arrancan algunos textos de botón de los
+        /// diseñadores viejos ("💾 Crear copia" → "Crear copia"); los íconos ahora salen de
+        /// <see cref="Iconos"/>. Sólo recorta símbolos/emojis iniciales, nunca letras ni "+".
+        /// </summary>
+        private static string SinEmojiInicial(string texto)
+        {
+            int i = 0;
+            while (i < texto.Length)
+            {
+                char c = texto[i];
+                bool simbolo = char.IsSurrogate(c) || c == ' ' || c == '\uFE0F'
+                    || (c >= '\u2190' && c <= '\u21FF') || (c >= '\u2300' && c <= '\u23FF')
+                    || (c >= '\u2600' && c <= '\u27BF') || (c >= '\u2B00' && c <= '\u2BFF');
+                if (!simbolo) break;
+                i++;
+            }
+            return i == 0 || i >= texto.Length ? texto : texto[i..];
         }
 
         private static Color Oscurecer(Color color, float factor) => Color.FromArgb(
@@ -309,6 +340,7 @@ namespace SGIG.UI
         public const string Ocultar = "\uED1A";
         public const string Aviso = "\uE7BA";
         public const string Ok = "\uE73E";
+        public const string Cancelar = "\uE711";
     }
 
     /// <summary>
