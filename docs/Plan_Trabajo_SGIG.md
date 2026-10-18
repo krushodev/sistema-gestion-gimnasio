@@ -479,10 +479,12 @@ varias fases ya cerradas — no es una fase nueva, se documenta acá para no per
 
 ### 9.4 Dashboard de inicio
 
-- [ ] Reemplazar las 8 tarjetas de acceso (redundantes con el sidebar) por un panel de **resumen según el rol**: Administrador → ingresos del mes, socios activos / con cuota al día, check-ins promedio (reutiliza `ServicioReporte.ObtenerMetricas()`); Recepcionista → atajos a Check-in y Cobro de cuota + últimos accesos; Técnico → máquinas en mantenimiento y atajo a registrar falla.
-- [ ] Tarjetas de métrica con `RoundedPanel`, ícono de línea, valor grande y detalle en `TextoSecundario`; distribución con `FlowLayoutPanel` adaptable (4/3/2/1 columnas).
-- [ ] Saludo contextual ("Buen día, Nombre") y fecha actual.
-- [ ] Si algún dato del resumen requiere una consulta nueva en `SGIG.Datos`/`SGIG.Negocio`, documentarla acá antes de escribirla (por ahora se espera reutilizar lo existente).
+- [x] Reemplazar las 8 tarjetas de acceso (redundantes con el sidebar) por un panel de **resumen según el rol**: Administrador → ingresos del mes, socios activos / con cuota al día, check-ins promedio (reutiliza `ServicioReporte.ObtenerMetricas()`); Recepcionista → atajos a Check-in y Cobro de cuota + últimos accesos; Técnico → máquinas en mantenimiento y atajo a registrar falla.
+- [x] Tarjetas de métrica con `RoundedPanel`, ícono de línea, valor grande y detalle en `TextoSecundario`; distribución con `FlowLayoutPanel` adaptable (4/3/2/1 columnas).
+- [x] Saludo contextual ("Buen día, Nombre") y fecha actual.
+- [x] Si algún dato del resumen requiere una consulta nueva en `SGIG.Datos`/`SGIG.Negocio`, documentarla acá antes de escribirla (por ahora se espera reutilizar lo existente).
+
+> **Implementado (18/10/2026):** `ucInicio.cs` (+ `TarjetaMetrica`). No hizo falta ninguna consulta nueva: Administrador usa `ServicioReporte.ObtenerMetricas()`; Recepcionista `ObtenerMetricas()` + `ServicioCheckin.ObtenerHistorial` (últimos 7 días; "accesos de hoy" se calcula de ahí); Técnico `ServicioMaquina.ObtenerTodas()` + `ServicioMantenimiento.ObtenerActivos()`. Las tarjetas son clickeables y llevan a la sección relacionada; los datos se recargan cada vez que se vuelve a Inicio y, si falla la carga, el error se muestra en el lugar de las tarjetas (sin `MessageBox`).
 
 ### 9.5 Login (`frmLogin`)
 

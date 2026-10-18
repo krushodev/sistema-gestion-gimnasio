@@ -23,7 +23,7 @@ namespace SGIG.UI
         private Panel pnlPrincipal = null!;
         private Panel pnlBarraSuperior = null!;
         private Panel pnlContenido = null!;
-        private Panel pnlInicio = null!;
+        private ucInicio pnlInicio = null!;
         private Label lblTituloSeccion = null!;
         private Label lblNombreUsuario = null!;
         private Label lblRolUsuario = null!;
@@ -129,7 +129,7 @@ namespace SGIG.UI
                 Padding = new Padding(24)
             };
 
-            pnlInicio = ConstruirInicio();
+            pnlInicio = new ucInicio(_usuario, Navegar);
             pnlContenido.Controls.Add(pnlInicio);
 
             pnlPrincipal.Controls.Add(pnlContenido);
@@ -147,36 +147,6 @@ namespace SGIG.UI
             string a = string.IsNullOrWhiteSpace(_usuario.Apellido) ? "" : _usuario.Apellido.Trim()[..1];
             string iniciales = n + a;
             return iniciales.Length > 0 ? iniciales : "?";
-        }
-
-        /// <summary>
-        /// Pantalla de inicio provisoria (saludo). La Fase 9.4 la reemplaza por el
-        /// resumen según el rol.
-        /// </summary>
-        private Panel ConstruirInicio()
-        {
-            var panel = new Panel { Dock = DockStyle.Fill, BackColor = Tema.Fondo };
-
-            int hora = DateTime.Now.Hour;
-            string saludo = hora < 12 ? "Buen día" : hora < 20 ? "Buenas tardes" : "Buenas noches";
-
-            panel.Controls.Add(new Label
-            {
-                Text = $"{saludo}, {_usuario.Nombre}",
-                Font = Tema.Fuente(24F, FontStyle.Bold),
-                ForeColor = Tema.TextoPrimario,
-                AutoSize = true,
-                Location = new Point(0, 8)
-            });
-            panel.Controls.Add(new Label
-            {
-                Text = "Elegí una opción del menú de la izquierda para empezar.",
-                Font = Tema.FuenteSubtitulo,
-                ForeColor = Tema.TextoSecundario,
-                AutoSize = true,
-                Location = new Point(2, 56)
-            });
-            return panel;
         }
 
         // ── Navegación ───────────────────────────────────────────────────────
@@ -238,6 +208,7 @@ namespace SGIG.UI
             {
                 pnlInicio.Visible = true;
                 pnlInicio.BringToFront();
+                _ = pnlInicio.RecargarAsync();
                 lblTituloSeccion.Text = "Inicio";
             }
             else if (_destinos.TryGetValue(clave, out var destino))
