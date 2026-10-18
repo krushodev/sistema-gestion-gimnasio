@@ -1,456 +1,310 @@
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Windows.Forms;
 using SGIG.Entidades;
 
 namespace SGIG.UI
 {
+    /// <summary>
+    /// Contenedor principal: sidebar de navegación a la izquierda, barra superior con el
+    /// título de la sección y el usuario, y el área de contenido donde se embebe la
+    /// pantalla activa (RNF#02). Todo se arma por código; el .Designer.cs sólo conserva
+    /// la franja de estado original, oculta.
+    /// </summary>
     public partial class frmMDIParent : Form
     {
+        private const int AnchoMinimoExpandido = 1100;
+        private const string ClaveInicio = "inicio";
+
         private readonly Usuario _usuario;
-        private Panel pnlContenedor = null!;
-        private Panel pnlDashboard = null!;
-        private TableLayoutPanel tlpGrilla = null!;
-        private Label _lblUsuarioSuperior = null!;
+
+        private ucSidebar _sidebar = null!;
+        private Panel pnlPrincipal = null!;
+        private Panel pnlBarraSuperior = null!;
+        private Panel pnlContenido = null!;
+        private Panel pnlInicio = null!;
+        private Label lblTituloSeccion = null!;
+        private Label lblNombreUsuario = null!;
+        private Label lblRolUsuario = null!;
+
+        private Form? _hijoActual;
+        private string _claveActual = string.Empty;
+        private bool _ultimoAutoColapsado;
+
+        private sealed record Destino(
+            string Seccion, string Clave, string Titulo, string Icono, int[] Roles, Func<Form> Crear);
+
+        private readonly Dictionary<string, Destino> _destinos = new();
 
         public frmMDIParent(Usuario usuario)
         {
             InitializeComponent();
             _usuario = usuario ?? throw new ArgumentNullException(nameof(usuario));
+            MinimumSize = new Size(900, 600);
         }
 
-        private void frmMDIParent_Load(object sender, EventArgs e)
+        private void frmMDIParent_Load(object? sender, EventArgs e)
         {
-            ConstruirDashboard();
-            CargarTarjetasSegunRol(_usuario.IdRol);
-        }
-
-        /// <summary>Texto que muestra la barra superior con los datos del usuario logueado.</summary>
-        private string TextoUsuarioLogueado() =>
-            $"👤  {_usuario.Nombre} {_usuario.Apellido}   |   Rol: {_usuario.Rol?.NombreRol}";
-
-        /// <summary>
-        /// Barra persistente arriba a la derecha (usuario logueado, Configuración,
-        /// Cerrar sesión), visible siempre -- a diferencia de pnlHeader, que vive
-        /// dentro de pnlDashboard y se oculta al abrir cualquier módulo. Reemplaza a
-        /// la franja stsEstado de abajo, que quedaba casi invisible.
-        /// </summary>
-        private void ConstruirBarraSuperior()
-        {
-            var pnlBarraSuperior = new Panel
-            {
-                Dock = DockStyle.Top,
-                Height = 44,
-                BackColor = Tema.SlateOscuro,
-                Name = "pnlBarraSuperior"
-            };
-
-            // AutoSize=false con ancho fijo y AutoEllipsis: si el nombre+rol es largo,
-            // se trunca con "..." en vez de crecer y arriesgar que el cálculo manual de
-            // posición (más abajo) empuje el label fuera del panel.
-            _lblUsuarioSuperior = new Label
-            {
-                Text = TextoUsuarioLogueado(),
-                Font = new Font("Segoe UI", 9.5F),
-                ForeColor = Color.FromArgb(226, 232, 240),
-                AutoSize = false,
-                AutoEllipsis = true,
-                TextAlign = ContentAlignment.MiddleRight,
-                Size = new Size(260, 22)
-            };
-
-            var btnConfiguracion = new Button
-            {
-                Text = "⚙ Configuración",
-                Font = Tema.FuenteBoton,
-                BackColor = Tema.SlateMedio,
-                ForeColor = Color.White,
-                FlatStyle = FlatStyle.Flat,
-                Size = new Size(140, 30),
-                Cursor = Cursors.Hand
-            };
-            btnConfiguracion.FlatAppearance.BorderSize = 0;
-            btnConfiguracion.Click += (s, e) =>
-            {
-                using var frm = new frmConfiguracion(_usuario);
-                frm.ShowDialog(this);
-                _lblUsuarioSuperior.Text = TextoUsuarioLogueado();
-            };
-
-            var btnCerrarSesionSuperior = new Button
-            {
-                Text = "Cerrar sesión",
-                Font = Tema.FuenteBoton,
-                BackColor = Tema.Peligro,
-                ForeColor = Color.White,
-                FlatStyle = FlatStyle.Flat,
-                Size = new Size(120, 30),
-                Cursor = Cursors.Hand
-            };
-            btnCerrarSesionSuperior.FlatAppearance.BorderSize = 0;
-            btnCerrarSesionSuperior.Click += (s, e) => CerrarSesion();
-
-            pnlBarraSuperior.Controls.Add(_lblUsuarioSuperior);
-            pnlBarraSuperior.Controls.Add(btnConfiguracion);
-            pnlBarraSuperior.Controls.Add(btnCerrarSesionSuperior);
-
-            Controls.Add(pnlBarraSuperior);
-            pnlBarraSuperior.BringToFront();
-
-            // Recién tiene ancho real una vez agregada al formulario (igual que
-            // pnlBarraVolver en AbrirFormularioEnPanel): se ubica todo a la derecha
-            // después de agregarla.
-            const int margen = 16;
-            const int separacion = 10;
-            btnCerrarSesionSuperior.Location = new Point(
-                pnlBarraSuperior.ClientSize.Width - margen - btnCerrarSesionSuperior.Width, 7);
-            btnConfiguracion.Location = new Point(
-                btnCerrarSesionSuperior.Left - separacion - btnConfiguracion.Width, 7);
-            _lblUsuarioSuperior.Location = new Point(
-                btnConfiguracion.Left - separacion - _lblUsuarioSuperior.Width, 11);
-        }
-
-        private void ConstruirDashboard()
-        {
-            // La franja inferior original (stsEstado) queda oculta: el usuario logueado
-            // y cerrar sesión casi no se veían ahí abajo. Se reemplaza por una barra
-            // persistente arriba a la derecha (ver ConstruirBarraSuperior), visible
-            // tanto en el dashboard como con cualquier pantalla hija abierta.
+            // La franja inferior original (stsEstado) queda oculta: el usuario y
+            // "Cerrar sesión" ahora viven en la barra superior y en el sidebar.
             stsEstado.Visible = false;
 
-            ConstruirBarraSuperior();
+            ConstruirLayout();
+            ConstruirNavegacion();
+            Navegar(ClaveInicio);
 
-            // Contenedor principal
-            pnlContenedor = new Panel
-            {
-                Dock = DockStyle.Fill,
-                BackColor = Color.FromArgb(241, 245, 249)
-            };
-            this.Controls.Add(pnlContenedor);
-            pnlContenedor.BringToFront();
-
-            // Vista del Dashboard con padding perimetral
-            pnlDashboard = new Panel
-            {
-                Dock = DockStyle.Fill,
-                BackColor = Color.FromArgb(241, 245, 249),
-                Padding = new Padding(50, 30, 50, 40)
-            };
-
-            // Encabezado superior
-            var pnlHeader = new Panel
-            {
-                Dock = DockStyle.Top,
-                Height = 85,
-                BackColor = Color.Transparent
-            };
-
-            var lblHola = new Label
-            {
-                Text = $"¡Hola, {_usuario.Nombre}!",
-                Font = new Font("Segoe UI", 26F, FontStyle.Bold),
-                ForeColor = Color.FromArgb(15, 23, 42),
-                Location = new Point(0, 0),
-                AutoSize = true
-            };
-
-            var lblSub = new Label
-            {
-                Text = "Bienvenido al panel principal de SGIG. Seleccioná el módulo con el que deseás trabajar hoy:",
-                Font = new Font("Segoe UI", 12F, FontStyle.Regular),
-                ForeColor = Color.FromArgb(100, 116, 139),
-                Location = new Point(2, 50),
-                AutoSize = true
-            };
-
-            pnlHeader.Controls.Add(lblHola);
-            pnlHeader.Controls.Add(lblSub);
-
-            // Grilla responsiva de 4 columnas x 2 filas
-            tlpGrilla = new TableLayoutPanel
-            {
-                Dock = DockStyle.Fill,
-                ColumnCount = 4,
-                RowCount = 2,
-                BackColor = Color.Transparent,
-                Padding = new Padding(0, 20, 0, 0)
-            };
-
-            tlpGrilla.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25f));
-            tlpGrilla.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25f));
-            tlpGrilla.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25f));
-            tlpGrilla.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25f));
-
-            tlpGrilla.RowStyles.Add(new RowStyle(SizeType.Percent, 50f));
-            tlpGrilla.RowStyles.Add(new RowStyle(SizeType.Percent, 50f));
-
-            pnlDashboard.Controls.Add(tlpGrilla);
-            pnlDashboard.Controls.Add(pnlHeader);
-
-            pnlContenedor.Controls.Add(pnlDashboard);
+            Resize += (s, ev) => AdaptarSidebarAlAncho();
+            AdaptarSidebarAlAncho(forzar: true);
         }
 
-        private void CargarTarjetasSegunRol(int idRol)
+        // ── Layout general ───────────────────────────────────────────────────
+        private void ConstruirLayout()
         {
-            tlpGrilla.Controls.Clear();
+            BackColor = Tema.Fondo;
 
-            // 1. 👥 Socios
-            if (idRol is Roles.Administrador or Roles.Recepcionista)
-            {
-                AgregarTarjetaGrilla(
-                    "Gestión de Socios",
-                    "Alta, modificación, bajas, fichas médicas y listado general de alumnos.",
-                    "👥",
-                    Color.FromArgb(37, 99, 235),
-                    () => AbrirFormularioEnPanel(new frmSocios(), "👥  Gestión de Socios")
-                );
-            }
+            _sidebar = new ucSidebar { Dock = DockStyle.Left };
+            _sidebar.ItemSeleccionado += Navegar;
+            _sidebar.ConfiguracionSolicitada += (s, e) => AbrirConfiguracion();
+            _sidebar.CerrarSesionSolicitado += (s, e) => CerrarSesion();
 
-            // 2. 🛡️ Usuarios
-            if (idRol == Roles.Administrador)
-            {
-                AgregarTarjetaGrilla(
-                    "Seguridad y Usuarios",
-                    "Gestión de cuentas del personal, roles, permisos y credenciales.",
-                    "🛡️",
-                    Color.FromArgb(79, 70, 229),
-                    () => AbrirFormularioEnPanel(new frmUsuarios(_usuario), "🛡️  Seguridad y Usuarios")
-                );
-            }
+            pnlPrincipal = new Panel { Dock = DockStyle.Fill, BackColor = Tema.Fondo };
 
-            // 3. 💳 Tesorería: Cobro de Cuotas y Planes
-            if (idRol is Roles.Administrador or Roles.Recepcionista)
-            {
-                AgregarTarjetaGrilla(
-                    "Cobro de Cuotas",
-                    "Registrar pago de socios, emisión de facturación y cálculo de vencimiento.",
-                    "💳",
-                    Color.FromArgb(5, 150, 105),
-                    () => AbrirFormularioEnPanel(new frmCobroCuota(), "💳  Cobro de Cuotas")
-                );
-
-                if (idRol == Roles.Administrador)
-                {
-                    AgregarTarjetaGrilla(
-                        "Planes de Membresía",
-                        "Consulta de tarifas y periodicidad vigentes (catálogo sembrado con la aplicación).",
-                        "📋",
-                        Color.FromArgb(16, 185, 129),
-                        () => AbrirFormularioEnPanel(new frmPlanes(), "📋  Planes de Membresía")
-                    );
-                }
-            }
-
-            // 4. ⏱️ Control de Acceso (Recepcionista)
-            if (idRol == Roles.Recepcionista)
-            {
-                AgregarTarjetaGrilla(
-                    "Control de Acceso",
-                    "Monitoreo de entradas en recepción, molinete y estado de cuotas al día.",
-                    "⏱️",
-                    Color.FromArgb(245, 158, 11),
-                    () => AbrirFormularioEnPanel(new frmCheckin(), "⏱️  Control de Acceso")
-                );
-
-                AgregarTarjetaGrilla(
-                    "Historial de Accesos",
-                    "Seguimiento de quién ingresó y cuántos días le quedan antes de vencer su cuota.",
-                    "🗓️",
-                    Color.FromArgb(202, 138, 4),
-                    () => AbrirFormularioEnPanel(new frmHistorialAccesos(), "🗓️  Historial de Accesos")
-                );
-            }
-
-            // 5. 🏋️ Activos y Máquinas (Administrador y Técnico)
-            if (idRol is Roles.Administrador or Roles.Tecnico)
-            {
-                AgregarTarjetaGrilla(
-                    "Máquinas",
-                    "Consulta del inventario y estado de las máquinas (catálogo sembrado con la aplicación).",
-                    "🏋️",
-                    Color.FromArgb(236, 72, 153),
-                    () => AbrirFormularioEnPanel(new frmMaquinas(), "🏋️  Máquinas")
-                );
-
-                AgregarTarjetaGrilla(
-                    "Historial de Mantenimientos",
-                    "Consulta de intervenciones técnicas registradas por máquina.",
-                    "🛠️",
-                    Color.FromArgb(190, 24, 93),
-                    () => AbrirFormularioEnPanel(new frmHistorialMantenimientos(), "🛠️  Historial de Mantenimientos")
-                );
-            }
-
-            // Mantenimiento (Técnico)
-            if (idRol == Roles.Tecnico)
-            {
-                AgregarTarjetaGrilla(
-                    "Mantenimiento",
-                    "Registrar una falla y finalizar mantenimientos en curso.",
-                    "🔧",
-                    Color.FromArgb(217, 119, 6),
-                    () => AbrirFormularioEnPanel(new frmMantenimiento(_usuario), "🔧  Mantenimiento")
-                );
-            }
-
-            // 7. 📊 Reportes (Administrador)
-            // 7. 📊 Reportes (Administrador)
-            if (idRol == Roles.Administrador)
-            {
-                AgregarTarjetaGrilla(
-                    "Reportes e Ingresos",
-                    "Métricas de concurrencia, balance financiero, altas y bajas periódicas.",
-                    "📊",
-                    Color.FromArgb(14, 165, 233),
-                    () => AbrirFormularioEnPanel(new frmReportes(), "📊  Reportes e Ingresos")
-                );
-
-                // 8. 💾 Copias de Seguridad (Administrador)
-                AgregarTarjetaGrilla(
-                    "Copia de Seguridad",
-                    "Generación y restauración de backups para la base de datos SQL Server.",
-                    "💾",
-                    Color.FromArgb(100, 116, 139),
-                    () => AbrirFormularioEnPanel(new frmBackup(), "💾  Copia de Seguridad")
-                );
-            }
-        }
-
-        private void AgregarTarjetaGrilla(string titulo, string descripcion, string icono, Color colorAcento, Action accion)
-        {
-            var card = new Panel
-            {
-                Dock = DockStyle.Fill,
-                BackColor = Color.White,
-                Margin = new Padding(12),
-                Cursor = Cursors.Hand
-            };
-
-            var barraSuperior = new Panel
+            pnlBarraSuperior = new Panel
             {
                 Dock = DockStyle.Top,
-                Height = 6,
-                BackColor = colorAcento
+                Height = 64,
+                BackColor = Tema.Superficie
             };
-
-            var lblIcono = new Label
+            pnlBarraSuperior.Paint += (s, e) =>
             {
-                Text = icono,
-                Font = new Font("Segoe UI Emoji", 34F),
-                Location = new Point(22, 20),
-                AutoSize = true
+                using var lapiz = new Pen(Tema.Borde);
+                e.Graphics.DrawLine(lapiz, 0, pnlBarraSuperior.Height - 1,
+                    pnlBarraSuperior.Width, pnlBarraSuperior.Height - 1);
             };
 
-            var lblTitulo = new Label
+            // Usuario: avatar con iniciales + nombre y rol, anclado a la derecha.
+            var pnlUsuario = new Panel { Dock = DockStyle.Right, Width = 280, BackColor = Tema.Superficie };
+            var avatar = new AvatarIniciales(Iniciales()) { Location = new Point(12, 14) };
+            lblNombreUsuario = new Label
             {
-                Text = titulo,
-                Font = new Font("Segoe UI", 13.5F, FontStyle.Bold),
-                ForeColor = Color.FromArgb(30, 41, 59),
-                Location = new Point(22, 85),
-                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right,
-                Height = 30
+                Text = $"{_usuario.Nombre} {_usuario.Apellido}",
+                Font = Tema.Fuente(10F, FontStyle.Bold),
+                ForeColor = Tema.TextoPrimario,
+                AutoEllipsis = true,
+                Location = new Point(58, 13),
+                Size = new Size(210, 20),
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
             };
-
-            var lblDesc = new Label
+            lblRolUsuario = new Label
             {
-                Text = descripcion,
-                Font = new Font("Segoe UI", 9.75F),
-                ForeColor = Color.FromArgb(100, 116, 139),
-                Location = new Point(24, 120),
-                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Bottom
+                Text = _usuario.Rol?.NombreRol ?? string.Empty,
+                Font = Tema.Fuente(9F),
+                ForeColor = Tema.TextoSecundario,
+                AutoEllipsis = true,
+                Location = new Point(58, 33),
+                Size = new Size(210, 18),
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
+            };
+            pnlUsuario.Controls.AddRange(new Control[] { avatar, lblNombreUsuario, lblRolUsuario });
+
+            lblTituloSeccion = new Label
+            {
+                Dock = DockStyle.Fill,
+                Font = Tema.FuenteTitulo,
+                ForeColor = Tema.TextoPrimario,
+                TextAlign = ContentAlignment.MiddleLeft,
+                Padding = new Padding(24, 0, 0, 0),
+                AutoEllipsis = true
             };
 
-            card.Controls.AddRange(new Control[] { barraSuperior, lblIcono, lblTitulo, lblDesc });
+            pnlBarraSuperior.Controls.Add(pnlUsuario);
+            pnlBarraSuperior.Controls.Add(lblTituloSeccion);
+            lblTituloSeccion.BringToFront();
 
-            void EjecutarAccion(object? s, EventArgs e) => accion();
+            pnlContenido = new Panel
+            {
+                Dock = DockStyle.Fill,
+                BackColor = Tema.Fondo,
+                Padding = new Padding(24)
+            };
 
-            card.Click += EjecutarAccion;
-            lblIcono.Click += EjecutarAccion;
-            lblTitulo.Click += EjecutarAccion;
-            lblDesc.Click += EjecutarAccion;
+            pnlInicio = ConstruirInicio();
+            pnlContenido.Controls.Add(pnlInicio);
 
-            card.MouseEnter += (s, e) => card.BackColor = Color.FromArgb(248, 250, 252);
-            card.MouseLeave += (s, e) => card.BackColor = Color.White;
+            pnlPrincipal.Controls.Add(pnlContenido);
+            pnlPrincipal.Controls.Add(pnlBarraSuperior);
+            pnlContenido.BringToFront();
 
-            tlpGrilla.Controls.Add(card);
+            Controls.Add(pnlPrincipal);
+            Controls.Add(_sidebar);
+            pnlPrincipal.BringToFront();
+        }
+
+        private string Iniciales()
+        {
+            string n = string.IsNullOrWhiteSpace(_usuario.Nombre) ? "" : _usuario.Nombre.Trim()[..1];
+            string a = string.IsNullOrWhiteSpace(_usuario.Apellido) ? "" : _usuario.Apellido.Trim()[..1];
+            string iniciales = n + a;
+            return iniciales.Length > 0 ? iniciales : "?";
         }
 
         /// <summary>
-        /// Embebe <paramref name="hijo"/> dentro del panel principal, con una barra
-        /// de cabecera consistente (título de la sección + volver) que vive afuera
-        /// del formulario hijo -- así toda pantalla tiene la misma "estructura"
-        /// alrededor sin tener que tocar el .Designer.cs de cada una.
+        /// Pantalla de inicio provisoria (saludo). La Fase 9.4 la reemplaza por el
+        /// resumen según el rol.
         /// </summary>
-        private void AbrirFormularioEnPanel(Form hijo, string titulo)
+        private Panel ConstruirInicio()
         {
-            pnlDashboard.Visible = false;
+            var panel = new Panel { Dock = DockStyle.Fill, BackColor = Tema.Fondo };
 
-            var pnlBarraVolver = new Panel
-            {
-                Dock = DockStyle.Top,
-                Height = 50,
-                BackColor = Tema.FondoClaro,
-                Name = "pnlBarraVolver"
-            };
+            int hora = DateTime.Now.Hour;
+            string saludo = hora < 12 ? "Buen día" : hora < 20 ? "Buenas tardes" : "Buenas noches";
 
-            var lblTitulo = new Label
+            panel.Controls.Add(new Label
             {
-                Text = titulo,
-                Font = Tema.FuenteTitulo,
-                ForeColor = Tema.SlateOscuro,
+                Text = $"{saludo}, {_usuario.Nombre}",
+                Font = Tema.Fuente(24F, FontStyle.Bold),
+                ForeColor = Tema.TextoPrimario,
                 AutoSize = true,
-                Location = new Point(16, 12)
-            };
-
-            var btnVolver = new Button
+                Location = new Point(0, 8)
+            });
+            panel.Controls.Add(new Label
             {
-                Text = "⬅  Volver al Inicio",
-                Font = Tema.FuenteBoton,
-                BackColor = Tema.SlateOscuro,
-                ForeColor = Color.White,
-                FlatStyle = FlatStyle.Flat,
-                Size = new Size(150, 32),
-                Anchor = AnchorStyles.Top | AnchorStyles.Right,
-                Cursor = Cursors.Hand
-            };
-            btnVolver.FlatAppearance.BorderSize = 0;
+                Text = "Elegí una opción del menú de la izquierda para empezar.",
+                Font = Tema.FuenteSubtitulo,
+                ForeColor = Tema.TextoSecundario,
+                AutoSize = true,
+                Location = new Point(2, 56)
+            });
+            return panel;
+        }
 
-            btnVolver.Click += (s, e) =>
+        // ── Navegación ───────────────────────────────────────────────────────
+        /// <summary>
+        /// Qué ve cada rol. La matriz de permisos es la de siempre (Fase 2.4): sólo
+        /// cambia dónde se muestra, no quién puede entrar a qué.
+        /// </summary>
+        private void ConstruirNavegacion()
+        {
+            const int A = Roles.Administrador, R = Roles.Recepcionista, T = Roles.Tecnico;
+
+            var catalogo = new Destino[]
             {
-                hijo.Close();
-                pnlContenedor.Controls.Remove(pnlBarraVolver);
-                pnlContenedor.Controls.Remove(hijo);
-                pnlDashboard.Visible = true;
-                pnlDashboard.BringToFront();
+                new("Gestión", "socios", "Socios", Iconos.Socios, new[] { A, R }, () => new frmSocios()),
+                new("Gestión", "cobro", "Cobro de cuotas", Iconos.Cobro, new[] { A, R }, () => new frmCobroCuota()),
+                new("Gestión", "planes", "Planes", Iconos.Planes, new[] { A }, () => new frmPlanes()),
+
+                new("Acceso", "checkin", "Control de acceso", Iconos.Acceso, new[] { R }, () => new frmCheckin()),
+                new("Acceso", "historialAccesos", "Historial de accesos", Iconos.Historial, new[] { R }, () => new frmHistorialAccesos()),
+
+                new("Activos", "maquinas", "Máquinas", Iconos.Maquinas, new[] { A, T }, () => new frmMaquinas()),
+                new("Activos", "mantenimiento", "Mantenimiento", Iconos.Mantenimiento, new[] { T }, () => new frmMantenimiento(_usuario)),
+                new("Activos", "historialMantenimientos", "Historial de mantenimientos", Iconos.Historial, new[] { A, T }, () => new frmHistorialMantenimientos()),
+
+                new("Administración", "usuarios", "Usuarios", Iconos.Usuarios, new[] { A }, () => new frmUsuarios(_usuario)),
+                new("Administración", "reportes", "Reportes", Iconos.Reportes, new[] { A }, () => new frmReportes()),
+                new("Administración", "backup", "Copia de seguridad", Iconos.Backup, new[] { A }, () => new frmBackup()),
             };
 
-            pnlBarraVolver.Controls.Add(lblTitulo);
-            pnlBarraVolver.Controls.Add(btnVolver);
+            _sidebar.AgregarItem(ClaveInicio, "Inicio", Iconos.Inicio);
 
-            hijo.TopLevel = false;
-            hijo.FormBorderStyle = FormBorderStyle.None;
-            hijo.Dock = DockStyle.Fill;
+            string? seccionActual = null;
+            foreach (var destino in catalogo)
+            {
+                if (Array.IndexOf(destino.Roles, _usuario.IdRol) < 0) continue;
 
-            Tema.EstilizarFormulario(hijo);
-            Tema.EstilizarControles(hijo);
+                if (destino.Seccion != seccionActual)
+                {
+                    _sidebar.AgregarSeccion(destino.Seccion);
+                    seccionActual = destino.Seccion;
+                }
 
-            pnlContenedor.Controls.Add(hijo);
-            pnlContenedor.Controls.Add(pnlBarraVolver);
+                _destinos[destino.Clave] = destino;
+                _sidebar.AgregarItem(destino.Clave, destino.Titulo, destino.Icono);
+            }
+        }
 
-            // Recién acá pnlBarraVolver tiene su ancho real (quedó dockeada al
-            // ancho de pnlContenedor), así que el botón se ubica después de agregarla.
-            btnVolver.Location = new Point(pnlBarraVolver.ClientSize.Width - btnVolver.Width - 14, 9);
+        /// <summary>
+        /// Reemplaza la pantalla activa por la indicada (cerrando la anterior en vez de
+        /// apilarla) y marca el ítem activo del sidebar.
+        /// </summary>
+        private void Navegar(string clave)
+        {
+            if (clave == _claveActual) return;
 
-            pnlBarraVolver.BringToFront();
-            hijo.BringToFront();
-            hijo.Show();
+            CerrarHijoActual();
+
+            if (clave == ClaveInicio)
+            {
+                pnlInicio.Visible = true;
+                pnlInicio.BringToFront();
+                lblTituloSeccion.Text = "Inicio";
+            }
+            else if (_destinos.TryGetValue(clave, out var destino))
+            {
+                pnlInicio.Visible = false;
+
+                var hijo = destino.Crear();
+                hijo.TopLevel = false;
+                hijo.FormBorderStyle = FormBorderStyle.None;
+                hijo.Dock = DockStyle.Fill;
+
+                Tema.EstilizarFormulario(hijo);
+                Tema.EstilizarControles(hijo);
+
+                pnlContenido.Controls.Add(hijo);
+                hijo.BringToFront();
+                hijo.Show();
+
+                _hijoActual = hijo;
+                lblTituloSeccion.Text = destino.Titulo;
+            }
+            else
+            {
+                return;
+            }
+
+            _claveActual = clave;
+            _sidebar.Seleccionar(clave);
+        }
+
+        private void CerrarHijoActual()
+        {
+            if (_hijoActual == null) return;
+
+            pnlContenido.Controls.Remove(_hijoActual);
+            _hijoActual.Close();
+            _hijoActual.Dispose();
+            _hijoActual = null;
+        }
+
+        // ── Adaptabilidad ────────────────────────────────────────────────────
+        /// <summary>
+        /// Colapsa el sidebar a sólo íconos por debajo de <see cref="AnchoMinimoExpandido"/>.
+        /// Sólo reacciona cuando la ventana cruza el umbral, así el botón de hamburguesa
+        /// puede contradecirlo a mano sin que el próximo resize lo pise.
+        /// </summary>
+        private void AdaptarSidebarAlAncho(bool forzar = false)
+        {
+            bool debeColapsar = ClientSize.Width < AnchoMinimoExpandido;
+            if (!forzar && debeColapsar == _ultimoAutoColapsado) return;
+
+            _ultimoAutoColapsado = debeColapsar;
+            _sidebar.Colapsado = debeColapsar;
+        }
+
+        // ── Cuenta ───────────────────────────────────────────────────────────
+        private void AbrirConfiguracion()
+        {
+            using var frm = new frmConfiguracion(_usuario);
+            frm.ShowDialog(this);
+            lblNombreUsuario.Text = $"{_usuario.Nombre} {_usuario.Apellido}";
         }
 
         // Sigue acá porque frmMDIParent.Designer.cs engancha el evento del
-        // ToolStripStatusLabel original, pero ese control está oculto (ver
-        // ConstruirBarraSuperior): el botón "Cerrar sesión" real ahora es el de la
-        // barra superior, que llama a CerrarSesion() directamente.
-        private void btnCerrarSesion_Click(object sender, EventArgs e) => CerrarSesion();
+        // ToolStripStatusLabel original, pero ese control está oculto: el acceso real a
+        // "Cerrar sesión" ahora está en el sidebar, que llama a CerrarSesion() directamente.
+        private void btnCerrarSesion_Click(object? sender, EventArgs e) => CerrarSesion();
 
         private void CerrarSesion()
         {

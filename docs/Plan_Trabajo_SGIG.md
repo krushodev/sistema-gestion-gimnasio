@@ -468,12 +468,14 @@ varias fases ya cerradas — no es una fase nueva, se documenta acá para no per
 
 ### 9.3 Contenedor principal: sidebar + barra superior (`frmMDIParent`)
 
-- [ ] Control `ucSidebar` (UserControl en código): logo/nombre "SGIG" arriba, ítems de navegación filtrados por rol (misma matriz de permisos de 2.4, **sin cambiarla**), ítem activo resaltado, "Configuración" y "Cerrar sesión" fijados abajo.
-- [ ] Agrupar los ítems por sección: **Gestión** (Socios, Cobro de cuotas), **Acceso** (Control de acceso, Historial de accesos), **Activos** (Máquinas, Mantenimiento, Historial de mantenimientos), **Administración** (Usuarios, Reportes, Copia de seguridad) — cada rol ve sólo las secciones e ítems que le corresponden.
-- [ ] Barra superior nueva: título de la sección actual + usuario y rol (avatar con iniciales) a la derecha. **Se elimina `pnlBarraVolver` y el botón "Volver al Inicio"**: navegar es hacer clic en el sidebar.
-- [ ] `AbrirFormularioEnPanel` pasa a ser `NavegarA(...)`: reemplaza el formulario hijo actual (cerrándolo y liberándolo) en vez de apilarlo, y marca el ítem activo del sidebar.
-- [ ] Colapso adaptable del sidebar (< 1100 px → sólo íconos con *tooltip*; botón de hamburguesa manual) y `MinimumSize` del formulario.
-- [ ] Mantener la confirmación `MessageBox` Sí/No al cerrar sesión.
+- [x] Control `ucSidebar` (UserControl en código): logo/nombre "SGIG" arriba, ítems de navegación filtrados por rol (misma matriz de permisos de 2.4, **sin cambiarla**), ítem activo resaltado, "Configuración" y "Cerrar sesión" fijados abajo.
+- [x] Agrupar los ítems por sección: **Gestión** (Socios, Cobro de cuotas), **Acceso** (Control de acceso, Historial de accesos), **Activos** (Máquinas, Mantenimiento, Historial de mantenimientos), **Administración** (Usuarios, Reportes, Copia de seguridad) — cada rol ve sólo las secciones e ítems que le corresponden.
+- [x] Barra superior nueva: título de la sección actual + usuario y rol (avatar con iniciales) a la derecha. **Se elimina `pnlBarraVolver` y el botón "Volver al Inicio"**: navegar es hacer clic en el sidebar.
+- [x] `AbrirFormularioEnPanel` pasa a ser `NavegarA(...)`: reemplaza el formulario hijo actual (cerrándolo y liberándolo) en vez de apilarlo, y marca el ítem activo del sidebar.
+- [x] Colapso adaptable del sidebar (< 1100 px → sólo íconos con *tooltip*; botón de hamburguesa manual) y `MinimumSize` del formulario.
+- [x] Mantener la confirmación `MessageBox` Sí/No al cerrar sesión.
+
+> **Implementado (18/10/2026):** `ucSidebar.cs` (sidebar + `ItemSidebar`/`EncabezadoSeccion`/`AvatarIniciales`) y `frmMDIParent.cs` reescrito por código; el `.Designer.cs` no se tocó (la franja `stsEstado` sigue oculta y `btnCerrarSesion_Click` se conserva). "Planes" quedó en la sección Gestión (sólo Administrador). Mientras no esté la 9.4, "Inicio" muestra sólo un saludo. Pendiente de revisión visual por el usuario: glifos de íconos, colapso a < 1100 px y recorrido por rol.
 
 ### 9.4 Dashboard de inicio
 

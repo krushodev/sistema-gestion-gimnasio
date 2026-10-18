@@ -289,24 +289,25 @@ namespace SGIG.UI
     /// </summary>
     public static class Iconos
     {
-        public const string Menu = "";
-        public const string Inicio = "";
-        public const string Socios = "";
-        public const string Usuarios = "";
-        public const string Cobro = "";
-        public const string Acceso = "";
-        public const string Historial = "";
-        public const string Maquinas = "";
-        public const string Mantenimiento = "";
-        public const string Reportes = "";
-        public const string Backup = "";
-        public const string Configuracion = "";
-        public const string Salir = "";
-        public const string Buscar = "";
-        public const string Ver = "";
-        public const string Ocultar = "";
-        public const string Aviso = "";
-        public const string Ok = "";
+        public const string Menu = "\uE700";
+        public const string Inicio = "\uE80F";
+        public const string Socios = "\uE716";
+        public const string Usuarios = "\uE77B";
+        public const string Cobro = "\uE8C7";
+        public const string Acceso = "\uE8FB";
+        public const string Historial = "\uE81C";
+        public const string Maquinas = "\uE7F8";
+        public const string Mantenimiento = "\uE90F";
+        public const string Planes = "\uE8A5";
+        public const string Reportes = "\uE9D9";
+        public const string Backup = "\uE74E";
+        public const string Configuracion = "\uE713";
+        public const string Salir = "\uE7E8";
+        public const string Buscar = "\uE721";
+        public const string Ver = "\uE7B3";
+        public const string Ocultar = "\uED1A";
+        public const string Aviso = "\uE7BA";
+        public const string Ok = "\uE73E";
     }
 
     /// <summary>
