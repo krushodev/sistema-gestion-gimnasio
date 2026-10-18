@@ -355,23 +355,23 @@ les quedan (o hace cuántos vencieron) antes de la próxima cuota, para seguimie
 
 ### 7.1 Lógica de negocio
 
-- [ ] `ServicioReporte.cs`: total de ingresos (suma de `Pago.monto`) filtrado por rango de fechas (RF#24).
+- [x] `ServicioReporte.cs`: total de ingresos (suma de `Pago.monto`) filtrado por rango de fechas (RF#24) — `GenerarReporte(desde, hasta)` y `ObtenerMetricas()` para las tarjetas del dashboard.
 
 ### 7.2 Pantalla `frmReporteIngresos` (RF#24)
 
 - **Rol de acceso:** Administrador. **Se abre desde:** `mnuReporteIngresos`.
 - **Controles:** `dtpDesde`/`dtpHasta`, `btnGenerar`, `lblTotalIngresos`, `dgvDetalle` (detalle de pagos del período: fecha, socio, plan, monto, medio de pago).
 
-- [ ] Crear `frmReporteIngresos` con cálculo y filtro por fechas.
+- [x] Implementado como `frmReportes` (en lugar de `frmReporteIngresos`): filtro por rango de fechas, tarjetas de métricas (ingresos del mes, socios activos, check-ins promedio), grilla de detalle y exportación a CSV. Se abre desde el menú Reportes de `frmMDIParent`.
 
 ### 7.3 Pantalla `frmBackup` (RF#25)
 
 - **Rol de acceso:** Administrador. **Se abre desde:** `mnuBackup`.
 - **Controles:** `txtRutaArchivo`, `btnSeleccionarRuta`, `btnBackup`, `btnRestore` (con confirmación previa), `lblEstado`.
 
-- [ ] Crear `frmBackup`.
-- [ ] `ServicioBackup.cs`: `BACKUP DATABASE`.
-- [ ] `ServicioBackup.cs`: `RESTORE DATABASE` con confirmación `MessageBox` Sí/No previa.
+- [x] Crear `frmBackup` (botones `btnGenerarBackup` y `btnRestaurar`, `lblEstado`; operaciones en segundo plano con la UI bloqueada).
+- [x] `ServicioBackup.cs`: `BACKUP DATABASE` (`GenerarCopiaSeguridad`).
+- [x] `ServicioBackup.cs`: `RESTORE DATABASE` (`RestaurarCopiaSeguridad`) con confirmación `MessageBox` Sí/No previa.
 
 ## Fase 8 — Documentación y Entrega
 
