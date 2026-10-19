@@ -54,14 +54,14 @@ namespace SGIG.UI
         private void ConfigurarGrilla()
         {
             Grillas.Configurar(dgvUsuarios,
-                (nameof(Usuario.Apellido), "Apellido", 100),
-                (nameof(Usuario.Nombre), "Nombre", 100),
-                (nameof(Usuario.Documento), "Documento", 80),
-                (nameof(Usuario.NombreUsuario), "Usuario", 90),
-                (nameof(Usuario.NombreRol), "Rol", 90),
-                (nameof(Usuario.Legajo), "Legajo", 70),
-                (nameof(Usuario.Email), "Correo electrónico", 150),
-                (nameof(Usuario.Activo), "Estado", 70));
+                (nameof(Usuario.Apellido), "Apellido", 90),
+                (nameof(Usuario.Nombre), "Nombre", 90),
+                (nameof(Usuario.Documento), "Documento", 85),
+                (nameof(Usuario.NombreUsuario), "Usuario", 85),
+                (nameof(Usuario.NombreRol), "Rol", 115),
+                (nameof(Usuario.Legajo), "Legajo", 85),
+                (nameof(Usuario.Email), "Correo electrónico", 175),
+                (nameof(Usuario.Activo), "Estado", 95));
         }
 
         private void CargarGrilla()

@@ -31,6 +31,9 @@ namespace SGIG.UI
                 btnEliminar.Visible = false;
                 grpDatos.Visible = false;
 
+                // Sin el panel de edición (oculto), la grilla ocupa todo el alto disponible.
+                dgvMaquinas.Height = ClientSize.Height - dgvMaquinas.Top - 16;
+
                 ConfigurarGrilla();
                 CargarGrilla();
             }

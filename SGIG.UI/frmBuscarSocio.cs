@@ -79,18 +79,20 @@ public class frmBuscarSocio : Form
 
         _btnSeleccionar = new Button
         {
+            Name = "btnSeleccionar",
             Text = "Seleccionar",
-            Location = new Point(312, 336),
-            Size = new Size(90, 28),
+            Location = new Point(284, 336),
+            Size = new Size(112, 32),
             Anchor = AnchorStyles.Bottom | AnchorStyles.Right
         };
         _btnSeleccionar.Click += (s, e) => ConfirmarSeleccion();
 
         _btnCancelar = new Button
         {
+            Name = "btnCancelar",
             Text = "Cancelar",
-            Location = new Point(414, 336),
-            Size = new Size(90, 28),
+            Location = new Point(404, 336),
+            Size = new Size(100, 32),
             Anchor = AnchorStyles.Bottom | AnchorStyles.Right
         };
         _btnCancelar.Click += (s, e) =>

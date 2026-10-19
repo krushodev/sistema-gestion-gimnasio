@@ -112,9 +112,14 @@ namespace SGIG.UI
                     txt.BorderStyle = BorderStyle.FixedSingle;
                     txt.Font = FuenteTexto;
                 }
+                else if (c is DateTimePicker dtp)
+                {
+                    dtp.Format = DateTimePickerFormat.Custom;
+                    dtp.CustomFormat = "dd/MM/yyyy";
+                    dtp.Font = FuenteTexto;
+                }
                 else if (c is ComboBox cbo)
                 {
-                    cbo.FlatStyle = FlatStyle.Flat;
                     cbo.Font = FuenteTexto;
                 }
                 else if (c is DataGridView dgv)
@@ -125,6 +130,37 @@ namespace SGIG.UI
                 if (c.HasChildren)
                 {
                     EstilizarControles(c.Controls);
+                }
+            }
+
+            AjustarSolapes(controls);
+        }
+
+        /// <summary>
+        /// Los rótulos de los formularios con diseñador están dimensionados para la fuente
+        /// con la que se dibujaron; con otra fuente o escala crecen y tapan el campo que
+        /// tienen a la derecha ("Detalle técnic|"). Para cada rótulo de ancho automático se
+        /// corre el TextBox vecino de su misma fila, conservando su borde derecho.
+        /// </summary>
+        private static void AjustarSolapes(Control.ControlCollection controls)
+        {
+            foreach (Control rotulo in controls)
+            {
+                if (rotulo is not Label { AutoSize: true } etiqueta) continue;
+
+                int derecha = etiqueta.Left + etiqueta.PreferredSize.Width;
+                foreach (Control vecino in controls)
+                {
+                    if (vecino is not TextBox campo || campo.Multiline) continue;
+
+                    bool mismaFila = campo.Top < etiqueta.Bottom && campo.Bottom > etiqueta.Top;
+                    bool pisado = campo.Left >= etiqueta.Left && campo.Left < derecha + 6;
+                    if (!mismaFila || !pisado) continue;
+
+                    int nuevaIzquierda = derecha + 8;
+                    int borde = campo.Right;
+                    campo.Left = nuevaIzquierda;
+                    campo.Width = Math.Max(60, borde - nuevaIzquierda);
                 }
             }
         }
@@ -214,14 +250,23 @@ namespace SGIG.UI
         {
             if (string.IsNullOrEmpty(btn.Text) || btn.Width <= 0) return FuenteBoton;
 
-            for (float tamanio = 10F; tamanio >= 8F; tamanio -= 0.5F)
+            int disponible = btn.Width - 12;
+            foreach (var (estilo, desde, hasta) in new[]
             {
-                using var prueba = new Font(FuenteBoton.FontFamily, tamanio, FontStyle.Bold);
-                int ancho = TextRenderer.MeasureText(btn.Text, prueba).Width;
-                if (ancho <= btn.Width - 12)
-                    return tamanio == 10F ? FuenteBoton : new Font(FuenteBoton.FontFamily, tamanio, FontStyle.Bold);
+                (FontStyle.Bold, 10F, 8.5F),
+                (FontStyle.Regular, 9F, 8F)
+            })
+            {
+                for (float tamanio = desde; tamanio >= hasta; tamanio -= 0.5F)
+                {
+                    using var prueba = new Font(FuenteBoton.FontFamily, tamanio, estilo);
+                    if (TextRenderer.MeasureText(btn.Text, prueba).Width <= disponible)
+                        return estilo == FontStyle.Bold && tamanio == 10F
+                            ? FuenteBoton
+                            : new Font(FuenteBoton.FontFamily, tamanio, estilo);
+                }
             }
-            return new Font(FuenteBoton.FontFamily, 8F, FontStyle.Bold);
+            return new Font(FuenteBoton.FontFamily, 8F, FontStyle.Regular);
         }
 
         private static Color Oscurecer(Color color, float factor) => Color.FromArgb(
@@ -255,6 +300,7 @@ namespace SGIG.UI
             dgv.ColumnHeadersDefaultCellStyle.SelectionBackColor = Superficie;
             dgv.ColumnHeadersDefaultCellStyle.SelectionForeColor = TextoSecundario;
             dgv.ColumnHeadersDefaultCellStyle.Padding = new Padding(8, 0, 0, 0);
+            dgv.ColumnHeadersDefaultCellStyle.WrapMode = DataGridViewTriState.False;
 
             dgv.DefaultCellStyle.BackColor = Superficie;
             dgv.DefaultCellStyle.ForeColor = TextoPrimario;

@@ -37,11 +37,12 @@ namespace SGIG.UI
             lblIconoResultado = new Label
             {
                 AutoSize = false,
-                Font = Tema.FuenteIconos(26F),
-                Size = new Size(48, 40),
-                Location = new Point(16, 0),
+                Font = Tema.FuenteIconos(32F),
+                Size = new Size(pnlResultado.Width, 56),
+                Location = new Point(0, 6),
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right,
                 BackColor = Color.Transparent,
-                TextAlign = ContentAlignment.MiddleLeft
+                TextAlign = ContentAlignment.MiddleCenter
             };
             pnlResultado.Controls.Add(lblIconoResultado);
 

@@ -29,11 +29,13 @@ namespace SGIG.UI
         private Label lblRolUsuario = null!;
 
         private Form? _hijoActual;
+        private Panel? _hostHijo;
         private string _claveActual = string.Empty;
         private bool _ultimoAutoColapsado;
 
         private sealed record Destino(
-            string Seccion, string Clave, string Titulo, string Icono, int[] Roles, Func<Form> Crear);
+            string Seccion, string Clave, string Titulo, string Icono, int[] Roles, Func<Form> Crear,
+            bool Rigida = false);
 
         private readonly Dictionary<string, Destino> _destinos = new();
 
@@ -161,7 +163,7 @@ namespace SGIG.UI
             var catalogo = new Destino[]
             {
                 new("Gestión", "socios", "Socios", Iconos.Socios, new[] { A, R }, () => new frmSocios()),
-                new("Gestión", "cobro", "Cobro de cuotas", Iconos.Cobro, new[] { A, R }, () => new frmCobroCuota()),
+                new("Gestión", "cobro", "Cobro de cuotas", Iconos.Cobro, new[] { A, R }, () => new frmCobroCuota(), Rigida: true),
                 new("Gestión", "planes", "Planes", Iconos.Planes, new[] { A }, () => new frmPlanes()),
 
                 new("Acceso", "checkin", "Control de acceso", Iconos.Acceso, new[] { R }, () => new frmCheckin()),
@@ -216,6 +218,17 @@ namespace SGIG.UI
                 pnlInicio.Visible = false;
 
                 var hijo = destino.Crear();
+
+                // Las pantallas "rígidas" (controles con posición absoluta que no se reacomodan,
+                // como Cobro de cuotas) se cortarían por debajo de su tamaño de diseño: van en un
+                // panel con scroll que fija ese mínimo (ya escalado por el DPI de la pantalla).
+                // El resto se adapta solo y rellena todo el espacio disponible.
+                // Ninguna pantalla conserva su MinimumSize de diseño: forzaría al formulario a ser más
+                // grande que el espacio disponible y se cortaría. Las que se adaptan (grillas con
+                // anclajes) simplemente rellenan el espacio; las rígidas usan el panel con scroll.
+                var tamanioMinimo = destino.Rigida ? hijo.ClientSize : Size.Empty;
+                hijo.MinimumSize = Size.Empty;
+
                 hijo.TopLevel = false;
                 hijo.FormBorderStyle = FormBorderStyle.None;
                 hijo.Dock = DockStyle.Fill;
@@ -223,10 +236,19 @@ namespace SGIG.UI
                 Tema.EstilizarFormulario(hijo);
                 Tema.EstilizarControles(hijo);
 
-                pnlContenido.Controls.Add(hijo);
-                hijo.BringToFront();
+                var host = new Panel
+                {
+                    Dock = DockStyle.Fill,
+                    AutoScroll = true,
+                    AutoScrollMinSize = tamanioMinimo,
+                    BackColor = Tema.Fondo
+                };
+                host.Controls.Add(hijo);
+                pnlContenido.Controls.Add(host);
+                host.BringToFront();
                 hijo.Show();
 
+                _hostHijo = host;
                 _hijoActual = hijo;
                 lblTituloSeccion.Text = destino.Titulo;
             }
@@ -243,10 +265,12 @@ namespace SGIG.UI
         {
             if (_hijoActual == null) return;
 
-            pnlContenido.Controls.Remove(_hijoActual);
+            if (_hostHijo != null) pnlContenido.Controls.Remove(_hostHijo);
             _hijoActual.Close();
             _hijoActual.Dispose();
+            _hostHijo?.Dispose();
             _hijoActual = null;
+            _hostHijo = null;
         }
 
         // ── Adaptabilidad ────────────────────────────────────────────────────

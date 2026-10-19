@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Drawing;
 using System.Globalization;
 using System.Linq;
@@ -220,7 +220,7 @@ public partial class frmCobroCuota : Form
     {
         if (cboPlanes.SelectedItem is Plan plan)
         {
-            txtMonto.Text = plan.Precio.ToString("N2");
+            txtMonto.Text = plan.Precio.ToString("0.00", CultureInfo.CurrentCulture);
             CalcularNuevoVencimiento();
         }
     }
@@ -283,7 +283,10 @@ public partial class frmCobroCuota : Form
             return;
         }
 
-        if (!decimal.TryParse(txtMonto.Text, NumberStyles.Any, CultureInfo.InvariantCulture, out decimal monto) || monto <= 0)
+        // El campo sólo admite dígitos y UN separador (punto o coma): se normaliza a punto y se
+        // interpreta sin cultura, así funciona igual con la configuración regional de cualquier PC.
+        if (!decimal.TryParse(txtMonto.Text.Trim().Replace(',', '.'), NumberStyles.AllowDecimalPoint,
+                CultureInfo.InvariantCulture, out decimal monto) || monto <= 0)
         {
             MessageBox.Show("Ingrese un monto válido mayor a cero.", "Validación", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             txtMonto.Focus();

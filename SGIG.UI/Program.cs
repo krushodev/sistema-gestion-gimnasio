@@ -12,6 +12,15 @@ namespace SGIG.UI
         [STAThread]
         static void Main()
         {
+            // La interfaz es en español de Argentina: fechas dd/MM/yyyy y montos "$ 12.000,00"
+            // sin depender de la configuración regional de la PC donde corra la demo.
+            var cultura = (System.Globalization.CultureInfo)new System.Globalization.CultureInfo("es-AR").Clone();
+            cultura.DateTimeFormat.ShortDatePattern = "dd/MM/yyyy";
+            System.Globalization.CultureInfo.DefaultThreadCurrentCulture = cultura;
+            System.Globalization.CultureInfo.DefaultThreadCurrentUICulture = cultura;
+            System.Globalization.CultureInfo.CurrentCulture = cultura;
+            System.Globalization.CultureInfo.CurrentUICulture = cultura;
+
             // Configuración de alto DPI y fuente por defecto
             ApplicationConfiguration.Initialize();
 

@@ -26,6 +26,7 @@ namespace SGIG.UI
         public frmSocioEditor(Socio? socioExistente)
         {
             InitializeComponent();
+            HacerLugarParaFechaNacimiento();
 
             Tema.EstilizarFormulario(this);
             Tema.EstilizarControles(this);
@@ -36,6 +37,28 @@ namespace SGIG.UI
             // bloqueado por ucDatosPersona.btnBuscar_Click cuando el documento ya
             // pertenecía a otra Persona (RF#06).
             btnLimpiar.Visible = socioExistente is null;
+        }
+
+        /// <summary>
+        /// El diseñador dejó <c>ucDatosPersona</c> con 168 px de alto, pero su fila "Fecha
+        /// nacimiento" arranca en y=166: sólo se veía el borde superior del selector y la fila
+        /// pisaba "Apto médico". Se agranda el control y se baja todo lo que tiene debajo
+        /// (posiciones explícitas, para no depender de cómo se recalculen los anclajes).
+        /// </summary>
+        private void HacerLugarParaFechaNacimiento()
+        {
+            const int filaExtra = 36;
+            int limite = ucDatosPersona.Bottom - 8;
+
+            var originales = new List<(Control Control, int Top)>();
+            foreach (Control c in Controls)
+            {
+                if (c != ucDatosPersona && c.Top >= limite) originales.Add((c, c.Top));
+            }
+
+            ucDatosPersona.Height += filaExtra;
+            ClientSize = new Size(ClientSize.Width, ClientSize.Height + filaExtra);
+            foreach (var (control, top) in originales) control.Top = top + filaExtra;
         }
 
         private void btnLimpiar_Click(object sender, EventArgs e)

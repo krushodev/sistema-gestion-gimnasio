@@ -29,7 +29,7 @@ namespace SGIG.UI
             _servicioReporte = new ServicioReporte();
 
             Text = "SGIG — Métricas y Reportes de Ingresos";
-            Size = new Size(900, 600);
+            Size = new Size(740, 520);
             StartPosition = FormStartPosition.CenterParent;
 
             Tema.EstilizarFormulario(this);
@@ -69,14 +69,7 @@ namespace SGIG.UI
             });
 
             // Tarjetas de métricas (mismo componente que el inicio)
-            var flpTarjetas = new FlowLayoutPanel
-            {
-                Dock = DockStyle.Top,
-                AutoSize = true,
-                AutoSizeMode = AutoSizeMode.GrowAndShrink,
-                WrapContents = true,
-                BackColor = Tema.Fondo
-            };
+            var flpTarjetas = new PanelTarjetas();
             _tarjetaIngresos = new TarjetaMetrica(Iconos.Cobro, "Ingresos del mes", "$ 0", "Calculando...", Tema.TextoPrimario);
             _tarjetaSocios = new TarjetaMetrica(Iconos.Socios, "Socios activos", "0", "Calculando...", Tema.TextoPrimario);
             _tarjetaCheckins = new TarjetaMetrica(Iconos.Acceso, "Check-ins promedio", "0 / día", "Últimos 30 días", Tema.TextoPrimario);
@@ -147,7 +140,7 @@ namespace SGIG.UI
             _dgv.Columns.Add(new DataGridViewTextBoxColumn
             {
                 DataPropertyName = nameof(FilaReporteConceptoDTO.CantidadRegistros),
-                HeaderText = "Cantidad / Registros",
+                HeaderText = "Cantidad",
                 FillWeight = 20,
                 DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleRight }
             });

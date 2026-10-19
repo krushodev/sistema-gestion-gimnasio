@@ -24,7 +24,7 @@ namespace SGIG.UI
         private readonly Usuario _usuario;
         private readonly Action<string> _navegar;
 
-        private readonly FlowLayoutPanel _flpTarjetas;
+        private readonly PanelTarjetas _flpTarjetas;
         private readonly Label _lblTituloLista = new();
         private readonly DataGridView _dgvLista = new();
         private int _versionCarga;
@@ -44,16 +44,7 @@ namespace SGIG.UI
             // WinForms apila los controles Dock=Top al revés del orden en que se agregan (el
             // último agregado queda más arriba) y el Fill va primero: por eso se agrega de
             // abajo hacia arriba: lista (Fill), título de lista, atajos, tarjetas, encabezado.
-            _flpTarjetas = new FlowLayoutPanel
-            {
-                Dock = DockStyle.Top,
-                AutoSize = true,
-                AutoSizeMode = AutoSizeMode.GrowAndShrink,
-                WrapContents = true,
-                FlowDirection = FlowDirection.LeftToRight,
-                BackColor = Tema.Fondo,
-                Padding = new Padding(0, 4, 0, 0)
-            };
+            _flpTarjetas = new PanelTarjetas();
 
             if (_usuario.IdRol != Roles.Administrador)
             {
@@ -206,8 +197,7 @@ namespace SGIG.UI
                 if (version != _versionCarga || IsDisposed) return;
 
                 _flpTarjetas.SuspendLayout();
-                foreach (Control c in _flpTarjetas.Controls) c.Dispose();
-                _flpTarjetas.Controls.Clear();
+                foreach (var c in _flpTarjetas.Controls.Cast<Control>().ToArray()) c.Dispose();
                 foreach (var t in resultado.Tarjetas)
                     _flpTarjetas.Controls.Add(new TarjetaMetrica(
                         t.Icono, t.Titulo, t.Valor, t.Detalle, t.ColorValor, () => _navegar(t.Destino)));
@@ -219,7 +209,7 @@ namespace SGIG.UI
             {
                 if (IsDisposed || version != _versionCarga) return;
                 // Sin MessageBox: el inicio no debería interrumpir. Se avisa en el lugar de las tarjetas.
-                _flpTarjetas.Controls.Clear();
+                foreach (var c in _flpTarjetas.Controls.Cast<Control>().ToArray()) c.Dispose();
                 _flpTarjetas.Controls.Add(new Label
                 {
                     Text = "No se pudo cargar el resumen: " + ex.Message,
@@ -282,6 +272,61 @@ namespace SGIG.UI
                     return (tarjetas, enCurso);
                 }
             }
+        }
+    }
+
+    /// <summary>
+    /// Fila de tarjetas que se reacomoda sola (varias por fila según el ancho, con el alto
+    /// ajustado). Posiciona a mano en vez de usar un FlowLayoutPanel: con ese, si las tarjetas
+    /// se agregaban mientras el panel estaba oculto, quedaban todas apiladas en (0,0).
+    /// </summary>
+    internal sealed class PanelTarjetas : Panel
+    {
+        public PanelTarjetas()
+        {
+            Dock = DockStyle.Top;
+            Height = 140;
+            Padding = new Padding(0, 4, 0, 0);
+            BackColor = Tema.Fondo;
+        }
+
+        public void Reacomodar()
+        {
+            if (Controls.Count == 0) return;
+
+            var primera = Controls[0];
+            int anchoCelda = primera.Width + primera.Margin.Horizontal;
+            int altoCelda = primera.Height + primera.Margin.Vertical;
+            int porFila = Math.Max(1, ClientSize.Width / Math.Max(1, anchoCelda));
+
+            for (int i = 0; i < Controls.Count; i++)
+            {
+                Controls[i].Location = new Point(
+                    (i % porFila) * anchoCelda,
+                    Padding.Top + (i / porFila) * altoCelda);
+            }
+
+            int filas = (Controls.Count + porFila - 1) / porFila;
+            int alto = Padding.Vertical + filas * altoCelda;
+            if (Height != alto) Height = alto;
+        }
+
+        protected override void OnResize(EventArgs eventargs)
+        {
+            base.OnResize(eventargs);
+            Reacomodar();
+        }
+
+        protected override void OnControlAdded(ControlEventArgs e)
+        {
+            base.OnControlAdded(e);
+            Reacomodar();
+        }
+
+        protected override void OnControlRemoved(ControlEventArgs e)
+        {
+            base.OnControlRemoved(e);
+            Reacomodar();
         }
     }
 
