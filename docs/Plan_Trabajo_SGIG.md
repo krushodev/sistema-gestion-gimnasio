@@ -513,7 +513,7 @@ Para cada pantalla: aplicar `Tema.EstilizarGrilla`, botones por variante, reempl
 ### 9.7 Verificación y cierre
 
 - [x] `dotnet build SGIG.slnx` sin errores tras cada subfase (los 3 warnings de nulabilidad de `ServicioBackup`/`frmLogin` son anteriores a la Fase 9).
-- [ ] Revisión visual por el usuario en su máquina (el agente no puede renderizar la app): 100 %, 125 % y 150 % de escala de pantalla; ventana maximizada y a ~1000 px de ancho; monitor chico (1366×768).
+- [ ] Revisión visual por el usuario en su máquina: 125 % y 150 % de escala de pantalla y monitor chico (1366×768). Ya revisado por render del agente: ventana a 1400 y 1000 px, escala ~114 % (ver nota de render más abajo).
 - [ ] Recorrido de cada rol (Administrador / Recepcionista / Técnico) para confirmar que el sidebar muestra sólo lo permitido.
 - [ ] Retomar las capturas de pantalla de la Fase 8 **después** de esta fase, para que el Manual de Usuario muestre la UI definitiva.
 - [ ] *(Opcional)* modo oscuro con un segundo juego de tokens (`Tema.Aplicar(Modo)`); WinForms en .NET 10 lo soporta de forma experimental, por eso queda fuera del alcance base.
