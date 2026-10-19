@@ -31,6 +31,8 @@ SGIG.slnx
 
 `SGIG.Entidades`, `SGIG.Datos` y `SGIG.Negocio` no necesitan el sufijo `-windows` en su TFM porque no usan tipos de WinForms — solo `SGIG.UI` sí. Las 4 tienen que apuntar a la misma versión de .NET entre sí.
 
+Además existe **`SGIG.Tests`** (xUnit): pruebas automáticas de Entidades/Datos/Negocio contra una base aislada `SGIG_Test` que cada corrida crea y borra sola; nunca toca `SGIG`. Se corre con `dotnet test SGIG.Tests`. Ver `docs/patrones/testing.md` (convenciones: cada prueba crea sus propios datos, no depende de las demás ni de fechas del seed). Todo cambio de reglas de negocio debería traer su prueba y dejar la suite en verde.
+
 Dependencias en un solo sentido: `SGIG.UI → SGIG.Negocio → SGIG.Datos → SGIG.Entidades`. La UI **nunca** llama directamente a `SGIG.Datos`, ni `SGIG.Datos` conoce a `SGIG.Negocio`. Ningún control de formulario debe tener código SQL — eso es una violación de capas.
 
 ### Repositorio de referencia

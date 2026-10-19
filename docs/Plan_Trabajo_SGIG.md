@@ -530,6 +530,20 @@ Para cada pantalla: aplicar `Tema.EstilizarGrilla`, botones por variante, reempl
 
 ---
 
+## Fase 10 — Pruebas automáticas (agregada 18/10/2026)
+
+> Hasta la Fase 9 el proyecto no tenía tests automáticos. Detalle y convenciones en `docs/patrones/testing.md`.
+
+- [x] Proyecto `SGIG.Tests` (xUnit, `net10.0`) agregado a `SGIG.slnx`, con referencias a Entidades, Datos y Negocio.
+- [x] `BaseDeDatosFixture`: crea la base aislada `SGIG_Test` desde `docs/SGIG_CreateDB.sql`, la borra al terminar y aborta si la cadena de conexión no apunta a ella.
+- [x] Pruebas unitarias (sin base): validaciones y hash.
+- [x] Pruebas de integración: autenticación, usuarios, socios, tesorería, check-in, mantenimiento, reportes, catálogos, backup/restore (87 pruebas en total, todas en verde).
+- [x] Verificado que detectan roturas (se rompió a propósito el vencimiento mensual y fallaron las pruebas de cobro; se revirtió).
+- [ ] Opcional: pruebas de la capa `SGIG.Datos` por separado (hoy se prueba a través de los servicios) y de reglas que dependan de la fecha del sistema con un reloj inyectable.
+- [ ] Opcional: reporte de cobertura y ejecución automática en cada push (CI).
+
+---
+
 ## Cómo usar este plan con el agente
 
 1. Seguir las fases en el orden en que aparecen; dentro de una fase, las subsecciones también van en orden de dependencia (entidad → datos → negocio → pantalla).
