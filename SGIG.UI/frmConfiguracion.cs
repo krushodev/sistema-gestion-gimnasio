@@ -26,7 +26,7 @@ public class frmConfiguracion : Form
         _usuario = usuario;
 
         Text = "Configuración de mi cuenta";
-        ClientSize = new Size(600, 560);
+        ClientSize = new Size(600, 584);
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = false;
         MinimizeBox = false;
@@ -37,23 +37,24 @@ public class frmConfiguracion : Form
         {
             Text = "Cambiar contraseña",
             Location = new Point(16, 16),
-            Size = new Size(568, 168)
+            Size = new Size(568, 178)
         };
 
         var lblActual = new Label { Text = "Contraseña actual:", Location = new Point(16, 30), AutoSize = true };
-        _txtActual = new TextBox { Location = new Point(160, 27), Size = new Size(200, 23), PasswordChar = '●' };
+        _txtActual = new TextBox { Name = "txtContraseniaActual", Location = new Point(160, 27), Size = new Size(200, 23), PasswordChar = '●' };
 
         var lblNueva = new Label { Text = "Contraseña nueva:", Location = new Point(16, 66), AutoSize = true };
-        _txtNueva = new TextBox { Location = new Point(160, 63), Size = new Size(200, 23), PasswordChar = '●' };
+        _txtNueva = new TextBox { Name = "txtContraseniaNueva", Location = new Point(160, 63), Size = new Size(200, 23), PasswordChar = '●' };
 
         var lblConfirmar = new Label { Text = "Confirmar nueva:", Location = new Point(16, 102), AutoSize = true };
-        _txtConfirmar = new TextBox { Location = new Point(160, 99), Size = new Size(200, 23), PasswordChar = '●' };
+        _txtConfirmar = new TextBox { Name = "txtContraseniaConfirmar", Location = new Point(160, 99), Size = new Size(200, 23), PasswordChar = '●' };
 
         var btnCambiarContrasenia = new Button
         {
+            Name = "btnCambiarContrasenia",
             Text = "Cambiar contraseña",
             Location = new Point(16, 132),
-            Size = new Size(160, 28)
+            Size = new Size(192, 36)
         };
         btnCambiarContrasenia.Click += BtnCambiarContrasenia_Click;
 
@@ -68,8 +69,8 @@ public class frmConfiguracion : Form
         var grpDatos = new GroupBox
         {
             Text = "Mis datos",
-            Location = new Point(16, 200),
-            Size = new Size(568, 264)
+            Location = new Point(16, 210),
+            Size = new Size(568, 272)
         };
 
         _ucDatosPersona = new ucDatosPersona
@@ -80,9 +81,10 @@ public class frmConfiguracion : Form
 
         var btnGuardarDatos = new Button
         {
+            Name = "btnGuardarDatos",
             Text = "Guardar mis datos",
             Location = new Point(4, 228),
-            Size = new Size(160, 28)
+            Size = new Size(176, 36)
         };
         btnGuardarDatos.Click += BtnGuardarDatos_Click;
 
@@ -91,9 +93,10 @@ public class frmConfiguracion : Form
 
         var btnCerrar = new Button
         {
+            Name = "btnCerrar",
             Text = "Cerrar",
-            Location = new Point(492, 480),
-            Size = new Size(92, 28),
+            Location = new Point(484, 496),
+            Size = new Size(100, 36),
             Anchor = AnchorStyles.Bottom | AnchorStyles.Right
         };
         btnCerrar.Click += (s, e) => Close();

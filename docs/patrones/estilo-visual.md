@@ -83,3 +83,7 @@ color, nombralo siguiendo esta convención en vez de hardcodear un color aparte.
   orden en que se agregan a `Controls` (el último agregado queda más arriba) y el que es `Fill` debe ir
   primero o llamar a `BringToFront()`. Al armar un layout por código, agregar de abajo hacia arriba.
 - **Botones**: `EstilizarBoton` baja la fuente (hasta 8 pt) si el texto no entra en el ancho del botón.
+- **Altura de botones**: `Tema.AlturaBoton` = 36 px; `EstilizarBoton` normaliza los de 24–44 px (sin mover el control). Los de acción grande (login, cobro, backup) quedan fuera del rango.
+- **Ojo de contraseña** (`AgregarToggleContrasenia`): va **al costado** del campo, quitándole 30 px de ancho; no se superpone (en WinForms dos controles nativos superpuestos no tienen orden de dibujo garantizado) y `EstilizarBoton` ignora los botones `btnToggle_*`.
+- **Nombrar los controles creados por código**: la variante del botón sale del `Name` (`btnGuardar…`, `btnCerrar`, `btnEliminar`…); un botón sin nombre queda siempre azul.
+- **Pantalla que se cierra sola** (`Close()`): `frmMDIParent` vuelve al Inicio; no dejar el área vacía.

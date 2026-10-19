@@ -228,6 +228,7 @@ namespace SGIG.UI
         {
             txtDocumento.Enabled = false;
             cboTipoDocumento.Enabled = false;
+            btnBuscar.Enabled = false; // buscar otra persona no tiene sentido si la identidad está fija
         }
 
         public void Limpiar()

@@ -103,9 +103,15 @@ namespace SGIG.UI
                 }
                 else if (c is Label lbl)
                 {
-                    // Los grises "de sistema" de los diseñadores viejos pasan al token secundario.
-                    if (lbl.ForeColor == Color.Gray || lbl.ForeColor == SystemColors.GrayText)
-                        lbl.ForeColor = TextoSecundario;
+                    lbl.ForeColor = ColorHeredado(lbl.ForeColor);
+                    NormalizarFuente(lbl);
+                }
+                else if (c is GroupBox grp)
+                {
+                    grp.ForeColor = ColorHeredado(grp.ForeColor) == grp.ForeColor && grp.ForeColor == SystemColors.ControlText
+                        ? TextoPrimario
+                        : ColorHeredado(grp.ForeColor);
+                    NormalizarFuente(grp);
                 }
                 else if (c is TextBox txt)
                 {
@@ -151,7 +157,8 @@ namespace SGIG.UI
                 int derecha = etiqueta.Left + etiqueta.PreferredSize.Width;
                 foreach (Control vecino in controls)
                 {
-                    if (vecino is not TextBox campo || campo.Multiline) continue;
+                    if (vecino is not (TextBox or ComboBox) || vecino is TextBox { Multiline: true }) continue;
+                    var campo = vecino;
 
                     bool mismaFila = campo.Top < etiqueta.Bottom && campo.Bottom > etiqueta.Top;
                     bool pisado = campo.Left >= etiqueta.Left && campo.Left < derecha + 6;
@@ -163,6 +170,35 @@ namespace SGIG.UI
                     campo.Width = Math.Max(60, borde - nuevaIzquierda);
                 }
             }
+        }
+
+        /// <summary>Colores de la paleta vieja (y grises de sistema) que pasan a los tokens actuales.</summary>
+        private static Color ColorHeredado(Color color)
+        {
+            if (color == Color.Gray || color == SystemColors.GrayText) return TextoSecundario;
+
+            return (color.R, color.G, color.B) switch
+            {
+                (26, 32, 44) or (45, 55, 72) => TextoPrimario,
+                (74, 85, 104) => TextoSecundario,
+                (0, 100, 0) => ExitoTexto,
+                _ => color
+            };
+        }
+
+        /// <summary>
+        /// "Segoe UI Semibold" y los tamaños 9,75/15,75 vienen de diseñadores viejos: se llevan a
+        /// "Segoe UI" (negrita si era semibold) y a 10/16 pt, para que haya una sola escala.
+        /// </summary>
+        private static void NormalizarFuente(Control control)
+        {
+            var f = control.Font;
+            bool semibold = f.Name == "Segoe UI Semibold";
+            float tamanio = f.SizeInPoints switch { 9.75F => 10F, 15.75F => 16F, 9.5F when control is GroupBox => 9F, var t => t };
+            if (!semibold && tamanio == f.SizeInPoints) return;
+
+            var estilo = semibold && control is Label ? FontStyle.Bold : semibold ? FontStyle.Regular : f.Style;
+            control.Font = new Font("Segoe UI", tamanio, estilo);
         }
 
         // ── Botones ─────────────────────────────────────────────────────────
@@ -189,13 +225,40 @@ namespace SGIG.UI
 
         public static void EstilizarBoton(Button btn)
         {
+            // El ojo de mostrar/ocultar contraseña ya viene estilizado (fuente de íconos): si se lo
+            // tratara como un botón de formulario quedaría azul y con un cuadradito en vez del glifo.
+            if (btn.Name.StartsWith("btnToggle_", StringComparison.Ordinal)) return;
+
             var variante = VarianteSegunNombre(btn.Name);
             btn.Text = SinEmojiInicial(btn.Text);
 
             btn.FlatStyle = FlatStyle.Flat;
+            UniformarAltura(btn);
             btn.Font = AjustarFuenteBoton(btn);
             btn.Cursor = Cursors.Hand;
             btn.UseVisualStyleBackColor = false;
+
+            AplicarColores(btn, variante);
+
+            // Habilitado/deshabilitado cambia en tiempo de ejecución (p. ej. "Registrar pago" hasta
+            // que se elige un socio): los colores se recalculan para que el gris sea siempre el mismo.
+            if (_botonesSuscritos.TryGetValue(btn, out _)) return;
+            _botonesSuscritos.Add(btn, new object());
+            btn.EnabledChanged += (s, e) => AplicarColores(btn, VarianteSegunNombre(btn.Name));
+        }
+
+        private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<Button, object> _botonesSuscritos = new();
+
+        private static void AplicarColores(Button btn, VarianteBoton variante)
+        {
+            if (!btn.Enabled)
+            {
+                btn.BackColor = FilaAlterna;
+                btn.ForeColor = Color.FromArgb(148, 163, 184); // #94A3B8 (mismo gris que el texto del sidebar)
+                btn.FlatAppearance.BorderSize = 1;
+                btn.FlatAppearance.BorderColor = Borde;
+                return;
+            }
 
             if (variante == VarianteBoton.Secundario)
             {
@@ -240,6 +303,24 @@ namespace SGIG.UI
                 i++;
             }
             return i == 0 || i >= texto.Length ? texto : texto[i..];
+        }
+
+        /// <summary>Altura estándar de los botones de formulario (los de acción grande —login, cobro, backup— quedan como están).</summary>
+        public const int AlturaBoton = 36;
+
+        /// <summary>
+        /// Los diseñadores dejaron botones de 25 a 43 px de alto según la pantalla. Se unifican a
+        /// <see cref="AlturaBoton"/> sin mover el control: si está anclado abajo conserva su borde
+        /// inferior; si no, crece/achica parejo desde el centro.
+        /// </summary>
+        private static void UniformarAltura(Button btn)
+        {
+            if (btn.Dock != DockStyle.None || btn.Height == AlturaBoton || btn.Height < 24 || btn.Height > 44) return;
+
+            int diferencia = btn.Height - AlturaBoton;
+            bool anclaAbajo = btn.Anchor.HasFlag(AnchorStyles.Bottom) && !btn.Anchor.HasFlag(AnchorStyles.Top);
+            btn.Top += anclaAbajo ? diferencia : diferencia / 2;
+            btn.Height = AlturaBoton;
         }
 
         /// <summary>
@@ -344,19 +425,22 @@ namespace SGIG.UI
                 ForeColor = TextoSecundario,
                 Cursor = Cursors.Hand,
                 FlatStyle = FlatStyle.Flat,
-                Size = new Size(26, txt.Height - 4),
-                Location = new Point(txt.Right - 28, txt.Top + 2),
+                Size = new Size(26, txt.Height),
                 TabStop = false,
                 BackColor = Superficie
             };
 
+            // El botón ocupa el extremo derecho del espacio que tenía el campo: se le quitan 30 px
+            // al TextBox y el ojo va a su lado. Superponerlo sobre el TextBox no es confiable (son
+            // dos controles nativos y el orden de dibujo no está garantizado).
+            const int espacio = 30;
+            txt.Width -= espacio;
+            btnToggle.Location = new Point(txt.Right + 4, txt.Top);
+
             btnToggle.FlatAppearance.BorderSize = 0;
             btnToggle.FlatAppearance.MouseOverBackColor = FilaAlterna;
 
-            txt.LocationChanged += (s, e) =>
-            {
-                btnToggle.Location = new Point(txt.Right - 28, txt.Top + 2);
-            };
+            txt.LocationChanged += (s, e) => btnToggle.Location = new Point(txt.Right + 4, txt.Top);
 
             btnToggle.Click += (s, e) =>
             {

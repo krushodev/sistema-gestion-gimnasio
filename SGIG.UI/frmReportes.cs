@@ -50,7 +50,7 @@ namespace SGIG.UI
             Padding = new Padding(0);
 
             // Encabezado
-            var pnlEncabezado = new Panel { Dock = DockStyle.Top, Height = 64, BackColor = Tema.Fondo };
+            var pnlEncabezado = new Panel { Dock = DockStyle.Top, Height = 72, BackColor = Tema.Fondo };
             pnlEncabezado.Controls.Add(new Label
             {
                 Text = "Reportes financieros y concurrencia",
@@ -64,7 +64,7 @@ namespace SGIG.UI
                 Text = "Métricas del mes y detalle de ingresos por período.",
                 Font = Tema.FuenteSubtitulo,
                 ForeColor = Tema.TextoSecundario,
-                Location = new Point(2, 34),
+                Location = new Point(2, 42),
                 AutoSize = true
             });
 

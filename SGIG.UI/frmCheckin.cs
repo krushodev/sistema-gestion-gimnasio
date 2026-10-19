@@ -38,7 +38,7 @@ namespace SGIG.UI
             {
                 AutoSize = false,
                 Font = Tema.FuenteIconos(32F),
-                Size = new Size(pnlResultado.Width, 56),
+                Size = new Size(pnlResultado.Width, 46),
                 Location = new Point(0, 6),
                 Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right,
                 BackColor = Color.Transparent,

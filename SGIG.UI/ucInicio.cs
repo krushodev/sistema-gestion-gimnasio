@@ -78,7 +78,7 @@ namespace SGIG.UI
             string fecha = DateTime.Now.ToString("dddd d 'de' MMMM", new CultureInfo("es-AR"));
             fecha = char.ToUpper(fecha[0], CultureInfo.CurrentCulture) + fecha[1..];
 
-            var panel = new Panel { Dock = DockStyle.Top, Height = 84, BackColor = Tema.Fondo };
+            var panel = new Panel { Dock = DockStyle.Top, Height = 90, BackColor = Tema.Fondo };
             panel.Controls.Add(new Label
             {
                 Text = $"{saludo}, {_usuario.Nombre}",
@@ -93,7 +93,7 @@ namespace SGIG.UI
                 Font = Tema.FuenteSubtitulo,
                 ForeColor = Tema.TextoSecundario,
                 AutoSize = true,
-                Location = new Point(2, 48)
+                Location = new Point(2, 56)
             });
             return panel;
         }

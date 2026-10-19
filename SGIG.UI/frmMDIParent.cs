@@ -250,6 +250,14 @@ namespace SGIG.UI
 
                 _hostHijo = host;
                 _hijoActual = hijo;
+
+                // Si la pantalla se cierra sola (p. ej. el botón "Cerrar" de Planes) no debe quedar
+                // el área vacía con el ítem del sidebar todavía marcado: se vuelve al Inicio.
+                hijo.FormClosed += (s, e) =>
+                {
+                    if (ReferenceEquals(_hijoActual, hijo) && !IsDisposed)
+                        BeginInvoke(() => Navegar(ClaveInicio));
+                };
                 lblTituloSeccion.Text = destino.Titulo;
             }
             else
@@ -265,12 +273,20 @@ namespace SGIG.UI
         {
             if (_hijoActual == null) return;
 
-            if (_hostHijo != null) pnlContenido.Controls.Remove(_hostHijo);
-            _hijoActual.Close();
-            _hijoActual.Dispose();
-            _hostHijo?.Dispose();
+            // Se suelta primero la referencia: así el FormClosed de la pantalla (ver Navegar) sabe que
+            // este cierre lo provoca la propia navegación y no vuelve al Inicio.
+            var hijo = _hijoActual;
+            var host = _hostHijo;
             _hijoActual = null;
             _hostHijo = null;
+
+            if (host != null) pnlContenido.Controls.Remove(host);
+            if (!hijo.IsDisposed)
+            {
+                hijo.Close();
+                hijo.Dispose();
+            }
+            host?.Dispose();
         }
 
         // ── Adaptabilidad ────────────────────────────────────────────────────
