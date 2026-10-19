@@ -41,9 +41,9 @@ namespace SGIG.UI
             Dock = DockStyle.Fill;
             BackColor = Tema.Fondo;
 
-            // De arriba hacia abajo: encabezado, tarjetas, atajos, título de lista, lista (Fill).
-            Controls.Add(ConstruirEncabezado());
-
+            // WinForms apila los controles Dock=Top al revés del orden en que se agregan (el
+            // último agregado queda más arriba) y el Fill va primero: por eso se agrega de
+            // abajo hacia arriba: lista (Fill), título de lista, atajos, tarjetas, encabezado.
             _flpTarjetas = new FlowLayoutPanel
             {
                 Dock = DockStyle.Top,
@@ -54,13 +54,12 @@ namespace SGIG.UI
                 BackColor = Tema.Fondo,
                 Padding = new Padding(0, 4, 0, 0)
             };
-            Controls.Add(_flpTarjetas);
-
-            var atajos = ConstruirAtajos();
-            if (atajos != null) Controls.Add(atajos);
 
             if (_usuario.IdRol != Roles.Administrador)
             {
+                ConfigurarLista();
+                Controls.Add(_dgvLista);
+
                 _lblTituloLista.Dock = DockStyle.Top;
                 _lblTituloLista.Height = 40;
                 _lblTituloLista.Font = Tema.Fuente(12F, FontStyle.Bold);
@@ -70,12 +69,15 @@ namespace SGIG.UI
                     ? "Últimos accesos"
                     : "Mantenimientos en curso";
                 Controls.Add(_lblTituloLista);
-
-                ConfigurarLista();
-                Controls.Add(_dgvLista);
-                _dgvLista.BringToFront();
             }
 
+            var atajos = ConstruirAtajos();
+            if (atajos != null) Controls.Add(atajos);
+
+            Controls.Add(_flpTarjetas);
+            Controls.Add(ConstruirEncabezado());
+
+            if (_usuario.IdRol != Roles.Administrador) _dgvLista.BringToFront();
         }
 
         private Control ConstruirEncabezado()
@@ -167,7 +169,7 @@ namespace SGIG.UI
                     (nameof(Checkin.NombreCompleto), "Socio", 170),
                     (nameof(Checkin.Resultado), "Resultado", 90),
                     (nameof(Checkin.DescripcionVencimiento), "Cuota", 140));
-                _dgvLista.Columns[nameof(Checkin.FechaHora)]!.DefaultCellStyle.Format = "dd/MM  HH:mm";
+                _dgvLista.Columns["col" + nameof(Checkin.FechaHora)]!.DefaultCellStyle.Format = "dd/MM  HH:mm";
                 _dgvLista.CellFormatting += (s, e) =>
                 {
                     if (e.RowIndex < 0 || _dgvLista.Columns[e.ColumnIndex].DataPropertyName != nameof(Checkin.Resultado))
@@ -184,7 +186,7 @@ namespace SGIG.UI
                     (nameof(Mantenimiento.NombreTecnico), "Técnico", 130),
                     (nameof(Mantenimiento.FechaInicio), "Inicio", 90),
                     (nameof(Mantenimiento.DetalleTecnico), "Detalle", 200));
-                _dgvLista.Columns[nameof(Mantenimiento.FechaInicio)]!.DefaultCellStyle.Format = "dd/MM/yyyy";
+                _dgvLista.Columns["col" + nameof(Mantenimiento.FechaInicio)]!.DefaultCellStyle.Format = "dd/MM/yyyy";
             }
         }
 
@@ -293,13 +295,13 @@ namespace SGIG.UI
         private readonly Label _lblDetalle;
         private readonly Font _fuenteIcono = Tema.FuenteIconos(12F);
         private readonly Font _fuenteTitulo = Tema.Fuente(9.5F);
-        private readonly Font _fuenteValor = Tema.Fuente(24F, FontStyle.Bold);
+        private readonly Font _fuenteValor = Tema.Fuente(20F, FontStyle.Bold);
         private readonly Font _fuenteDetalle = Tema.Fuente(9F);
 
         public TarjetaMetrica(string icono, string titulo, string valor, string detalle,
             Color colorValor, Action? alHacerClick = null)
         {
-            Size = new Size(260, 124);
+            Size = new Size(260, 128);
             Margin = new Padding(0, 0, 16, 16);
             BackColor = Tema.Fondo;
 
@@ -330,8 +332,9 @@ namespace SGIG.UI
                 Font = _fuenteValor,
                 ForeColor = colorValor,
                 AutoEllipsis = true,
-                Location = new Point(14, 46),
-                Size = new Size(232, 40),
+                Location = new Point(14, 42),
+                Size = new Size(232, 46),
+                TextAlign = ContentAlignment.MiddleLeft,
                 BackColor = Color.Transparent
             };
             var lblDetalle = new Label
@@ -340,7 +343,7 @@ namespace SGIG.UI
                 Font = _fuenteDetalle,
                 ForeColor = Tema.TextoSecundario,
                 AutoEllipsis = true,
-                Location = new Point(16, 90),
+                Location = new Point(16, 96),
                 Size = new Size(230, 20),
                 BackColor = Color.Transparent
             };

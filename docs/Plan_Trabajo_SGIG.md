@@ -512,13 +512,17 @@ Para cada pantalla: aplicar `Tema.EstilizarGrilla`, botones por variante, reempl
 
 ### 9.7 Verificación y cierre
 
-- [ ] `dotnet build SGIG.slnx` sin errores ni warnings tras cada subfase.
+- [x] `dotnet build SGIG.slnx` sin errores tras cada subfase (los 3 warnings de nulabilidad de `ServicioBackup`/`frmLogin` son anteriores a la Fase 9).
 - [ ] Revisión visual por el usuario en su máquina (el agente no puede renderizar la app): 100 %, 125 % y 150 % de escala de pantalla; ventana maximizada y a ~1000 px de ancho; monitor chico (1366×768).
 - [ ] Recorrido de cada rol (Administrador / Recepcionista / Técnico) para confirmar que el sidebar muestra sólo lo permitido.
 - [ ] Retomar las capturas de pantalla de la Fase 8 **después** de esta fase, para que el Manual de Usuario muestre la UI definitiva.
 - [ ] *(Opcional)* modo oscuro con un segundo juego de tokens (`Tema.Aplicar(Modo)`); WinForms en .NET 10 lo soporta de forma experimental, por eso queda fuera del alcance base.
 
 **Orden recomendado:** 9.2 → 9.3 → 9.4 → 9.5 → 9.6 → 9.7. Cada subfase compila y se puede revisar por separado; si el tiempo apremia se puede cortar después de 9.3–9.5 y la app ya se ve rediseñada en lo más visible.
+
+> **Revisión por render (18/10/2026):** como el agente tiene acceso a la base local (usuario `admin` del seed), armó un arnés fuera del repo que dibuja las pantallas a imagen con `Control.DrawToBitmap` (sin abrir ventanas en el escritorio) y las inspeccionó para los 3 roles, a 1400 px y a 1000 px de ancho. Encontró y corrigió: (1) `ucInicio` explotaba con `NullReferenceException` para Recepcionista y Técnico (buscaba columnas por nombre de propiedad en vez de `"col" + propiedad`); (2) orden de apilado `Dock=Top` invertido en Inicio y Reportes (**regla: lo último que se agrega queda más arriba, y el `Fill` va primero/`BringToFront`**); (3) cifras de las tarjetas recortadas; (4) ícono del campo contraseña (ahora candado); (5) etiqueta del sidebar truncada ("Historial de mantenimientos" → "Intervenciones"); (6) botones cuyo texto no entra pasan a una fuente más chica en vez de recortarse; (7) el cuerpo de texto vuelve a `Segoe UI` (la variante *Variable* es más ancha y hacía que los rótulos de los formularios con diseñador pisaran a sus campos).
+>
+> **Pendiente de verificación humana:** los glifos de los íconos en tu fuente instalada, escala 125 %/150 %, y las pantallas que el render no cubrió (`frmSocioEditor`, `frmUsuarioEditor`, `frmConfiguracion`, `frmBuscarSocio`, `frmPlanes`, `frmMaquinas`, `frmHistorialMantenimientos` se renderizaron sólo en parte). Observaciones menores abiertas: el rótulo "Detalle técnico" de `frmMantenimiento` queda tapado por su campo; las fechas se muestran como `M/d/yyyy` porque la cultura de Windows es en-US (no se fuerza `es-AR`).
 
 ---
 

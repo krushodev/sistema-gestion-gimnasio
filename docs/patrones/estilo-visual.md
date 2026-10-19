@@ -66,8 +66,9 @@ color, nombralo siguiendo esta convención en vez de hardcodear un color aparte.
   `Superficie`, `Borde`, `TextoPrimario`, `TextoSecundario`, `Acento`/`AcentoHover`, `Exito`,
   `Peligro`, `Aviso`, `FilaAlterna`. No usar `Color.FromArgb` sueltos en formularios. Los nombres
   viejos (`SlateOscuro`, `Primario`, `FondoClaro`...) siguen como alias hasta migrar cada pantalla.
-- **Tipografía**: `Tema.Fuente(tamaño, estilo)` y las `Fuente*` estándar usan Segoe UI Variable
-  con fallback a Segoe UI.
+- **Tipografía**: `Tema.Fuente(tamaño, estilo)` y las `Fuente*` de cuerpo usan **Segoe UI** (no
+  la variante Variable: es más ancha y hace que los rótulos de los formularios con diseñador pisen a
+  sus campos); sólo `FuenteTitulo` usa Segoe UI Variable Display con fallback.
 - **Íconos**: clase `Iconos` (glifos de Segoe Fluent Icons / MDL2 Assets, sin imágenes ni NuGet)
   + `Tema.FuenteIconos(tamaño)`. Reemplaza a los emojis. Los códigos de glifo se ajustan en un solo
   lugar; si alguno no se ve bien en la máquina de uso, cambiar el código en `Iconos`.
@@ -77,3 +78,8 @@ color, nombralo siguiendo esta convención en vez de hardcodear un color aparte.
 - **Grillas**: `Tema.EstilizarGrilla` (aplicada automáticamente por `EstilizarControles`) unifica
   filas altas, sin líneas verticales, cabecera sin relleno y fila alterna sutil.
 - **`RoundedPanel`**: panel con esquinas redondeadas y borde de 1 px dibujado por código.
+
+- **Regla de apilado `Dock`** (aprendida al renderizar): los controles `Dock=Top` se apilan al revés del
+  orden en que se agregan a `Controls` (el último agregado queda más arriba) y el que es `Fill` debe ir
+  primero o llamar a `BringToFront()`. Al armar un layout por código, agregar de abajo hacia arriba.
+- **Botones**: `EstilizarBoton` baja la fuente (hasta 8 pt) si el texto no entra en el ancho del botón.

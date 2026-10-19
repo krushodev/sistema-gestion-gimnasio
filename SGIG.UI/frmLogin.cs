@@ -81,7 +81,7 @@ namespace SGIG.UI
                 Font = Tema.FuenteTexto,
                 ForeColor = Tema.TextoSecundario,
                 AutoSize = true,
-                Location = new Point(2, 46)
+                Location = new Point(2, 54)
             };
             pnlCard.Controls.Add(lblSubtituloLogin);
 
@@ -89,7 +89,7 @@ namespace SGIG.UI
             campoUsuario = CrearCampo(txtUsuario, Iconos.Usuarios, 118, tabIndex: 0);
 
             EstilizarEtiquetaCampo(lblContrasenia, 176);
-            campoContrasenia = CrearCampo(txtContrasenia, Iconos.Acceso, 198, tabIndex: 1);
+            campoContrasenia = CrearCampo(txtContrasenia, Iconos.Candado, 198, tabIndex: 1);
 
             lblMensajeError.AutoSize = false;
             lblMensajeError.Font = Tema.Fuente(9.5F);

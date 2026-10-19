@@ -169,7 +169,7 @@ namespace SGIG.UI
 
                 new("Activos", "maquinas", "Máquinas", Iconos.Maquinas, new[] { A, T }, () => new frmMaquinas()),
                 new("Activos", "mantenimiento", "Mantenimiento", Iconos.Mantenimiento, new[] { T }, () => new frmMantenimiento(_usuario)),
-                new("Activos", "historialMantenimientos", "Historial de mantenimientos", Iconos.Historial, new[] { A, T }, () => new frmHistorialMantenimientos()),
+                new("Activos", "historialMantenimientos", "Intervenciones", Iconos.Historial, new[] { A, T }, () => new frmHistorialMantenimientos()),
 
                 new("Administración", "usuarios", "Usuarios", Iconos.Usuarios, new[] { A }, () => new frmUsuarios(_usuario)),
                 new("Administración", "reportes", "Reportes", Iconos.Reportes, new[] { A }, () => new frmReportes()),

@@ -86,9 +86,9 @@ namespace SGIG.UI
             var pnlFiltro = new Panel { Dock = DockStyle.Top, Height = 56, BackColor = Tema.Fondo };
 
             var lblDesde = new Label { Text = "Desde", Font = Tema.Fuente(9F, FontStyle.Bold), ForeColor = Tema.TextoSecundario, Location = new Point(2, 18), AutoSize = true };
-            _dtpDesde = new DateTimePicker { Location = new Point(52, 14), Width = 130, Value = DateTime.Today.AddDays(-30) };
+            _dtpDesde = new DateTimePicker { Format = DateTimePickerFormat.Short, Location = new Point(52, 14), Width = 130, Value = DateTime.Today.AddDays(-30) };
             var lblHasta = new Label { Text = "Hasta", Font = Tema.Fuente(9F, FontStyle.Bold), ForeColor = Tema.TextoSecundario, Location = new Point(204, 18), AutoSize = true };
-            _dtpHasta = new DateTimePicker { Location = new Point(252, 14), Width = 130, Value = DateTime.Today };
+            _dtpHasta = new DateTimePicker { Format = DateTimePickerFormat.Short, Location = new Point(252, 14), Width = 130, Value = DateTime.Today };
 
             _btnConsultar = new Button { Name = "btnGenerar", Text = "Generar vista", Location = new Point(402, 10), Size = new Size(130, 34) };
             _btnConsultar.Click += async (s, e) => await ActualizarGrillaAsync();
@@ -117,10 +117,11 @@ namespace SGIG.UI
             };
             Tema.EstilizarGrilla(_dgv);
 
-            Controls.Add(pnlEncabezado);
-            Controls.Add(flpTarjetas);
-            Controls.Add(pnlFiltro);
+            // Dock=Top se apila al revés del orden de alta: de abajo hacia arriba.
             Controls.Add(_dgv);
+            Controls.Add(pnlFiltro);
+            Controls.Add(flpTarjetas);
+            Controls.Add(pnlEncabezado);
             _dgv.BringToFront();
         }
 

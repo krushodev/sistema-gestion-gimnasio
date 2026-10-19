@@ -44,8 +44,10 @@ namespace SGIG.UI
         public static Color Primario => Acento;
 
         // ── Tipografía ───────────────────────────────────────────────────────
-        // "Segoe UI Variable" viene con Windows 11; en Windows 10 se cae a "Segoe UI".
-        private static readonly string FamiliaTexto = ElegirFamilia("Segoe UI Variable Text", "Segoe UI");
+        // El cuerpo de texto usa "Segoe UI" (no la variante "Variable" de Windows 11): los
+        // formularios con diseñador se dibujaron con sus métricas, y una fuente más ancha
+        // hace que los rótulos pisen a los campos vecinos. Los títulos sí usan Variable.
+        private static readonly string FamiliaTexto = "Segoe UI";
         private static readonly string FamiliaTitulos = ElegirFamilia("Segoe UI Variable Display", "Segoe UI Semibold", "Segoe UI");
 
         public static Font Fuente(float tamanio, FontStyle estilo = FontStyle.Regular) =>
@@ -155,7 +157,7 @@ namespace SGIG.UI
             btn.Text = SinEmojiInicial(btn.Text);
 
             btn.FlatStyle = FlatStyle.Flat;
-            btn.Font = FuenteBoton;
+            btn.Font = AjustarFuenteBoton(btn);
             btn.Cursor = Cursors.Hand;
             btn.UseVisualStyleBackColor = false;
 
@@ -202,6 +204,24 @@ namespace SGIG.UI
                 i++;
             }
             return i == 0 || i >= texto.Length ? texto : texto[i..];
+        }
+
+        /// <summary>
+        /// La fuente estándar del botón; si el texto no entra en el ancho que le dio el
+        /// diseñador, baja de a 0,5 pt (hasta 8 pt) en vez de dejarlo recortado.
+        /// </summary>
+        private static Font AjustarFuenteBoton(Button btn)
+        {
+            if (string.IsNullOrEmpty(btn.Text) || btn.Width <= 0) return FuenteBoton;
+
+            for (float tamanio = 10F; tamanio >= 8F; tamanio -= 0.5F)
+            {
+                using var prueba = new Font(FuenteBoton.FontFamily, tamanio, FontStyle.Bold);
+                int ancho = TextRenderer.MeasureText(btn.Text, prueba).Width;
+                if (ancho <= btn.Width - 12)
+                    return tamanio == 10F ? FuenteBoton : new Font(FuenteBoton.FontFamily, tamanio, FontStyle.Bold);
+            }
+            return new Font(FuenteBoton.FontFamily, 8F, FontStyle.Bold);
         }
 
         private static Color Oscurecer(Color color, float factor) => Color.FromArgb(
@@ -340,6 +360,7 @@ namespace SGIG.UI
         public const string Ocultar = "\uED1A";
         public const string Aviso = "\uE7BA";
         public const string Ok = "\uE73E";
+        public const string Candado = "\uE72E";
         public const string Cancelar = "\uE711";
     }
 
