@@ -81,5 +81,76 @@ namespace SGIG.Datos
                 throw new AccesoDatosException("Error al consultar el reporte financiero: " + ex.Message, ex);
             }
         }
+
+        /// <summary>
+        /// Facturado por plan entre dos fechas (hasta exclusiva). Mismo criterio que la tarjeta
+        /// "Ingresos del mes" (Facturacion.monto_total por fecha_emision). Incluye los planes
+        /// activos sin facturación, en 0.
+        /// </summary>
+        public IEnumerable<PuntoGraficoDTO> ObtenerIngresosPorPlan(DateTime desde, DateTime hastaExclusiva)
+        {
+            const string sql = @"
+                SELECT p.nombre AS Etiqueta, ISNULL(SUM(f.monto_total), 0) AS Valor
+                FROM dbo.[Plan] p
+                LEFT JOIN dbo.Facturacion f
+                       ON f.id_plan = p.id_plan
+                      AND f.fecha_emision >= @Desde
+                      AND f.fecha_emision < @Hasta
+                WHERE p.activo = 1 OR f.id_facturacion IS NOT NULL
+                GROUP BY p.nombre
+                ORDER BY Valor DESC, p.nombre;";
+
+            try
+            {
+                using var conn = Conexion.ObtenerConexionAbierta();
+                return conn.Query<PuntoGraficoDTO>(sql, new { Desde = desde.Date, Hasta = hastaExclusiva.Date });
+            }
+            catch (SqlException ex)
+            {
+                throw new AccesoDatosException("Error al consultar los ingresos por plan: " + ex.Message, ex);
+            }
+        }
+
+        /// <summary>Intentos de acceso (concedidos y rechazados) de un día, agrupados por hora.</summary>
+        public IEnumerable<AccesosPorHoraDTO> ObtenerAccesosPorHora(DateTime dia)
+        {
+            const string sql = @"
+                SELECT DATEPART(HOUR, fecha_hora) AS Hora, COUNT(*) AS Cantidad
+                FROM dbo.Checkin
+                WHERE fecha_hora >= @Desde AND fecha_hora < @Hasta
+                GROUP BY DATEPART(HOUR, fecha_hora)
+                ORDER BY Hora;";
+
+            try
+            {
+                using var conn = Conexion.ObtenerConexionAbierta();
+                return conn.Query<AccesosPorHoraDTO>(sql, new { Desde = dia.Date, Hasta = dia.Date.AddDays(1) });
+            }
+            catch (SqlException ex)
+            {
+                throw new AccesoDatosException("Error al consultar los accesos por hora: " + ex.Message, ex);
+            }
+        }
+
+        /// <summary>Mantenimientos iniciados entre dos fechas (hasta exclusiva), agrupados por año y mes.</summary>
+        public IEnumerable<MantenimientosPorMesDTO> ObtenerMantenimientosPorMes(DateTime desde, DateTime hastaExclusiva)
+        {
+            const string sql = @"
+                SELECT YEAR(fecha_inicio) AS Anio, MONTH(fecha_inicio) AS Mes, COUNT(*) AS Cantidad
+                FROM dbo.Mantenimiento
+                WHERE fecha_inicio >= @Desde AND fecha_inicio < @Hasta
+                GROUP BY YEAR(fecha_inicio), MONTH(fecha_inicio)
+                ORDER BY Anio, Mes;";
+
+            try
+            {
+                using var conn = Conexion.ObtenerConexionAbierta();
+                return conn.Query<MantenimientosPorMesDTO>(sql, new { Desde = desde.Date, Hasta = hastaExclusiva.Date });
+            }
+            catch (SqlException ex)
+            {
+                throw new AccesoDatosException("Error al consultar los mantenimientos por mes: " + ex.Message, ex);
+            }
+        }
     }
 }

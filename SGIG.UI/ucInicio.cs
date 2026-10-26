@@ -13,11 +13,11 @@ using SGIG.Negocio;
 namespace SGIG.UI
 {
     /// <summary>
-    /// Pantalla de inicio: saludo, tarjetas de resumen y, según el rol, atajos y una lista
-    /// de actividad reciente. Sólo reutiliza servicios existentes (ServicioReporte,
-    /// ServicioCheckin, ServicioMaquina, ServicioMantenimiento); no agrega consultas.
-    /// Administrador → métricas del negocio. Recepcionista → accesos y atajos de mostrador.
-    /// Técnico → estado de las máquinas y mantenimientos en curso.
+    /// Pantalla de inicio: saludo, tarjetas de resumen, un gráfico y, según el rol, atajos y
+    /// una lista de actividad reciente. Usa ServicioReporte, ServicioCheckin, ServicioMaquina
+    /// y ServicioMantenimiento (los gráficos, Fase 11, son las únicas consultas propias).
+    /// Administrador → métricas del negocio e ingresos por plan. Recepcionista → accesos por
+    /// hora y atajos de mostrador. Técnico → estado de las máquinas y mantenimientos por mes.
     /// </summary>
     public class ucInicio : UserControl
     {
@@ -25,6 +25,7 @@ namespace SGIG.UI
         private readonly Action<string> _navegar;
 
         private readonly PanelTarjetas _flpTarjetas;
+        private readonly TarjetaGrafico _grafico;
         private readonly Label _lblTituloLista = new();
         private readonly DataGridView _dgvLista = new();
         private int _versionCarga;
@@ -43,8 +44,9 @@ namespace SGIG.UI
 
             // WinForms apila los controles Dock=Top al revés del orden en que se agregan (el
             // último agregado queda más arriba) y el Fill va primero: por eso se agrega de
-            // abajo hacia arriba: lista (Fill), título de lista, atajos, tarjetas, encabezado.
+            // abajo hacia arriba: lista (Fill), título de lista, gráfico, atajos, tarjetas, encabezado.
             _flpTarjetas = new PanelTarjetas();
+            _grafico = CrearGrafico();
 
             if (_usuario.IdRol != Roles.Administrador)
             {
@@ -62,6 +64,16 @@ namespace SGIG.UI
                 Controls.Add(_lblTituloLista);
             }
 
+            var contenedorGrafico = new Panel
+            {
+                Dock = DockStyle.Top,
+                Height = _usuario.IdRol == Roles.Administrador ? 300 : 250,
+                Padding = new Padding(0, 0, 16, 16),
+                BackColor = Tema.Fondo
+            };
+            contenedorGrafico.Controls.Add(_grafico);
+            Controls.Add(contenedorGrafico);
+
             var atajos = ConstruirAtajos();
             if (atajos != null) Controls.Add(atajos);
 
@@ -70,6 +82,17 @@ namespace SGIG.UI
 
             if (_usuario.IdRol != Roles.Administrador) _dgvLista.BringToFront();
         }
+
+        /// <summary>Un gráfico por rol (Fase 11): qué plan deja más plata / hora pico / fallas por mes.</summary>
+        private TarjetaGrafico CrearGrafico() => _usuario.IdRol switch
+        {
+            Roles.Administrador => new TarjetaGrafico("Ingresos por plan",
+                "Facturado este mes, de mayor a menor", TarjetaGrafico.Orientacion.Barras, v => $"$ {v:N0}"),
+            Roles.Recepcionista => new TarjetaGrafico("Accesos de hoy por hora",
+                "Intentos de acceso (concedidos y rechazados)", TarjetaGrafico.Orientacion.Columnas, v => v.ToString("N0")),
+            _ => new TarjetaGrafico("Mantenimientos por mes",
+                "Fallas registradas en los últimos 6 meses", TarjetaGrafico.Orientacion.Columnas, v => v.ToString("N0"))
+        };
 
         private Control ConstruirEncabezado()
         {
@@ -203,6 +226,7 @@ namespace SGIG.UI
                         t.Icono, t.Titulo, t.Valor, t.Detalle, t.ColorValor, () => _navegar(t.Destino)));
                 _flpTarjetas.ResumeLayout();
 
+                _grafico.Mostrar(resultado.Grafico);
                 if (_usuario.IdRol != Roles.Administrador) _dgvLista.DataSource = resultado.Lista;
             }
             catch (Exception ex)
@@ -218,30 +242,32 @@ namespace SGIG.UI
                     AutoSize = true,
                     MaximumSize = new Size(700, 0)
                 });
+                _grafico.MostrarMensaje("No se pudo cargar el gráfico.");
             }
         }
 
-        private (List<DatosTarjeta> Tarjetas, object? Lista) CargarDatos()
+        private (List<DatosTarjeta> Tarjetas, object? Lista, List<PuntoGraficoDTO> Grafico) CargarDatos()
         {
             var tarjetas = new List<DatosTarjeta>();
+            var reportes = new ServicioReporte();
 
             switch (_usuario.IdRol)
             {
                 case Roles.Administrador:
                 {
-                    var m = new ServicioReporte().ObtenerMetricas();
+                    var m = reportes.ObtenerMetricas();
                     tarjetas.Add(new DatosTarjeta(Iconos.Cobro, "Ingresos del mes", $"$ {m.IngresosMes:N0}",
                         "Total facturado este mes", Tema.TextoPrimario, "reportes"));
                     tarjetas.Add(new DatosTarjeta(Iconos.Socios, "Socios activos", m.SociosActivos.ToString(),
                         $"{m.SociosAlDia} con cuota al día", Tema.TextoPrimario, "socios"));
                     tarjetas.Add(new DatosTarjeta(Iconos.Acceso, "Check-ins promedio", $"{m.CheckinsPromedioDia:F1} / día",
                         "Últimos 30 días", Tema.TextoPrimario, "reportes"));
-                    return (tarjetas, null);
+                    return (tarjetas, null, reportes.ObtenerIngresosPorPlan(DateTime.Today));
                 }
 
                 case Roles.Recepcionista:
                 {
-                    var m = new ServicioReporte().ObtenerMetricas();
+                    var m = reportes.ObtenerMetricas();
                     var recientes = new ServicioCheckin()
                         .ObtenerHistorial(DateTime.Today.AddDays(-7), DateTime.Today).ToList();
                     var deHoy = recientes.Where(c => c.FechaHora.Date == DateTime.Today).ToList();
@@ -253,7 +279,7 @@ namespace SGIG.UI
                         "historialAccesos"));
                     tarjetas.Add(new DatosTarjeta(Iconos.Socios, "Socios con cuota al día", m.SociosAlDia.ToString(),
                         $"de {m.SociosActivos} activos", Tema.TextoPrimario, "socios"));
-                    return (tarjetas, recientes.Take(8).ToList());
+                    return (tarjetas, recientes.Take(8).ToList(), reportes.ObtenerAccesosPorHora(DateTime.Today));
                 }
 
                 default: // Técnico
@@ -269,7 +295,7 @@ namespace SGIG.UI
                         $"de {maquinas.Count} máquinas", Tema.TextoPrimario, "maquinas"));
                     tarjetas.Add(new DatosTarjeta(Iconos.Historial, "Mantenimientos en curso", enCurso.Count.ToString(),
                         "Sin fecha de fin", Tema.TextoPrimario, "mantenimiento"));
-                    return (tarjetas, enCurso);
+                    return (tarjetas, enCurso, reportes.ObtenerMantenimientosPorMes(DateTime.Today));
                 }
             }
         }

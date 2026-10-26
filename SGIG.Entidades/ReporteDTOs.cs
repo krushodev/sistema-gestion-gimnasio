@@ -17,4 +17,26 @@ namespace SGIG.Entidades
         public int CantidadRegistros { get; set; }
         public decimal MontoTotal { get; set; }
     }
+
+    /// <summary>Una barra/columna de un gráfico del Inicio: rótulo y valor.</summary>
+    public class PuntoGraficoDTO
+    {
+        public string Etiqueta { get; set; } = string.Empty;
+        public decimal Valor { get; set; }
+    }
+
+    /// <summary>Cantidad de intentos de acceso en una hora del día (sólo horas con datos).</summary>
+    public class AccesosPorHoraDTO
+    {
+        public int Hora { get; set; }
+        public int Cantidad { get; set; }
+    }
+
+    /// <summary>Cantidad de mantenimientos iniciados en un mes (sólo meses con datos).</summary>
+    public class MantenimientosPorMesDTO
+    {
+        public int Anio { get; set; }
+        public int Mes { get; set; }
+        public int Cantidad { get; set; }
+    }
 }

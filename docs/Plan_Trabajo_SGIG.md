@@ -548,6 +548,28 @@ Para cada pantalla: aplicar `Tema.EstilizarGrilla`, botones por variante, reempl
 
 ---
 
+## Fase 11 — Gráficos en el Inicio según el rol (agregada 25/10/2026)
+
+> **Origen:** pedido del usuario: al iniciar sesión, el Inicio (`ucInicio`) muestra un gráfico representativo del rol, debajo de las tarjetas de métricas. De la propuesta de 3–4 gráficos por rol se eligió **uno por rol**. Es presentación + consultas de solo lectura: no cambia el modelo de datos, los roles ni la ERS.
+
+| Rol | Gráfico | Tipo | Fuente de datos |
+|---|---|---|---|
+| Administrador | **Ingresos por plan del mes actual** ("¿qué plan deja más plata?") | Barras horizontales, de mayor a menor | `Facturacion.monto_total` por `fecha_emision` (mismo criterio que la tarjeta "Ingresos del mes", así las barras suman lo mismo que la tarjeta) + `Plan.nombre`. Muestra todos los planes activos, aunque estén en 0. |
+| Recepcionista | **Accesos de hoy por hora** (hora pico) | Columnas | `Checkin.fecha_hora` del día (concedidos + rechazados, igual que la tarjeta "Accesos de hoy"). Franja fija 06–22 h, ampliada si hay accesos fuera de ella. |
+| Técnico | **Mantenimientos por mes** (últimos 6 meses, incluido el actual) | Columnas | `Mantenimiento.fecha_inicio` agrupado por año/mes; los meses sin registros aparecen en 0. |
+
+**Consultas nuevas (documentadas antes de escribirlas, regla de la 9.4):** en `RepositorioReporte` → `ObtenerIngresosPorPlan(desde, hasta)`, `ObtenerAccesosPorHora(dia)`, `ObtenerMantenimientosPorMes(desde, hasta)`; en `ServicioReporte` los métodos homónimos, que validan los parámetros y completan con 0 las horas/meses sin datos. DTOs nuevos en `ReporteDTOs.cs`: `PuntoGraficoDTO` (lo que consume la UI), `AccesosPorHoraDTO`, `MantenimientosPorMesDTO`.
+
+**Dibujo:** control propio `TarjetaGrafico` (`RoundedPanel` + GDI+ en `OnPaint`), sin paquetes NuGet — `System.Windows.Forms.DataVisualization` (el `Chart` clásico) no existe en .NET moderno. Colores sólo de `Tema` (se agrega el token `AcentoSuave`); la barra de mayor valor va en `Acento` y el resto en `AcentoSuave`; tooltip con el valor exacto al pasar el mouse; estado vacío "Sin datos para mostrar".
+
+- [x] DTOs, consultas en `RepositorioReporte` y métodos en `ServicioReporte`.
+- [x] Pruebas en `SGIG.Tests/GraficosTests.cs` (los valores coinciden con SQL directo, se completan los huecos, validaciones).
+- [x] `TarjetaGrafico` y token `Tema.AcentoSuave`.
+- [x] Integración en `ucInicio` (carga en segundo plano junto con las tarjetas; si falla, el gráfico muestra el error en su lugar).
+- [ ] Revisión visual por el usuario en su máquina con los 3 roles.
+
+---
+
 ## Cómo usar este plan con el agente
 
 1. Seguir las fases en el orden en que aparecen; dentro de una fase, las subsecciones también van en orden de dependencia (entidad → datos → negocio → pantalla).

@@ -24,6 +24,7 @@ namespace SGIG.UI
         public static readonly Color TextoSecundario = Color.FromArgb(100, 116, 139);  // #64748B
         public static readonly Color Acento = Color.FromArgb(37, 99, 235);             // #2563EB
         public static readonly Color AcentoHover = Color.FromArgb(29, 78, 216);        // #1D4ED8
+        public static readonly Color AcentoSuave = Color.FromArgb(147, 197, 253);      // #93C5FD (barras de gráfico)
         public static readonly Color Exito = Color.FromArgb(22, 163, 74);              // #16A34A
         public static readonly Color Peligro = Color.FromArgb(220, 38, 38);            // #DC2626
         public static readonly Color PeligroFondo = Color.FromArgb(254, 242, 242);     // #FEF2F2
