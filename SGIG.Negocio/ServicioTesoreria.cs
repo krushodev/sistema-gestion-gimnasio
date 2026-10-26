@@ -15,6 +15,15 @@ public class ServicioTesoreria
         return _repositorioTesoreria.ObtenerHistorialPorSocio(idPersona);
     }
 
+    /// <summary>Últimos cobros de todos los socios, para el Inicio del Administrador (Fase 13).</summary>
+    public IEnumerable<Pago> ObtenerUltimosPagos(int cantidad)
+    {
+        if (cantidad < 1 || cantidad > 100)
+            throw new NegocioException("La cantidad de pagos a mostrar debe estar entre 1 y 100.");
+
+        return _repositorioTesoreria.ObtenerUltimosPagos(cantidad);
+    }
+
     // RF#11 y RF#12: Registro de Facturación, Pago y cálculo por calendario
     public void RegistrarCobro(int idPersona, int idPlan, int idMedioPago, decimal monto, DateTime? vencimientoActual)
     {

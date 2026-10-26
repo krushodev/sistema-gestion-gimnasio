@@ -142,6 +142,38 @@ namespace SGIG.Negocio
             };
         }
 
+        /// <summary>
+        /// Socios activos cuya cuota vence entre hoy y dentro de <paramref name="dias"/> días
+        /// (inclusive), del vencimiento más cercano al más lejano. Para el Inicio (Fase 13).
+        /// </summary>
+        public List<Socio> ObtenerPorVencer(DateTime hoy, int dias)
+        {
+            if (dias < 0)
+                throw new NegocioException("La cantidad de días no puede ser negativa.");
+
+            return _repositorioSocio.ObtenerActivos()
+                .Where(s => s.FechaVencimientoCuota.HasValue
+                            && s.FechaVencimientoCuota.Value.Date >= hoy.Date
+                            && s.FechaVencimientoCuota.Value.Date <= hoy.Date.AddDays(dias))
+                .OrderBy(s => s.FechaVencimientoCuota)
+                .ThenBy(s => s.Apellido)
+                .ToList();
+        }
+
+        /// <summary>
+        /// Si hoy es el cumpleaños de quien nació en <paramref name="fechaNacimiento"/>. Quien
+        /// nació un 29 de febrero lo festeja el 28 en los años no bisiestos.
+        /// </summary>
+        public static bool EsCumpleanios(DateTime? fechaNacimiento, DateTime hoy)
+        {
+            if (fechaNacimiento is not DateTime nacimiento) return false;
+
+            if (nacimiento.Month == 2 && nacimiento.Day == 29 && !DateTime.IsLeapYear(hoy.Year))
+                return hoy.Month == 2 && hoy.Day == 28;
+
+            return nacimiento.Month == hoy.Month && nacimiento.Day == hoy.Day;
+        }
+
         /// <summary>Mismo criterio que el Check-in: al día mientras el vencimiento no sea anterior a hoy.</summary>
         public static string DescribirCuota(int? diasParaVencer) => diasParaVencer switch
         {

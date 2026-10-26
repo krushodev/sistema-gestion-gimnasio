@@ -592,6 +592,32 @@ Para cada pantalla: aplicar `Tema.EstilizarGrilla`, botones por variante, reempl
 
 ---
 
+## Fase 13 — Inicio "qué tengo que hacer hoy" (agregada 25/10/2026)
+
+> **Origen:** el usuario notó el Inicio "muy blanco y vacío" después de mover los gráficos a su sección. Se rediseña como una pantalla de pendientes del día (los gráficos cubren el "cómo vamos"). Sin cambios en el modelo de datos, los roles ni la ERS.
+
+- **Bloque "Para atender hoy"** (debajo de las tarjetas): avisos de color, clickeables, armados en la capa de negocio por `ServicioAvisos.ObtenerAvisos(idRol, hoy)` → `List<AvisoDTO>` (nivel, texto, categoría):
+  - Administrador y Recepcionista: socios activos con la **cuota vencida** (rojo) y cuotas que **vencen en los próximos 7 días** (naranja) → llevan a Socios.
+  - Recepcionista: **cumpleaños de hoy** de socios activos (azul; quien nació un 29/02 lo festeja el 28/02 en años no bisiestos).
+  - Administrador y Técnico: **máquinas en reparación hace más de 7 días** (mantenimientos sin fecha de fin) → llevan a Máquinas.
+  - Sin pendientes: "Todo al día" (verde).
+- **Dos listas lado a lado**, cada una en una tarjeta con título:
+
+  | Rol | Izquierda | Derecha |
+  |---|---|---|
+  | Administrador | Últimos cobros (socio, plan, monto) | Cuotas por vencer (7 días) |
+  | Recepcionista | Últimos accesos | Vencen esta semana |
+  | Técnico | Mantenimientos en curso (+ días fuera de servicio) | Máquinas más antiguas (por fecha de compra) |
+- **Estados vacíos:** si una lista no tiene filas se muestra un ícono gris y un texto ("Todavía no hubo accesos hoy") en vez de la grilla en blanco.
+- **Datos:** una sola consulta nueva, `RepositorioTesoreria.ObtenerUltimosPagos(cantidad)` (pagos de todos los socios con el nombre del socio; `Pago` suma la propiedad de grilla `NombreSocio`). El resto se resuelve en negocio sobre lo existente: `ServicioSocio.ObtenerPorVencer(hoy, dias)` y `ServicioSocio.EsCumpleanios` (sobre `ObtenerActivos`), mantenimientos activos y máquinas.
+
+- [x] `AvisoDTO`, `ServicioAvisos`, `ServicioSocio.ObtenerPorVencer`/`EsCumpleanios`, `ServicioTesoreria.ObtenerUltimosPagos`.
+- [x] Pruebas en `SGIG.Tests/InicioTests.cs`.
+- [x] Rediseño de `ucInicio` (avisos + dos listas en tarjetas + estados vacíos); tokens `AvisoFondo`/`AvisoTexto`/`AcentoFondo` en `Tema`.
+- [ ] Revisión visual por el usuario en su máquina con los 3 roles.
+
+---
+
 ## Cómo usar este plan con el agente
 
 1. Seguir las fases en el orden en que aparecen; dentro de una fase, las subsecciones también van en orden de dependencia (entidad → datos → negocio → pantalla).

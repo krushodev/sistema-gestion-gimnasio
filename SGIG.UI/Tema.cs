@@ -32,6 +32,9 @@ namespace SGIG.UI
         public static readonly Color ExitoTexto = Color.FromArgb(21, 128, 61);         // #15803D
         public static readonly Color PeligroTexto = Color.FromArgb(185, 28, 28);       // #B91C1C
         public static readonly Color Aviso = Color.FromArgb(217, 119, 6);              // #D97706
+        public static readonly Color AvisoFondo = Color.FromArgb(254, 243, 199);       // #FEF3C7
+        public static readonly Color AvisoTexto = Color.FromArgb(180, 83, 9);          // #B45309
+        public static readonly Color AcentoFondo = Color.FromArgb(219, 234, 254);      // #DBEAFE
 
         // Fila alterna de las grillas y hover de superficies: apenas más oscuro que Fondo.
         public static readonly Color FilaAlterna = Color.FromArgb(241, 245, 249);      // #F1F5F9
@@ -387,7 +390,7 @@ namespace SGIG.UI
             dgv.DefaultCellStyle.BackColor = Superficie;
             dgv.DefaultCellStyle.ForeColor = TextoPrimario;
             dgv.DefaultCellStyle.Font = FuenteTexto;
-            dgv.DefaultCellStyle.SelectionBackColor = Color.FromArgb(219, 234, 254); // #DBEAFE
+            dgv.DefaultCellStyle.SelectionBackColor = AcentoFondo;
             dgv.DefaultCellStyle.SelectionForeColor = TextoPrimario;
             dgv.DefaultCellStyle.Padding = new Padding(8, 0, 0, 0);
 

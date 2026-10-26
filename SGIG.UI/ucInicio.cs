@@ -1,6 +1,7 @@
 // Controles armados sólo por código (nunca se arrastran al diseñador).
 #pragma warning disable WFO1000
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Globalization;
@@ -13,26 +14,41 @@ using SGIG.Negocio;
 namespace SGIG.UI
 {
     /// <summary>
-    /// Pantalla de inicio: saludo, tarjetas de resumen y, según el rol, atajos y una lista
-    /// de actividad reciente. Sólo reutiliza servicios existentes (ServicioReporte,
-    /// ServicioCheckin, ServicioMaquina, ServicioMantenimiento); no agrega consultas.
-    /// Administrador → métricas del negocio. Recepcionista → accesos y atajos de mostrador.
-    /// Técnico → estado de las máquinas y mantenimientos en curso. Los gráficos tienen su
-    /// propia sección (<see cref="frmGraficos"/>); acá sólo hay un atajo "Ver gráficos".
+    /// Pantalla de inicio "qué tengo que hacer hoy" (Fase 13): saludo, tarjetas de resumen,
+    /// atajos, el bloque "Para atender hoy" (avisos de <see cref="ServicioAvisos"/>) y dos
+    /// listas lado a lado, cada una en una tarjeta con estado vacío.
+    /// Administrador → últimos cobros y cuotas por vencer. Recepcionista → últimos accesos y
+    /// vencimientos de la semana. Técnico → mantenimientos en curso y máquinas más antiguas.
+    /// Los gráficos tienen su propia sección (<see cref="frmGraficos"/>).
     /// </summary>
     public class ucInicio : UserControl
     {
+        private const int DiasPorVencer = ServicioAvisos.DiasDeMargen;
+
+        // Una sola instancia: CellFormatting corre por cada celda en cada repintado.
+        private static readonly Font FuenteDestacada = Tema.Fuente(10F, FontStyle.Bold);
+
         private readonly Usuario _usuario;
         private readonly Action<string> _navegar;
 
         private readonly PanelTarjetas _flpTarjetas;
-        private readonly Label _lblTituloLista = new();
-        private readonly DataGridView _dgvLista = new();
+        private readonly PanelFlujo _pnlAvisos = new();
+        private readonly BloqueLista _bloqueIzquierdo;
+        private readonly BloqueLista _bloqueDerecho;
         private int _versionCarga;
 
         /// <summary>Datos de una tarjeta, calculados en segundo plano (los controles se crean en el hilo de la UI).</summary>
         private sealed record DatosTarjeta(
             string Icono, string Titulo, string Valor, string Detalle, Color ColorValor, string Destino);
+
+        /// <summary>Todo lo que se consulta en segundo plano en cada recarga.</summary>
+        private sealed record DatosInicio(
+            List<DatosTarjeta> Tarjetas, List<AvisoDTO> Avisos, IList Izquierda, IList Derecha);
+
+        // Filas de las listas (sólo para mostrar: la grilla enlaza sus propiedades).
+        private sealed record FilaVencimiento(string Socio, string Documento, DateTime Vence, string Cuando);
+        private sealed record FilaMantenimiento(string Maquina, string Tecnico, DateTime Inicio, int DiasFuera);
+        private sealed record FilaMaquina(string Maquina, string Marca, DateTime Compra, string Antiguedad, string Estado);
 
         public ucInicio(Usuario usuario, Action<string> navegar)
         {
@@ -42,34 +58,45 @@ namespace SGIG.UI
             Dock = DockStyle.Fill;
             BackColor = Tema.Fondo;
 
+            _flpTarjetas = new PanelTarjetas();
+            (_bloqueIzquierdo, _bloqueDerecho) = CrearListas();
+
             // WinForms apila los controles Dock=Top al revés del orden en que se agregan (el
             // último agregado queda más arriba) y el Fill va primero: por eso se agrega de
-            // abajo hacia arriba: lista (Fill), título de lista, atajos, tarjetas, encabezado.
-            _flpTarjetas = new PanelTarjetas();
-
-            if (_usuario.IdRol != Roles.Administrador)
+            // abajo hacia arriba: listas (Fill), avisos, título de avisos, atajos, tarjetas, encabezado.
+            var listas = new TableLayoutPanel
             {
-                ConfigurarLista();
-                Controls.Add(_dgvLista);
+                Dock = DockStyle.Fill,
+                ColumnCount = 2,
+                RowCount = 1,
+                BackColor = Tema.Fondo,
+                Padding = new Padding(0, 6, 16, 0)
+            };
+            listas.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
+            listas.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
+            listas.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+            _bloqueIzquierdo.Margin = new Padding(0, 0, 8, 0);
+            _bloqueDerecho.Margin = new Padding(8, 0, 0, 0);
+            listas.Controls.Add(_bloqueIzquierdo, 0, 0);
+            listas.Controls.Add(_bloqueDerecho, 1, 0);
+            Controls.Add(listas);
 
-                _lblTituloLista.Dock = DockStyle.Top;
-                _lblTituloLista.Height = 40;
-                _lblTituloLista.Font = Tema.Fuente(12F, FontStyle.Bold);
-                _lblTituloLista.ForeColor = Tema.TextoPrimario;
-                _lblTituloLista.TextAlign = ContentAlignment.BottomLeft;
-                _lblTituloLista.Text = _usuario.IdRol == Roles.Recepcionista
-                    ? "Últimos accesos"
-                    : "Mantenimientos en curso";
-                Controls.Add(_lblTituloLista);
-            }
+            Controls.Add(_pnlAvisos);
+            Controls.Add(new Label
+            {
+                Text = "Para atender hoy",
+                Dock = DockStyle.Top,
+                Height = 40,
+                Font = Tema.Fuente(12F, FontStyle.Bold),
+                ForeColor = Tema.TextoPrimario,
+                TextAlign = ContentAlignment.MiddleLeft
+            });
 
-            var atajos = ConstruirAtajos();
-            if (atajos != null) Controls.Add(atajos);
-
+            Controls.Add(ConstruirAtajos());
             Controls.Add(_flpTarjetas);
             Controls.Add(ConstruirEncabezado());
 
-            if (_usuario.IdRol != Roles.Administrador) _dgvLista.BringToFront();
+            listas.BringToFront();
         }
 
         private Control ConstruirEncabezado()
@@ -99,7 +126,7 @@ namespace SGIG.UI
             return panel;
         }
 
-        private Control? ConstruirAtajos()
+        private Control ConstruirAtajos()
         {
             (string Texto, string Clave, bool Primario)[] atajos = _usuario.IdRol switch
             {
@@ -119,8 +146,6 @@ namespace SGIG.UI
                     ("Ver gráficos", "graficos", true),
                 }
             };
-
-            if (atajos.Length == 0) return null;
 
             var panel = new FlowLayoutPanel
             {
@@ -148,44 +173,96 @@ namespace SGIG.UI
             return panel;
         }
 
-        private void ConfigurarLista()
-        {
-            _dgvLista.Dock = DockStyle.Fill;
-            _dgvLista.ReadOnly = true;
-            _dgvLista.AllowUserToAddRows = false;
-            _dgvLista.AllowUserToDeleteRows = false;
-            _dgvLista.AllowUserToResizeRows = false;
-            _dgvLista.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
-            _dgvLista.MultiSelect = false;
-            Tema.EstilizarGrilla(_dgvLista);
+        // ── Listas ───────────────────────────────────────────────────────────
 
-            if (_usuario.IdRol == Roles.Recepcionista)
+        /// <summary>Las dos listas del rol, con sus columnas y su texto de estado vacío.</summary>
+        private (BloqueLista Izquierda, BloqueLista Derecha) CrearListas()
+        {
+            switch (_usuario.IdRol)
             {
-                Grillas.Configurar(_dgvLista,
-                    (nameof(Checkin.FechaHora), "Fecha y hora", 110),
-                    (nameof(Checkin.NombreCompleto), "Socio", 170),
-                    (nameof(Checkin.Resultado), "Resultado", 90),
-                    (nameof(Checkin.DescripcionVencimiento), "Cuota", 140));
-                _dgvLista.Columns["col" + nameof(Checkin.FechaHora)]!.DefaultCellStyle.Format = "dd/MM  HH:mm";
-                _dgvLista.CellFormatting += (s, e) =>
+                case Roles.Administrador:
                 {
-                    if (e.RowIndex < 0 || _dgvLista.Columns[e.ColumnIndex].DataPropertyName != nameof(Checkin.Resultado))
-                        return;
-                    bool concedido = Convert.ToString(e.Value) == "Concedido";
-                    e.CellStyle!.ForeColor = concedido ? Tema.Exito : Tema.Peligro;
-                    e.CellStyle.Font = Tema.Fuente(10F, FontStyle.Bold);
-                };
-            }
-            else
-            {
-                Grillas.Configurar(_dgvLista,
-                    (nameof(Mantenimiento.NombreMaquina), "Máquina", 150),
-                    (nameof(Mantenimiento.NombreTecnico), "Técnico", 130),
-                    (nameof(Mantenimiento.FechaInicio), "Inicio", 90),
-                    (nameof(Mantenimiento.DetalleTecnico), "Detalle", 200));
-                _dgvLista.Columns["col" + nameof(Mantenimiento.FechaInicio)]!.DefaultCellStyle.Format = "dd/MM/yyyy";
+                    var cobros = new BloqueLista("Últimos cobros", "Todavía no se registró ningún cobro", Iconos.Cobro);
+                    Grillas.Configurar(cobros.Grilla,
+                        (nameof(Pago.FechaPago), "Fecha", 70),
+                        (nameof(Pago.NombreSocio), "Socio", 150),
+                        (nameof(Pago.PlanNombre), "Plan", 100),
+                        (nameof(Pago.Monto), "Monto", 80));
+                    Formato(cobros, nameof(Pago.FechaPago), "dd/MM/yyyy");
+                    Formato(cobros, nameof(Pago.Monto), "$ #,##0");
+                    return (cobros, CrearListaVencimientos($"Cuotas por vencer ({DiasPorVencer} días)"));
+                }
+
+                case Roles.Recepcionista:
+                {
+                    var accesos = new BloqueLista("Últimos accesos", "No hubo accesos en los últimos 7 días", Iconos.Acceso);
+                    Grillas.Configurar(accesos.Grilla,
+                        (nameof(Checkin.FechaHora), "Fecha y hora", 100),
+                        (nameof(Checkin.NombreCompleto), "Socio", 150),
+                        (nameof(Checkin.Resultado), "Resultado", 90),
+                        (nameof(Checkin.DescripcionVencimiento), "Cuota", 120));
+                    Formato(accesos, nameof(Checkin.FechaHora), "dd/MM  HH:mm");
+                    accesos.Grilla.CellFormatting += (s, e) =>
+                    {
+                        if (e.RowIndex < 0 || accesos.Grilla.Columns[e.ColumnIndex].DataPropertyName != nameof(Checkin.Resultado))
+                            return;
+                        bool concedido = Convert.ToString(e.Value) == "Concedido";
+                        e.CellStyle!.ForeColor = concedido ? Tema.Exito : Tema.Peligro;
+                        e.CellStyle.Font = FuenteDestacada;
+                    };
+                    return (accesos, CrearListaVencimientos("Vencen esta semana"));
+                }
+
+                default: // Técnico
+                {
+                    var enCurso = new BloqueLista("Mantenimientos en curso", "No hay máquinas en reparación", Iconos.Ok);
+                    Grillas.Configurar(enCurso.Grilla,
+                        (nameof(FilaMantenimiento.Maquina), "Máquina", 140),
+                        (nameof(FilaMantenimiento.Tecnico), "Técnico", 110),
+                        (nameof(FilaMantenimiento.Inicio), "Inicio", 80),
+                        (nameof(FilaMantenimiento.DiasFuera), "Días fuera", 70));
+                    Formato(enCurso, nameof(FilaMantenimiento.Inicio), "dd/MM/yyyy");
+                    // Una reparación de más de 7 días se destaca en naranja (mismo margen que el aviso).
+                    enCurso.Grilla.CellFormatting += (s, e) =>
+                    {
+                        if (e.RowIndex < 0 || enCurso.Grilla.Columns[e.ColumnIndex].DataPropertyName != nameof(FilaMantenimiento.DiasFuera))
+                            return;
+                        if (e.Value is int dias && dias > ServicioAvisos.DiasDeMargen)
+                        {
+                            e.CellStyle!.ForeColor = Tema.Aviso;
+                            e.CellStyle.Font = FuenteDestacada;
+                        }
+                    };
+
+                    var antiguas = new BloqueLista("Máquinas más antiguas", "No hay máquinas con fecha de compra", Iconos.Maquinas);
+                    Grillas.Configurar(antiguas.Grilla,
+                        (nameof(FilaMaquina.Maquina), "Máquina", 140),
+                        (nameof(FilaMaquina.Marca), "Marca", 90),
+                        (nameof(FilaMaquina.Compra), "Compra", 80),
+                        (nameof(FilaMaquina.Antiguedad), "Antigüedad", 80),
+                        (nameof(FilaMaquina.Estado), "Estado", 90));
+                    Formato(antiguas, nameof(FilaMaquina.Compra), "dd/MM/yyyy");
+                    return (enCurso, antiguas);
+                }
             }
         }
+
+        private static BloqueLista CrearListaVencimientos(string titulo)
+        {
+            var vencimientos = new BloqueLista(titulo, "Ninguna cuota vence en los próximos días", Iconos.Ok);
+            Grillas.Configurar(vencimientos.Grilla,
+                (nameof(FilaVencimiento.Socio), "Socio", 150),
+                (nameof(FilaVencimiento.Documento), "Documento", 80),
+                (nameof(FilaVencimiento.Vence), "Vence", 80),
+                (nameof(FilaVencimiento.Cuando), "Cuándo", 70));
+            Formato(vencimientos, nameof(FilaVencimiento.Vence), "dd/MM/yyyy");
+            return vencimientos;
+        }
+
+        private static void Formato(BloqueLista bloque, string propiedad, string formato) =>
+            bloque.Grilla.Columns["col" + propiedad]!.DefaultCellStyle.Format = formato;
+
+        // ── Carga ────────────────────────────────────────────────────────────
 
         protected override void OnLoad(EventArgs e)
         {
@@ -199,23 +276,34 @@ namespace SGIG.UI
             int version = ++_versionCarga;
             try
             {
-                var resultado = await Task.Run(CargarDatos);
+                var datos = await Task.Run(CargarDatos);
                 if (version != _versionCarga || IsDisposed) return;
 
                 _flpTarjetas.SuspendLayout();
-                foreach (var c in _flpTarjetas.Controls.Cast<Control>().ToArray()) c.Dispose();
-                foreach (var t in resultado.Tarjetas)
+                Vaciar(_flpTarjetas);
+                foreach (var t in datos.Tarjetas)
                     _flpTarjetas.Controls.Add(new TarjetaMetrica(
                         t.Icono, t.Titulo, t.Valor, t.Detalle, t.ColorValor, () => _navegar(t.Destino)));
                 _flpTarjetas.ResumeLayout();
 
-                if (_usuario.IdRol != Roles.Administrador) _dgvLista.DataSource = resultado.Lista;
+                _pnlAvisos.SuspendLayout();
+                Vaciar(_pnlAvisos);
+                foreach (var aviso in datos.Avisos)
+                {
+                    string? destino = DestinoDe(aviso);
+                    _pnlAvisos.Controls.Add(new ChipAviso(aviso, destino is null ? null : () => _navegar(destino)));
+                }
+                _pnlAvisos.ResumeLayout();
+
+                _bloqueIzquierdo.Mostrar(datos.Izquierda);
+                _bloqueDerecho.Mostrar(datos.Derecha);
             }
             catch (Exception ex)
             {
                 if (IsDisposed || version != _versionCarga) return;
                 // Sin MessageBox: el inicio no debería interrumpir. Se avisa en el lugar de las tarjetas.
-                foreach (var c in _flpTarjetas.Controls.Cast<Control>().ToArray()) c.Dispose();
+                Vaciar(_flpTarjetas);
+                Vaciar(_pnlAvisos);
                 _flpTarjetas.Controls.Add(new Label
                 {
                     Text = "No se pudo cargar el resumen: " + ex.Message,
@@ -223,34 +311,51 @@ namespace SGIG.UI
                     Font = Tema.FuenteLabel,
                     AutoSize = true,
                     MaximumSize = new Size(700, 0)
-                });            }
+                });
+            }
         }
 
-        private (List<DatosTarjeta> Tarjetas, object? Lista) CargarDatos()
+        private static void Vaciar(Control contenedor)
         {
+            foreach (var c in contenedor.Controls.Cast<Control>().ToArray()) c.Dispose();
+        }
+
+        /// <summary>A qué pantalla lleva cada aviso (null = no es clickeable).</summary>
+        private static string? DestinoDe(AvisoDTO aviso) => aviso.Categoria switch
+        {
+            "Cuotas" or "Cumpleanios" => "socios",
+            "Maquinas" => "maquinas",
+            _ => null
+        };
+
+        private DatosInicio CargarDatos()
+        {
+            var hoy = DateTime.Today;
             var tarjetas = new List<DatosTarjeta>();
-            var reportes = new ServicioReporte();
+            var avisos = new ServicioAvisos().ObtenerAvisos(_usuario.IdRol, hoy);
 
             switch (_usuario.IdRol)
             {
                 case Roles.Administrador:
                 {
-                    var m = reportes.ObtenerMetricas();
+                    var m = new ServicioReporte().ObtenerMetricas();
                     tarjetas.Add(new DatosTarjeta(Iconos.Cobro, "Ingresos del mes", $"$ {m.IngresosMes:N0}",
                         "Total facturado este mes", Tema.TextoPrimario, "reportes"));
                     tarjetas.Add(new DatosTarjeta(Iconos.Socios, "Socios activos", m.SociosActivos.ToString(),
                         $"{m.SociosAlDia} con cuota al día", Tema.TextoPrimario, "socios"));
                     tarjetas.Add(new DatosTarjeta(Iconos.Acceso, "Check-ins promedio", $"{m.CheckinsPromedioDia:F1} / día",
                         "Últimos 30 días", Tema.TextoPrimario, "reportes"));
-                    return (tarjetas, null);
+
+                    var cobros = new ServicioTesoreria().ObtenerUltimosPagos(8).ToList();
+                    return new DatosInicio(tarjetas, avisos, cobros, Vencimientos(hoy));
                 }
 
                 case Roles.Recepcionista:
                 {
-                    var m = reportes.ObtenerMetricas();
+                    var m = new ServicioReporte().ObtenerMetricas();
                     var recientes = new ServicioCheckin()
-                        .ObtenerHistorial(DateTime.Today.AddDays(-7), DateTime.Today).ToList();
-                    var deHoy = recientes.Where(c => c.FechaHora.Date == DateTime.Today).ToList();
+                        .ObtenerHistorial(hoy.AddDays(-7), hoy).ToList();
+                    var deHoy = recientes.Where(c => c.FechaHora.Date == hoy).ToList();
                     int concedidos = deHoy.Count(c => c.Resultado == "Concedido");
                     int rechazados = deHoy.Count - concedidos;
 
@@ -259,7 +364,7 @@ namespace SGIG.UI
                         "historialAccesos"));
                     tarjetas.Add(new DatosTarjeta(Iconos.Socios, "Socios con cuota al día", m.SociosAlDia.ToString(),
                         $"de {m.SociosActivos} activos", Tema.TextoPrimario, "socios"));
-                    return (tarjetas, recientes.Take(8).ToList());
+                    return new DatosInicio(tarjetas, avisos, recientes.Take(8).ToList(), Vencimientos(hoy));
                 }
 
                 default: // Técnico
@@ -275,9 +380,40 @@ namespace SGIG.UI
                         $"de {maquinas.Count} máquinas", Tema.TextoPrimario, "maquinas"));
                     tarjetas.Add(new DatosTarjeta(Iconos.Historial, "Mantenimientos en curso", enCurso.Count.ToString(),
                         "Sin fecha de fin", Tema.TextoPrimario, "mantenimiento"));
-                    return (tarjetas, enCurso);
+
+                    var filasEnCurso = enCurso
+                        .OrderBy(x => x.FechaInicio)
+                        .Select(x => new FilaMantenimiento(x.NombreMaquina ?? "—", x.NombreTecnico ?? "—",
+                            x.FechaInicio, (hoy - x.FechaInicio.Date).Days))
+                        .ToList();
+                    var antiguas = maquinas
+                        .Where(q => q.FechaCompra.HasValue)
+                        .OrderBy(q => q.FechaCompra)
+                        .Take(8)
+                        .Select(q => new FilaMaquina(q.Nombre, q.Marca ?? "—", q.FechaCompra!.Value,
+                            Antiguedad(q.FechaCompra.Value, hoy), q.Estado))
+                        .ToList();
+                    return new DatosInicio(tarjetas, avisos, filasEnCurso, antiguas);
                 }
             }
+        }
+
+        private static List<FilaVencimiento> Vencimientos(DateTime hoy) =>
+            new ServicioSocio().ObtenerPorVencer(hoy, DiasPorVencer)
+                .Select(s =>
+                {
+                    int dias = (s.FechaVencimientoCuota!.Value.Date - hoy).Days;
+                    string cuando = dias switch { 0 => "Hoy", 1 => "Mañana", _ => $"En {dias} días" };
+                    return new FilaVencimiento($"{s.Apellido}, {s.Nombre}", s.Documento, s.FechaVencimientoCuota.Value, cuando);
+                })
+                .ToList();
+
+        /// <summary>"Menos de 1 año", "1 año", "8 años".</summary>
+        private static string Antiguedad(DateTime compra, DateTime hoy)
+        {
+            int anios = hoy.Year - compra.Year;
+            if (compra.Date > hoy.AddYears(-anios)) anios--;
+            return anios switch { < 1 => "Menos de 1 año", 1 => "1 año", _ => $"{anios} años" };
         }
     }
 

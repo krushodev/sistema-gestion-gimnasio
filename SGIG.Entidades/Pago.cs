@@ -14,4 +14,7 @@ public class Pago
     public string PlanNombre { get; set; } = string.Empty;
     public string MedioPagoDesc { get; set; } = string.Empty;
     public DateTime FechaVencimiento { get; set; }
+
+    /// <summary>"Apellido, Nombre" del socio: sólo lo carga la lista de últimos cobros del Inicio.</summary>
+    public string? NombreSocio { get; set; }
 }

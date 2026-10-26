@@ -37,6 +37,37 @@ public class RepositorioTesoreria
         }
     }
 
+    /// <summary>Los últimos pagos de todos los socios, con el nombre del socio (lista del Inicio, Fase 13).</summary>
+    public IEnumerable<Pago> ObtenerUltimosPagos(int cantidad)
+    {
+        const string sql = @"
+            SELECT TOP (@Cantidad)
+                p.id_pago AS IdPago,
+                p.id_facturacion AS IdFacturacion,
+                p.fecha_pago AS FechaPago,
+                p.monto AS Monto,
+                f.fecha_vencimiento AS FechaVencimiento,
+                pl.nombre AS PlanNombre,
+                mp.descripcion AS MedioPagoDesc,
+                pe.apellido + ', ' + pe.nombre AS NombreSocio
+            FROM dbo.Pago p
+            INNER JOIN dbo.Facturacion f ON p.id_facturacion = f.id_facturacion
+            INNER JOIN dbo.[Plan] pl ON f.id_plan = pl.id_plan
+            INNER JOIN dbo.MedioPago mp ON p.id_medio_pago = mp.id_medio_pago
+            INNER JOIN dbo.Persona pe ON pe.id_persona = f.id_persona
+            ORDER BY p.fecha_pago DESC, p.id_pago DESC";
+
+        try
+        {
+            using var connection = Conexion.ObtenerConexionAbierta();
+            return connection.Query<Pago>(sql, new { Cantidad = cantidad });
+        }
+        catch (SqlException ex)
+        {
+            throw new AccesoDatosException("Error al consultar los últimos pagos.", ex);
+        }
+    }
+
     public void RegistrarCobroTransaccional(Facturacion facturacion, Pago pago, DateTime nuevoVencimiento)
     {
         const string sqlFacturacion = @"

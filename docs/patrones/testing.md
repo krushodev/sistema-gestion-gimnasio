@@ -33,6 +33,7 @@ Requiere SQL Server LocalDB (el mismo que usa la app). No hace falta preparar na
 | `TesoreriaYCheckinTests.cs` | Cobro (Facturación + Pago, vencimiento por calendario, cobro adelantado, monto editable, errores, atomicidad) y Check-in (concedido/rechazado, registro RF#17, vencimiento hoy, baja, tiempo < 2 s RNF#01, historial) |
 | `ActivosReportesYBackupTests.cs` | Mantenimiento (estado de la máquina atómico), reportes vs. SQL, métricas, catálogos, backup y restore |
 | `PerfilSocioTests.cs` | Perfil del socio (Fase 12): plan actual vs. preferido, estado de la cuota, pagos y accesos del socio, socio inexistente |
+| `InicioTests.cs` | Inicio (Fase 13): avisos por rol (cuotas vencidas, por vencer, cumpleaños, reparaciones demoradas) vs. SQL, 29/02, últimos cobros |
 | `GraficosTests.cs` | Sección de gráficos (Fase 11): ingresos por plan, ingresos por mes, accesos por hora y mantenimientos por mes vs. SQL, huecos completados en 0, validaciones |
 
 ## Convenciones para agregar pruebas
