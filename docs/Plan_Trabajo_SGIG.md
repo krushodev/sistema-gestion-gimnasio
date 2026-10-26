@@ -570,6 +570,23 @@ Para cada pantalla: aplicar `Tema.EstilizarGrilla`, botones por variante, reempl
 
 ---
 
+## Fase 12 — Perfil del socio (agregada 25/10/2026)
+
+> **Origen:** pedido del usuario: desde la grilla de `frmSocios`, un botón por fila que lleve a un panel de perfil con más información del socio (plan que usa, estado de la cuota, pagos, accesos, datos personales). Es una pantalla de consulta: no cambia el modelo de datos, los roles ni la ERS. Mismos roles que `frmSocios` (Administrador y Recepcionista).
+
+- **Dónde se abre:** columna nueva **"Perfil"** con un botón "Ver perfil" al lado de "Estado" (no reemplaza al estado: un socio dado de baja se sigue distinguiendo); también con doble clic sobre la fila. El perfil se muestra **dentro de la misma pantalla** (`ucPerfilSocio`, panel que tapa la grilla) con "Volver al listado", sin abrir ventanas nuevas (RNF#02) y conservando el filtro de búsqueda.
+- **Contenido:** encabezado (iniciales, nombre, documento, estado Activo/Dado de baja, botón "Editar datos" que reutiliza `frmSocioEditor`); 4 tarjetas (`TarjetaMetrica`): **plan actual** (el de la última facturación; si nunca pagó, el plan preferido `Socio.IdPlan`), **cuota** (Al día / Por vencer ≤ 7 días / Vence hoy / Vencida / Sin cuotas, con color), **último pago** y **accesos de los últimos 30 días**; bloque de **datos personales** (tipo y número de documento, edad, email, teléfono, localidad y provincia, apto médico); grillas de **historial de pagos** y **accesos de los últimos 90 días**.
+- **Datos:** sin consultas nuevas. `ServicioSocio.ObtenerPerfil(idPersona)` arma un `PerfilSocioDTO` reutilizando `RepositorioSocio.ObtenerPorId`, `ServicioTesoreria.ObtenerHistorialSocio`, `ServicioCheckin.ObtenerHistorial` (filtrado por el `IdPersona` del socio), `ServicioCatalogo` y `ServicioPlan`; calcula ahí el estado de la cuota, la edad y los totales (regla de negocio, no de pantalla).
+
+- **Permisos dentro del perfil (decidido por el usuario, 25/10/2026):** el Administrador ve todo; el **Recepcionista ve el perfil sin la parte económica** (sin la tarjeta "Último pago", sin "Total pagado" y sin el historial de pagos; conserva plan actual, estado de la cuota, datos personales y accesos). El filtro está en la capa de negocio: `ObtenerPerfil(idPersona, idRolSolicitante)` no devuelve pagos ni montos si el rol no es Administrador (`PerfilSocioDTO.IncluyeDatosEconomicos = false`); la pantalla sólo acomoda el layout. `frmSocios` recibe el usuario logueado (`new frmSocios(_usuario)`) para saber el rol.
+
+- [x] `PerfilSocioDTO` y `ServicioSocio.ObtenerPerfil`.
+- [x] Pruebas en `SGIG.Tests/PerfilSocioTests.cs`.
+- [x] `ucPerfilSocio` y columna "Ver perfil" + doble clic en `frmSocios`.
+- [ ] Revisión visual por el usuario en su máquina.
+
+---
+
 ## Cómo usar este plan con el agente
 
 1. Seguir las fases en el orden en que aparecen; dentro de una fase, las subsecciones también van en orden de dependencia (entidad → datos → negocio → pantalla).

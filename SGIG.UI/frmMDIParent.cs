@@ -162,7 +162,7 @@ namespace SGIG.UI
 
             var catalogo = new Destino[]
             {
-                new("Gestión", "socios", "Socios", Iconos.Socios, new[] { A, R }, () => new frmSocios()),
+                new("Gestión", "socios", "Socios", Iconos.Socios, new[] { A, R }, () => new frmSocios(_usuario)),
                 new("Gestión", "cobro", "Cobro de cuotas", Iconos.Cobro, new[] { A, R }, () => new frmCobroCuota(), Rigida: true),
                 new("Gestión", "planes", "Planes", Iconos.Planes, new[] { A }, () => new frmPlanes()),
 

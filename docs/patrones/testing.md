@@ -32,6 +32,7 @@ Requiere SQL Server LocalDB (el mismo que usa la app). No hace falta preparar na
 | `SociosTests.cs` | Alta, duplicados, datos inválidos, modificar, búsqueda, baja lógica (no borra), reactivar, reutilizar Persona (RF#06), atomicidad |
 | `TesoreriaYCheckinTests.cs` | Cobro (Facturación + Pago, vencimiento por calendario, cobro adelantado, monto editable, errores, atomicidad) y Check-in (concedido/rechazado, registro RF#17, vencimiento hoy, baja, tiempo < 2 s RNF#01, historial) |
 | `ActivosReportesYBackupTests.cs` | Mantenimiento (estado de la máquina atómico), reportes vs. SQL, métricas, catálogos, backup y restore |
+| `PerfilSocioTests.cs` | Perfil del socio (Fase 12): plan actual vs. preferido, estado de la cuota, pagos y accesos del socio, socio inexistente |
 | `GraficosTests.cs` | Gráficos del Inicio (Fase 11): ingresos por plan, accesos por hora y mantenimientos por mes vs. SQL, huecos completados en 0, validaciones |
 
 ## Convenciones para agregar pruebas

@@ -15,18 +15,36 @@ namespace SGIG.UI
     //   (btnDarDeBaja alterna su texto y acción según el estado de la fila
     //   seleccionada: "Dar de baja" para un socio activo, "Dar de alta" para uno
     //   dado de baja — no hace falta agregar un botón nuevo)
+    //   colPerfil (columna de botón "Ver perfil", agregada por código en
+    //   ConfigurarGrilla) → abre ucPerfilSocio dentro de esta misma pantalla (Fase 12)
     // ───────────────────────────────────────────────────────────────────────────
     public partial class frmSocios : Form
     {
-        private readonly ServicioSocio _servicioSocio = new();
-        private List<Socio> _socios = new();
+        private const string ColumnaPerfil = "colPerfil";
+        // Una sola instancia: CellPainting corre por cada celda en cada repintado.
+        private static readonly Font FuenteBotonPerfil = Tema.Fuente(9F, FontStyle.Bold);
 
-        public frmSocios()
+        private readonly ServicioSocio _servicioSocio = new();
+        private readonly Usuario _usuarioLogueado;
+        private List<Socio> _socios = new();
+        private ucPerfilSocio? _perfilAbierto;
+
+        /// <param name="usuarioLogueado">Define qué parte del perfil del socio se muestra (Fase 12).</param>
+        public frmSocios(Usuario usuarioLogueado)
         {
+            _usuarioLogueado = usuarioLogueado;
             InitializeComponent();
             dgvSocios.CellFormatting += DgvSocios_CellFormatting;
             dgvSocios.DataBindingComplete += DgvSocios_DataBindingComplete;
             dgvSocios.SelectionChanged += (s, e) => ActualizarBotonBaja();
+            dgvSocios.CellPainting += DgvSocios_CellPainting;
+            dgvSocios.CellClick += DgvSocios_CellClick;
+            dgvSocios.CellDoubleClick += (s, e) =>
+            {
+                if (e.RowIndex >= 0 && dgvSocios.Rows[e.RowIndex].DataBoundItem is Socio socio) AbrirPerfil(socio);
+            };
+            dgvSocios.CellMouseEnter += (s, e) =>
+                dgvSocios.Cursor = e.RowIndex >= 0 && EsColumnaPerfil(e.ColumnIndex) ? Cursors.Hand : Cursors.Default;
         }
 
         private void frmSocios_Load(object sender, EventArgs e)
@@ -57,6 +75,86 @@ namespace SGIG.UI
                 (nameof(Socio.Email), "Correo electrónico", 150),
                 (nameof(Socio.FechaVencimientoCuota), "Vencim. cuota", 90),
                 (nameof(Socio.Activo), "Estado", 70));
+
+            // Botón por fila para ir al perfil (Fase 12). Se dibuja a mano en CellPainting
+            // para que tenga el estilo de Tema y no el botón gris de Windows.
+            dgvSocios.Columns.Add(new DataGridViewButtonColumn
+            {
+                Name = ColumnaPerfil,
+                HeaderText = "Perfil",
+                Text = "Ver perfil",
+                UseColumnTextForButtonValue = true,
+                FillWeight = 70,
+                SortMode = DataGridViewColumnSortMode.NotSortable
+            });
+        }
+
+        // ── Perfil del socio (Fase 12) ───────────────────────────────────────
+
+        private bool EsColumnaPerfil(int indiceColumna) =>
+            indiceColumna >= 0 && dgvSocios.Columns[indiceColumna].Name == ColumnaPerfil;
+
+        private void DgvSocios_CellClick(object? sender, DataGridViewCellEventArgs e)
+        {
+            if (e.RowIndex < 0 || !EsColumnaPerfil(e.ColumnIndex)) return;
+            if (dgvSocios.Rows[e.RowIndex].DataBoundItem is Socio socio) AbrirPerfil(socio);
+        }
+
+        /// <summary>Dibuja "Ver perfil" como un botón con borde en el color de acento.</summary>
+        private void DgvSocios_CellPainting(object? sender, DataGridViewCellPaintingEventArgs e)
+        {
+            if (e.RowIndex < 0 || !EsColumnaPerfil(e.ColumnIndex) || e.Graphics is null) return;
+
+            e.PaintBackground(e.CellBounds, true);
+
+            var boton = new Rectangle(e.CellBounds.X + 8, e.CellBounds.Y + 6,
+                Math.Min(110, e.CellBounds.Width - 16), e.CellBounds.Height - 12);
+            if (boton.Width > 20 && boton.Height > 10)
+            {
+                using var lapiz = new Pen(Tema.Acento);
+                e.Graphics.DrawRectangle(lapiz, boton);
+                TextRenderer.DrawText(e.Graphics, "Ver perfil", FuenteBotonPerfil, boton, Tema.Acento,
+                    TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis);
+            }
+            e.Handled = true;
+        }
+
+        /// <summary>
+        /// Muestra el perfil tapando la grilla, dentro de esta misma pantalla (RNF#02: nada
+        /// de ventanas sueltas). Al volver se recarga la grilla por si se editaron datos.
+        /// </summary>
+        private void AbrirPerfil(Socio socio)
+        {
+            if (_perfilAbierto != null) return;
+
+            // Se ocultan los controles del listado (no sólo se tapan): si no, el Tab del
+            // teclado seguiría llegando a la grilla y a los botones que quedan debajo.
+            foreach (Control c in Controls) c.Visible = false;
+
+            _perfilAbierto = new ucPerfilSocio(socio.IdPersona, _usuarioLogueado.IdRol);
+            _perfilAbierto.Volver += (s, e) => CerrarPerfil();
+            Controls.Add(_perfilAbierto);
+            _perfilAbierto.BringToFront();
+        }
+
+        private void CerrarPerfil()
+        {
+            if (_perfilAbierto == null) return;
+
+            var perfil = _perfilAbierto;
+            _perfilAbierto = null;
+            Controls.Remove(perfil);
+            perfil.Dispose();
+            foreach (Control c in Controls) c.Visible = true;
+
+            try
+            {
+                CargarGrilla();
+            }
+            catch (Exception ex)
+            {
+                MostrarError(ex);
+            }
         }
 
         private void CargarGrilla()

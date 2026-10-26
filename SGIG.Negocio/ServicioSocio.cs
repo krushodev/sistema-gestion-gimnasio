@@ -83,6 +83,83 @@ namespace SGIG.Negocio
             _repositorioSocio.Modificar(socio);
         }
 
+        /// <summary>
+        /// Perfil del socio (Fase 12): junta sus datos, el plan que usa, el estado de la
+        /// cuota, los pagos y los accesos recientes. No agrega consultas: reutiliza los
+        /// repositorios y servicios que ya existen y calcula acá lo derivado.
+        /// La parte económica (pagos, montos, total pagado) sólo se devuelve si quien
+        /// consulta es Administrador: el filtro está acá y no sólo en la pantalla.
+        /// </summary>
+        public PerfilSocioDTO ObtenerPerfil(int idPersona, int idRolSolicitante)
+        {
+            var socio = _repositorioSocio.ObtenerPorId(idPersona)
+                ?? throw new NegocioException("No se encontró el socio.");
+
+            var hoy = DateTime.Today;
+            var catalogo = new ServicioCatalogo();
+
+            var pagos = new ServicioTesoreria().ObtenerHistorialSocio(idPersona).ToList();
+            // El historial de accesos filtra por documento con LIKE: se queda sólo con los de este socio.
+            var accesos = new ServicioCheckin()
+                .ObtenerHistorial(hoy.AddDays(-90), hoy, socio.Documento)
+                .Where(c => c.IdPersona == idPersona)
+                .ToList();
+
+            var localidad = socio.IdLocalidad is int idLocalidad
+                ? catalogo.ObtenerLocalidades().FirstOrDefault(l => l.IdLocalidad == idLocalidad)
+                : null;
+            var provincia = localidad is null
+                ? null
+                : catalogo.ObtenerProvincias().FirstOrDefault(p => p.IdProvincia == localidad.IdProvincia);
+
+            int? diasParaVencer = socio.FechaVencimientoCuota.HasValue
+                ? (socio.FechaVencimientoCuota.Value.Date - hoy).Days
+                : null;
+
+            // El plan actual sale del último pago, pero los pagos en sí (con montos) sólo los ve el Administrador.
+            bool incluyeDatosEconomicos = idRolSolicitante == Roles.Administrador;
+            string? planActual = pagos.FirstOrDefault()?.PlanNombre;
+            if (!incluyeDatosEconomicos) pagos = new List<Pago>();
+
+            return new PerfilSocioDTO
+            {
+                Socio = socio,
+                TipoDocumento = catalogo.ObtenerTiposDocumento()
+                    .FirstOrDefault(t => t.IdTipoDocumento == socio.IdTipoDocumento)?.Descripcion ?? string.Empty,
+                Localidad = localidad is null
+                    ? null
+                    : provincia is null ? localidad.Nombre : $"{localidad.Nombre}, {provincia.Nombre}",
+                Edad = CalcularEdad(socio.FechaNacimiento, hoy),
+                PlanActual = planActual,
+                PlanPreferido = socio.IdPlan is int idPlan ? new ServicioPlan().ObtenerPorId(idPlan)?.Nombre : null,
+                DiasParaVencer = diasParaVencer,
+                EstadoCuota = DescribirCuota(diasParaVencer),
+                IncluyeDatosEconomicos = incluyeDatosEconomicos,
+                Pagos = pagos,
+                TotalPagado = pagos.Sum(p => p.Monto),
+                Accesos = accesos,
+                AccesosUltimos30Dias = accesos.Count(c => c.FechaHora >= hoy.AddDays(-30))
+            };
+        }
+
+        /// <summary>Mismo criterio que el Check-in: al día mientras el vencimiento no sea anterior a hoy.</summary>
+        public static string DescribirCuota(int? diasParaVencer) => diasParaVencer switch
+        {
+            null => "Sin cuotas",
+            < 0 => "Vencida",
+            0 => "Vence hoy",
+            <= 7 => "Por vencer",
+            _ => "Al día"
+        };
+
+        private static int? CalcularEdad(DateTime? fechaNacimiento, DateTime hoy)
+        {
+            if (fechaNacimiento is not DateTime nacimiento) return null;
+            int edad = hoy.Year - nacimiento.Year;
+            if (nacimiento.Date > hoy.AddYears(-edad)) edad--;
+            return edad;
+        }
+
         /// <summary>Baja lógica (RNF#03).</summary>
         public void DarDeBaja(int idPersona) => _repositorioSocio.BajaLogica(idPersona);
 
