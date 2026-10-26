@@ -373,6 +373,8 @@ les quedan (o hace cuántos vencieron) antes de la próxima cuota, para seguimie
 - [x] `ServicioBackup.cs`: `BACKUP DATABASE` (`GenerarCopiaSeguridad`).
 - [x] `ServicioBackup.cs`: `RESTORE DATABASE` (`RestaurarCopiaSeguridad`) con confirmación `MessageBox` Sí/No previa.
 
+> **Verificación y mejoras (25/10/2026):** backup real de `SGIG` comprobado con `RESTORE VERIFYONLY`; pruebas nuevas de que la app sigue funcionando justo después de un restore (sin limpiar el pool a mano) y de que un restore rechazado no deja la base en `SINGLE_USER`. Mejoras: (1) **antes de restaurar se lee el encabezado del archivo** (`RESTORE HEADERONLY`, `RepositorioBackup.ObtenerBaseDelBackup`) y se rechaza si no es un backup válido o si es copia de **otra base** (evita pisar `SGIG` con datos ajenos); (2) si SQL Server no puede escribir en la carpeta elegida (error 3201 + error 5 del SO, típico cuando corre como servicio y se elige el Escritorio), el mensaje pasa a ser en castellano y dice qué hacer, en vez del error técnico.
+
 ## Fase 8 — Documentación y Entrega
 
 - [ ] Capturas de pantalla por módulo (Seguridad, Personas, Tesorería, Control de Acceso, Activos, Reportes) — las toma el usuario una vez armado cada formulario.

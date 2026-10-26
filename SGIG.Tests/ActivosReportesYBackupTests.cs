@@ -152,6 +152,107 @@ public class BackupTests(BaseDeDatosFixture _)
         }
     }
 
+    /// <summary>
+    /// Igual que en la app: después de restaurar se sigue usando el sistema sin limpiar nada
+    /// a mano (las conexiones del pool apuntaban a la base de antes del restore).
+    /// </summary>
+    [Fact]
+    public void Despues_de_restaurar_la_app_sigue_funcionando_sin_intervencion()
+    {
+        var ruta = Path.Combine(Path.GetTempPath(), $"sgig_test_{Guid.NewGuid():N}.bak");
+        try
+        {
+            _servicio.GenerarCopiaSeguridad(ruta);
+            // Deja conexiones abiertas en el pool, como la app en uso.
+            Assert.NotEmpty(new ServicioSocio().ObtenerTodos());
+
+            _servicio.RestaurarCopiaSeguridad(ruta);
+
+            // Primera operación después del restore, sin ClearAllPools manual.
+            Assert.NotEmpty(new ServicioSocio().ObtenerTodos());
+            Assert.NotEmpty(new ServicioPlan().Listar());
+        }
+        finally
+        {
+            if (File.Exists(ruta)) File.Delete(ruta);
+        }
+    }
+
+    private static string AccesoDeLaBase() =>
+        Datos.Escalar("SELECT user_access_desc FROM sys.databases WHERE name = DB_NAME()")!.ToString()!;
+
+    /// <summary>
+    /// Un archivo que no es un backup se rechaza leyendo su encabezado, antes de tocar la
+    /// base: no queda en SINGLE_USER y sigue disponible para el resto del sistema.
+    /// </summary>
+    [Fact]
+    public void Un_archivo_que_no_es_backup_se_rechaza_sin_tocar_la_base()
+    {
+        var ruta = Path.Combine(Path.GetTempPath(), $"sgig_test_{Guid.NewGuid():N}.bak");
+        File.WriteAllText(ruta, "esto no es un backup de SQL Server");
+        try
+        {
+            var ex = Assert.Throws<NegocioException>(() => _servicio.RestaurarCopiaSeguridad(ruta));
+            Assert.Contains("no es una copia de seguridad válida", ex.Message);
+
+            Assert.Equal("MULTI_USER", AccesoDeLaBase());
+            Assert.NotEmpty(new ServicioPlan().Listar());
+        }
+        finally
+        {
+            if (File.Exists(ruta)) File.Delete(ruta);
+        }
+    }
+
+    /// <summary>
+    /// El backup de OTRA base (acá, la base de sistema "model") no puede pisar los datos:
+    /// se rechaza por el nombre que figura en su encabezado.
+    /// </summary>
+    [Fact]
+    public void El_backup_de_otra_base_se_rechaza_y_no_se_pisan_los_datos()
+    {
+        var ruta = Path.Combine(Path.GetTempPath(), $"sgig_test_model_{Guid.NewGuid():N}.bak");
+        try
+        {
+            Datos.Ejecutar("BACKUP DATABASE [model] TO DISK = @r WITH INIT", ("@r", ruta));
+            var personasAntes = Datos.Entero("SELECT COUNT(*) FROM dbo.Persona");
+
+            var ex = Assert.Throws<NegocioException>(() => _servicio.RestaurarCopiaSeguridad(ruta));
+
+            Assert.Contains("\"model\"", ex.Message);
+            Assert.Equal(personasAntes, Datos.Entero("SELECT COUNT(*) FROM dbo.Persona"));
+            Assert.Equal("MULTI_USER", AccesoDeLaBase());
+        }
+        finally
+        {
+            if (File.Exists(ruta)) File.Delete(ruta);
+        }
+    }
+
+    /// <summary>
+    /// Sin permiso de escritura en la carpeta, el usuario recibe un mensaje en castellano que
+    /// le dice qué hacer, no el error técnico de SQL Server.
+    /// </summary>
+    [Fact]
+    public void Sin_permiso_en_la_carpeta_el_mensaje_es_claro()
+    {
+        var ruta = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), $"sgig_test_{Guid.NewGuid():N}.bak");
+        try
+        {
+            _servicio.GenerarCopiaSeguridad(ruta);
+            // Si SQL Server corre con permisos de administrador, la carpeta sí es escribible:
+            // no hay error que verificar en esta máquina.
+        }
+        catch (AccesoDatosException ex)
+        {
+            Assert.StartsWith("SQL Server no tiene permiso para escribir en esa carpeta", ex.Message);
+        }
+        finally
+        {
+            if (File.Exists(ruta)) File.Delete(ruta);
+        }
+    }
+
     [Fact]
     public void Rutas_invalidas_son_rechazadas_con_NegocioException()
     {

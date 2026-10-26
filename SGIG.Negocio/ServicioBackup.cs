@@ -43,6 +43,17 @@ namespace SGIG.Negocio
                 throw new NegocioException("El archivo de respaldo seleccionado no existe o no es accesible.");
 
             string nombreBd = ObtenerNombreBaseDatos();
+
+            // Antes de reemplazar la base se confirma que el archivo sea una copia de ESTA base:
+            // restaurar el backup de otra base (otro sistema, otro proyecto) pisaría todos los datos.
+            string? baseDelArchivo = _repoBackup.ObtenerBaseDelBackup(rutaArchivo);
+            if (baseDelArchivo is null)
+                throw new NegocioException("El archivo seleccionado no es una copia de seguridad válida de SQL Server. No se restauró nada.");
+
+            if (!string.Equals(baseDelArchivo, nombreBd, StringComparison.OrdinalIgnoreCase))
+                throw new NegocioException(
+                    $"El archivo es una copia de la base \"{baseDelArchivo}\", no de \"{nombreBd}\". No se restauró nada.");
+
             _repoBackup.RealizarRestore(rutaArchivo, nombreBd);
         }
     }

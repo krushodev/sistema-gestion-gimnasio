@@ -45,9 +45,59 @@ namespace SGIG.Datos
                     }
                 }
             }
+            catch (SqlException ex) when (EsSinPermisoDeEscritura(ex))
+            {
+                // El archivo lo escribe el proceso de SQL Server, no la app: si SQL Server corre como
+                // servicio, puede no tener permiso sobre carpetas del usuario (Escritorio, Documentos).
+                throw new AccesoDatosException(
+                    "SQL Server no tiene permiso para escribir en esa carpeta. " +
+                    @"Elegí otra ubicación (por ejemplo, C:\Backups) e intentá de nuevo.", ex);
+            }
             catch (SqlException ex)
             {
                 throw new AccesoDatosException("Error al generar el backup: " + ex.Message, ex);
+            }
+        }
+
+        /// <summary>
+        /// Error 3201 ("Cannot open backup device") con error 5 del sistema operativo (acceso
+        /// denegado): SQL Server no puede escribir en la carpeta elegida.
+        /// </summary>
+        private static bool EsSinPermisoDeEscritura(SqlException ex)
+        {
+            foreach (SqlError error in ex.Errors)
+            {
+                if (error.Number == 3201 && error.Message.Contains("error 5(", StringComparison.Ordinal))
+                    return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Lee el encabezado del archivo (RESTORE HEADERONLY, no modifica nada) y devuelve el
+        /// nombre de la base de la que es copia, o null si el archivo no es un backup de SQL Server.
+        /// </summary>
+        public string? ObtenerBaseDelBackup(string rutaOrigen)
+        {
+            try
+            {
+                var builder = new SqlConnectionStringBuilder(Conexion.ObtenerCadena())
+                {
+                    InitialCatalog = "master"
+                };
+
+                using var conn = new SqlConnection(builder.ConnectionString);
+                conn.Open();
+                using var cmd = new SqlCommand("RESTORE HEADERONLY FROM DISK = @Ruta;", conn);
+                cmd.CommandTimeout = 60;
+                cmd.Parameters.AddWithValue("@Ruta", rutaOrigen);
+                using var lector = cmd.ExecuteReader();
+                return lector.Read() ? Convert.ToString(lector["DatabaseName"]) : null;
+            }
+            catch (SqlException)
+            {
+                // SQL Server no lo reconoce como backup (archivo dañado o de otro tipo).
+                return null;
             }
         }
 
