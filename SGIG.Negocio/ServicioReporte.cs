@@ -64,15 +64,31 @@ namespace SGIG.Negocio
         /// <paramref name="meses"/> meses (incluido el de <paramref name="fechaDelUltimoMes"/>),
         /// con los meses sin registros en 0.
         /// </summary>
-        public List<PuntoGraficoDTO> ObtenerMantenimientosPorMes(DateTime fechaDelUltimoMes, int meses = 6)
+        public List<PuntoGraficoDTO> ObtenerMantenimientosPorMes(DateTime fechaDelUltimoMes, int meses = 6) =>
+            PorMes(fechaDelUltimoMes, meses, _repoReporte.ObtenerMantenimientosPorMes);
+
+        /// <summary>
+        /// Segundo gráfico del Administrador: facturado por mes en los últimos
+        /// <paramref name="meses"/> meses (incluido el de <paramref name="fechaDelUltimoMes"/>),
+        /// con los meses sin facturación en 0. El último mes coincide con la tarjeta "Ingresos del mes".
+        /// </summary>
+        public List<PuntoGraficoDTO> ObtenerIngresosPorMes(DateTime fechaDelUltimoMes, int meses = 12) =>
+            PorMes(fechaDelUltimoMes, meses, _repoReporte.ObtenerIngresosPorMes);
+
+        /// <summary>
+        /// Calcula el rango de meses, pide los totales al repositorio y devuelve una columna
+        /// por mes, de corrido, completando con 0 los meses que la consulta no trajo.
+        /// </summary>
+        private static List<PuntoGraficoDTO> PorMes(DateTime fechaDelUltimoMes, int meses,
+            Func<DateTime, DateTime, IEnumerable<TotalPorMesDTO>> consultar)
         {
             if (meses < 1 || meses > 24)
                 throw new NegocioException("La cantidad de meses del gráfico debe estar entre 1 y 24.");
 
             var primerDiaUltimoMes = new DateTime(fechaDelUltimoMes.Year, fechaDelUltimoMes.Month, 1);
             var desde = primerDiaUltimoMes.AddMonths(-(meses - 1));
-            var porMes = _repoReporte.ObtenerMantenimientosPorMes(desde, primerDiaUltimoMes.AddMonths(1))
-                .ToDictionary(m => (m.Anio, m.Mes), m => m.Cantidad);
+            var porMes = consultar(desde, primerDiaUltimoMes.AddMonths(1))
+                .ToDictionary(m => (m.Anio, m.Mes), m => m.Valor);
 
             var puntos = new List<PuntoGraficoDTO>();
             for (var mes = desde; mes <= primerDiaUltimoMes; mes = mes.AddMonths(1))

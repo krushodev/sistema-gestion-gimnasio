@@ -102,9 +102,31 @@ public class GraficosTests(BaseDeDatosFixture _)
     }
 
     [Fact]
+    public void Ingresos_por_mes_devuelve_doce_meses_y_el_ultimo_coincide_con_la_tarjeta()
+    {
+        var plan = Datos.PlanPor("Mensual");
+        var id = new ServicioSocio().Alta(Datos.NuevoSocio());
+        new ServicioTesoreria().RegistrarCobro(id, plan.IdPlan, Datos.PrimerMedioPago(), plan.Precio, null);
+
+        var puntos = _servicio.ObtenerIngresosPorMes(DateTime.Today);
+
+        Assert.Equal(12, puntos.Count);
+        Assert.True(puntos.Last().Valor >= plan.Precio);
+        Assert.Equal(_servicio.ObtenerMetricas().IngresosMes, puntos.Last().Valor);
+
+        var inicioMes = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
+        Assert.Equal(
+            Convert.ToDecimal(Datos.Escalar(
+                "SELECT ISNULL(SUM(monto_total),0) FROM dbo.Facturacion WHERE fecha_emision >= @d AND fecha_emision < @h",
+                ("@d", inicioMes.AddMonths(-11)), ("@h", inicioMes.AddMonths(1)))),
+            puntos.Sum(p => p.Valor));
+    }
+
+    [Fact]
     public void Mantenimientos_por_mes_rechaza_una_cantidad_de_meses_invalida()
     {
         Assert.Throws<NegocioException>(() => _servicio.ObtenerMantenimientosPorMes(DateTime.Today, 0));
         Assert.Throws<NegocioException>(() => _servicio.ObtenerMantenimientosPorMes(DateTime.Today, 25));
+        Assert.Throws<NegocioException>(() => _servicio.ObtenerIngresosPorMes(DateTime.Today, 0));
     }
 }

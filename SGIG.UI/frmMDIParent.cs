@@ -162,6 +162,9 @@ namespace SGIG.UI
 
             var catalogo = new Destino[]
             {
+                // Sección propia para los gráficos (cada rol ve los suyos, ver frmGraficos).
+                new("Estadísticas", "graficos", "Gráficos", Iconos.Graficos, new[] { A, R, T }, () => new frmGraficos(_usuario)),
+
                 new("Gestión", "socios", "Socios", Iconos.Socios, new[] { A, R }, () => new frmSocios(_usuario)),
                 new("Gestión", "cobro", "Cobro de cuotas", Iconos.Cobro, new[] { A, R }, () => new frmCobroCuota(), Rigida: true),
                 new("Gestión", "planes", "Planes", Iconos.Planes, new[] { A }, () => new frmPlanes()),

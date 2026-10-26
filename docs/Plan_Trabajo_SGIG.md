@@ -566,6 +566,11 @@ Para cada pantalla: aplicar `Tema.EstilizarGrilla`, botones por variante, reempl
 - [x] Pruebas en `SGIG.Tests/GraficosTests.cs` (los valores coinciden con SQL directo, se completan los huecos, validaciones).
 - [x] `TarjetaGrafico` y token `Tema.AcentoSuave`.
 - [x] Integración en `ucInicio` (carga en segundo plano junto con las tarjetas; si falla, el gráfico muestra el error en su lugar).
+
+> **Revisión (25/10/2026, sugerencia de la cátedra):** los gráficos pasan del Inicio a una **sección propia** del sidebar, **"Estadísticas › Gráficos"** (`frmGraficos`, armado por código, visible para los 3 roles; cada uno ve los suyos, uno por fila ocupando toda la pantalla). El Inicio vuelve a ser sólo saludo + tarjetas + lista, con un atajo **"Ver gráficos"** para cada rol. El Administrador suma un segundo gráfico: **Ingresos por mes** (columnas, últimos 12 meses incluido el actual, `Facturacion.monto_total` por `fecha_emision`; el último mes coincide con la tarjeta "Ingresos del mes"). Consulta nueva `RepositorioReporte.ObtenerIngresosPorMes`; `MantenimientosPorMesDTO` se generaliza a `TotalPorMesDTO` (sirve para cantidades y montos) y `ServicioReporte` comparte el armado mes por mes (`PorMes`) entre los dos gráficos mensuales. Ícono nuevo `Iconos.Graficos`.
+
+- [x] Sección "Estadísticas › Gráficos" (`frmGraficos`) y atajo "Ver gráficos" en el Inicio.
+- [x] Segundo gráfico del Administrador (ingresos por mes) + prueba.
 - [ ] Revisión visual por el usuario en su máquina con los 3 roles.
 
 ---

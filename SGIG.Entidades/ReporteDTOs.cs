@@ -32,11 +32,14 @@ namespace SGIG.Entidades
         public int Cantidad { get; set; }
     }
 
-    /// <summary>Cantidad de mantenimientos iniciados en un mes (sólo meses con datos).</summary>
-    public class MantenimientosPorMesDTO
+    /// <summary>
+    /// Un total mensual (sólo meses con datos): cantidad de mantenimientos o monto
+    /// facturado, según la consulta que lo devuelva.
+    /// </summary>
+    public class TotalPorMesDTO
     {
         public int Anio { get; set; }
         public int Mes { get; set; }
-        public int Cantidad { get; set; }
+        public decimal Valor { get; set; }
     }
 }

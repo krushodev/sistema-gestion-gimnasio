@@ -133,10 +133,10 @@ namespace SGIG.Datos
         }
 
         /// <summary>Mantenimientos iniciados entre dos fechas (hasta exclusiva), agrupados por año y mes.</summary>
-        public IEnumerable<MantenimientosPorMesDTO> ObtenerMantenimientosPorMes(DateTime desde, DateTime hastaExclusiva)
+        public IEnumerable<TotalPorMesDTO> ObtenerMantenimientosPorMes(DateTime desde, DateTime hastaExclusiva)
         {
             const string sql = @"
-                SELECT YEAR(fecha_inicio) AS Anio, MONTH(fecha_inicio) AS Mes, COUNT(*) AS Cantidad
+                SELECT YEAR(fecha_inicio) AS Anio, MONTH(fecha_inicio) AS Mes, COUNT(*) AS Valor
                 FROM dbo.Mantenimiento
                 WHERE fecha_inicio >= @Desde AND fecha_inicio < @Hasta
                 GROUP BY YEAR(fecha_inicio), MONTH(fecha_inicio)
@@ -145,11 +145,35 @@ namespace SGIG.Datos
             try
             {
                 using var conn = Conexion.ObtenerConexionAbierta();
-                return conn.Query<MantenimientosPorMesDTO>(sql, new { Desde = desde.Date, Hasta = hastaExclusiva.Date });
+                return conn.Query<TotalPorMesDTO>(sql, new { Desde = desde.Date, Hasta = hastaExclusiva.Date });
             }
             catch (SqlException ex)
             {
                 throw new AccesoDatosException("Error al consultar los mantenimientos por mes: " + ex.Message, ex);
+            }
+        }
+
+        /// <summary>
+        /// Facturado por mes entre dos fechas (hasta exclusiva). Mismo criterio que la tarjeta
+        /// "Ingresos del mes": Facturacion.monto_total por fecha_emision.
+        /// </summary>
+        public IEnumerable<TotalPorMesDTO> ObtenerIngresosPorMes(DateTime desde, DateTime hastaExclusiva)
+        {
+            const string sql = @"
+                SELECT YEAR(fecha_emision) AS Anio, MONTH(fecha_emision) AS Mes, SUM(monto_total) AS Valor
+                FROM dbo.Facturacion
+                WHERE fecha_emision >= @Desde AND fecha_emision < @Hasta
+                GROUP BY YEAR(fecha_emision), MONTH(fecha_emision)
+                ORDER BY Anio, Mes;";
+
+            try
+            {
+                using var conn = Conexion.ObtenerConexionAbierta();
+                return conn.Query<TotalPorMesDTO>(sql, new { Desde = desde.Date, Hasta = hastaExclusiva.Date });
+            }
+            catch (SqlException ex)
+            {
+                throw new AccesoDatosException("Error al consultar los ingresos por mes: " + ex.Message, ex);
             }
         }
     }

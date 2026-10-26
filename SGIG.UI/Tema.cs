@@ -483,6 +483,7 @@ namespace SGIG.UI
         public const string Mantenimiento = "\uE90F";
         public const string Planes = "\uE8A5";
         public const string Reportes = "\uE9D9";
+        public const string Graficos = "\uE9D2";
         public const string Backup = "\uE74E";
         public const string Configuracion = "\uE713";
         public const string Salir = "\uE7E8";
