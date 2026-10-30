@@ -478,6 +478,8 @@ namespace SGIG.UI
     /// </summary>
     internal sealed class TarjetaMetrica : RoundedPanel
     {
+        private readonly string _titulo;
+        private readonly ToolTip _tooltip = new(); // valor completo si no entra ("Aductor/Abdu…")
         private readonly Label _lblValor;
         private readonly Label _lblDetalle;
         private readonly Font _fuenteIcono = Tema.FuenteIconos(12F);
@@ -535,6 +537,8 @@ namespace SGIG.UI
                 BackColor = Color.Transparent
             };
             Controls.AddRange(new Control[] { lblIcono, lblTitulo, lblValor, lblDetalle });
+            _titulo = titulo;
+            _tooltip.SetToolTip(lblValor, valor);
             _lblValor = lblValor;
             _lblDetalle = lblDetalle;
 
@@ -551,10 +555,14 @@ namespace SGIG.UI
             }
         }
 
+        /// <summary>Título, valor y detalle, en ese orden (para exportar los indicadores de Reportes).</summary>
+        public string[] Textos() => new[] { _titulo, _lblValor.Text, _lblDetalle.Text };
+
         /// <summary>Cambia el valor y el detalle una vez que llegan los datos.</summary>
         public void Actualizar(string valor, string detalle)
         {
             _lblValor.Text = valor;
+            _tooltip.SetToolTip(_lblValor, valor);
             _lblDetalle.Text = detalle;
         }
 
@@ -568,6 +576,7 @@ namespace SGIG.UI
         {
             if (disposing)
             {
+                _tooltip.Dispose();
                 _fuenteIcono.Dispose();
                 _fuenteTitulo.Dispose();
                 _fuenteValor.Dispose();

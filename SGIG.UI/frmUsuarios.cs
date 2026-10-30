@@ -15,6 +15,8 @@ namespace SGIG.UI
     //   (btnDarDeBaja alterna su texto y acción según el estado de la fila
     //   seleccionada: "Dar de baja" para un usuario activo, "Dar de alta" para uno
     //   dado de baja — no hace falta agregar un botón nuevo)
+    //   Barra de filtros (Fase 14, creada por código con BarraFiltros, junto a
+    //   txtBuscar): cboRol, cboEstado, lblResultado
     // ─────────────────────────────────────────────────────────────────────────
     public partial class frmUsuarios : Form
     {
@@ -22,11 +24,27 @@ namespace SGIG.UI
         private readonly Usuario _usuarioLogueado;
 
         private List<Usuario> _usuarios = new();
+        private List<Rol> _roles = new();
+
+        private readonly ComboBox cboRol = BarraFiltros.Combo("cboRol", 150, "Todos los roles");
+        private readonly ComboBox cboEstado = BarraFiltros.Combo("cboEstado", 120, "Todos", "Activos", "Dados de baja");
+        private readonly Label lblResultado = BarraFiltros.Resultado("lblResultado");
 
         public frmUsuarios(Usuario usuarioLogueado)
         {
             InitializeComponent();
             _usuarioLogueado = usuarioLogueado;
+
+            // Fase 14: filtros junto a la búsqueda.
+            BarraFiltros.Crear(dgvUsuarios, null,
+                BarraFiltros.Rotulo("Buscar", 0), BarraFiltros.ComoCampo(txtBuscar),
+                BarraFiltros.Rotulo("Rol"), cboRol,
+                BarraFiltros.Rotulo("Estado"), cboEstado,
+                lblResultado);
+            lblBuscar.Visible = false; // reemplazado por el rótulo de la barra
+            cboRol.SelectedIndexChanged += (s, e) => AplicarFiltro();
+            cboEstado.SelectedIndexChanged += (s, e) => AplicarFiltro();
+
             dgvUsuarios.CellFormatting += DgvUsuarios_CellFormatting;
             dgvUsuarios.DataBindingComplete += DgvUsuarios_DataBindingComplete;
             dgvUsuarios.SelectionChanged += (s, e) => ActualizarBotonBaja();
@@ -37,6 +55,7 @@ namespace SGIG.UI
             try
             {
                 ConfigurarGrilla();
+                CargarRoles();
                 CargarGrilla();
             }
             catch (Exception ex)
@@ -71,22 +90,32 @@ namespace SGIG.UI
             ActualizarBotonBaja();
         }
 
-        /// <summary>Filtro rápido en memoria por apellido, nombre, documento, legajo o usuario.</summary>
+        /// <summary>Roles del combo de filtro (los 3 fijos del sistema).</summary>
+        private void CargarRoles()
+        {
+            _roles = _servicioUsuario.ObtenerRoles().ToList();
+            cboRol.Items.Clear();
+            cboRol.Items.Add("Todos los roles");
+            cboRol.Items.AddRange(_roles.Select(r => (object)r.NombreRol).ToArray());
+            cboRol.SelectedIndex = 0;
+        }
+
+        /// <summary>
+        /// Aplica la barra de filtros sobre la lista ya cargada (sin volver a la base). El
+        /// criterio vive en <see cref="ServicioUsuario.Filtrar"/>.
+        /// </summary>
         private void AplicarFiltro()
         {
-            var texto = txtBuscar.Text.Trim();
+            var filtro = new FiltroUsuarios
+            {
+                Texto = txtBuscar.Text,
+                Estado = (FiltroEstado)Math.Max(0, cboEstado.SelectedIndex),
+                IdRol = cboRol.SelectedIndex > 0 ? _roles[cboRol.SelectedIndex - 1].IdRol : null
+            };
 
-            var filtrados = string.IsNullOrEmpty(texto)
-                ? _usuarios
-                : _usuarios.Where(u =>
-                        u.Apellido.Contains(texto, StringComparison.OrdinalIgnoreCase) ||
-                        u.Nombre.Contains(texto, StringComparison.OrdinalIgnoreCase) ||
-                        u.Documento.Contains(texto, StringComparison.OrdinalIgnoreCase) ||
-                        u.Legajo.Contains(texto, StringComparison.OrdinalIgnoreCase) ||
-                        u.NombreUsuario.Contains(texto, StringComparison.OrdinalIgnoreCase))
-                    .ToList();
-
-            dgvUsuarios.DataSource = filtrados.ToList();
+            var filtrados = ServicioUsuario.Filtrar(_usuarios, filtro);
+            dgvUsuarios.DataSource = filtrados;
+            lblResultado.Text = $"Mostrando {filtrados.Count} de {_usuarios.Count} usuarios";
         }
 
         private void txtBuscar_TextChanged(object sender, EventArgs e) => AplicarFiltro();

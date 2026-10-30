@@ -111,8 +111,9 @@ namespace SGIG.Datos
             }
         }
 
-        /// <summary>Intentos de acceso (concedidos y rechazados) de un día, agrupados por hora.</summary>
-        public IEnumerable<AccesosPorHoraDTO> ObtenerAccesosPorHora(DateTime dia)
+
+        /// <summary>Intentos de acceso (concedidos y rechazados) entre dos fechas (hasta exclusiva), agrupados por hora del día.</summary>
+        public IEnumerable<AccesosPorHoraDTO> ObtenerAccesosPorHora(DateTime desde, DateTime hastaExclusiva)
         {
             const string sql = @"
                 SELECT DATEPART(HOUR, fecha_hora) AS Hora, COUNT(*) AS Cantidad
@@ -124,7 +125,7 @@ namespace SGIG.Datos
             try
             {
                 using var conn = Conexion.ObtenerConexionAbierta();
-                return conn.Query<AccesosPorHoraDTO>(sql, new { Desde = dia.Date, Hasta = dia.Date.AddDays(1) });
+                return conn.Query<AccesosPorHoraDTO>(sql, new { Desde = desde.Date, Hasta = hastaExclusiva.Date });
             }
             catch (SqlException ex)
             {
@@ -132,48 +133,151 @@ namespace SGIG.Datos
             }
         }
 
-        /// <summary>Mantenimientos iniciados entre dos fechas (hasta exclusiva), agrupados por año y mes.</summary>
-        public IEnumerable<TotalPorMesDTO> ObtenerMantenimientosPorMes(DateTime desde, DateTime hastaExclusiva)
+        /// <summary>Mantenimientos iniciados entre dos fechas (hasta exclusiva), contados por día.</summary>
+        public IEnumerable<TotalPorDiaDTO> ObtenerMantenimientosPorDia(DateTime desde, DateTime hastaExclusiva)
         {
             const string sql = @"
-                SELECT YEAR(fecha_inicio) AS Anio, MONTH(fecha_inicio) AS Mes, COUNT(*) AS Valor
+                SELECT fecha_inicio AS Fecha, COUNT(*) AS Valor
                 FROM dbo.Mantenimiento
                 WHERE fecha_inicio >= @Desde AND fecha_inicio < @Hasta
-                GROUP BY YEAR(fecha_inicio), MONTH(fecha_inicio)
-                ORDER BY Anio, Mes;";
+                GROUP BY fecha_inicio
+                ORDER BY Fecha;";
 
             try
             {
                 using var conn = Conexion.ObtenerConexionAbierta();
-                return conn.Query<TotalPorMesDTO>(sql, new { Desde = desde.Date, Hasta = hastaExclusiva.Date });
+                return conn.Query<TotalPorDiaDTO>(sql, new { Desde = desde.Date, Hasta = hastaExclusiva.Date });
             }
             catch (SqlException ex)
             {
-                throw new AccesoDatosException("Error al consultar los mantenimientos por mes: " + ex.Message, ex);
+                throw new AccesoDatosException("Error al consultar los mantenimientos por día: " + ex.Message, ex);
             }
         }
 
         /// <summary>
-        /// Facturado por mes entre dos fechas (hasta exclusiva). Mismo criterio que la tarjeta
+        /// Facturado por día entre dos fechas (hasta exclusiva). Mismo criterio que la tarjeta
         /// "Ingresos del mes": Facturacion.monto_total por fecha_emision.
         /// </summary>
-        public IEnumerable<TotalPorMesDTO> ObtenerIngresosPorMes(DateTime desde, DateTime hastaExclusiva)
+        public IEnumerable<TotalPorDiaDTO> ObtenerIngresosPorDia(DateTime desde, DateTime hastaExclusiva)
         {
             const string sql = @"
-                SELECT YEAR(fecha_emision) AS Anio, MONTH(fecha_emision) AS Mes, SUM(monto_total) AS Valor
+                SELECT fecha_emision AS Fecha, SUM(monto_total) AS Valor
                 FROM dbo.Facturacion
                 WHERE fecha_emision >= @Desde AND fecha_emision < @Hasta
-                GROUP BY YEAR(fecha_emision), MONTH(fecha_emision)
-                ORDER BY Anio, Mes;";
+                GROUP BY fecha_emision
+                ORDER BY Fecha;";
 
             try
             {
                 using var conn = Conexion.ObtenerConexionAbierta();
-                return conn.Query<TotalPorMesDTO>(sql, new { Desde = desde.Date, Hasta = hastaExclusiva.Date });
+                return conn.Query<TotalPorDiaDTO>(sql, new { Desde = desde.Date, Hasta = hastaExclusiva.Date });
             }
             catch (SqlException ex)
             {
-                throw new AccesoDatosException("Error al consultar los ingresos por mes: " + ex.Message, ex);
+                throw new AccesoDatosException("Error al consultar los ingresos por día: " + ex.Message, ex);
+            }
+        }
+
+        // ── Reportes por período (Fase 14) ───────────────────────────────────
+
+        /// <summary>Cobrado por medio de pago entre dos fechas (hasta exclusiva), por fecha de pago.</summary>
+        public IEnumerable<FilaTotalDTO> ObtenerIngresosPorMedioPago(DateTime desde, DateTime hastaExclusiva)
+        {
+            const string sql = @"
+                SELECT mp.descripcion AS Concepto, COUNT(*) AS Cantidad, SUM(p.monto) AS Monto
+                FROM dbo.Pago p
+                INNER JOIN dbo.MedioPago mp ON mp.id_medio_pago = p.id_medio_pago
+                WHERE p.fecha_pago >= @Desde AND p.fecha_pago < @Hasta
+                GROUP BY mp.descripcion
+                ORDER BY Monto DESC;";
+
+            try
+            {
+                using var conn = Conexion.ObtenerConexionAbierta();
+                return conn.Query<FilaTotalDTO>(sql, new { Desde = desde.Date, Hasta = hastaExclusiva.Date });
+            }
+            catch (SqlException ex)
+            {
+                throw new AccesoDatosException("Error al consultar los ingresos por medio de pago: " + ex.Message, ex);
+            }
+        }
+
+        /// <summary>Cada pago del período (hasta exclusiva), del más reciente al más antiguo.</summary>
+        public IEnumerable<FilaCobroDTO> ObtenerDetalleCobros(DateTime desde, DateTime hastaExclusiva)
+        {
+            const string sql = @"
+                SELECT p.fecha_pago AS FechaPago,
+                       pe.apellido + ', ' + pe.nombre AS Socio,
+                       pe.documento AS Documento,
+                       pl.nombre AS [Plan],
+                       mp.descripcion AS MedioPago,
+                       p.monto AS Monto,
+                       f.fecha_vencimiento AS CubreHasta
+                FROM dbo.Pago p
+                INNER JOIN dbo.Facturacion f ON f.id_facturacion = p.id_facturacion
+                INNER JOIN dbo.Persona pe ON pe.id_persona = f.id_persona
+                INNER JOIN dbo.[Plan] pl ON pl.id_plan = f.id_plan
+                INNER JOIN dbo.MedioPago mp ON mp.id_medio_pago = p.id_medio_pago
+                WHERE p.fecha_pago >= @Desde AND p.fecha_pago < @Hasta
+                ORDER BY p.fecha_pago DESC, p.id_pago DESC;";
+
+            try
+            {
+                using var conn = Conexion.ObtenerConexionAbierta();
+                return conn.Query<FilaCobroDTO>(sql, new { Desde = desde.Date, Hasta = hastaExclusiva.Date });
+            }
+            catch (SqlException ex)
+            {
+                throw new AccesoDatosException("Error al consultar el detalle de cobros: " + ex.Message, ex);
+            }
+        }
+
+        /// <summary>Intentos de acceso por día del período (hasta exclusiva), separados por resultado.</summary>
+        public IEnumerable<FilaAsistenciaDTO> ObtenerAsistenciaPorDia(DateTime desde, DateTime hastaExclusiva)
+        {
+            const string sql = @"
+                SELECT CAST(fecha_hora AS DATE) AS Fecha,
+                       COUNT(*) AS Total,
+                       SUM(CASE WHEN resultado = 'Concedido' THEN 1 ELSE 0 END) AS Concedidos,
+                       SUM(CASE WHEN resultado = 'Rechazado' THEN 1 ELSE 0 END) AS Rechazados
+                FROM dbo.Checkin
+                WHERE fecha_hora >= @Desde AND fecha_hora < @Hasta
+                GROUP BY CAST(fecha_hora AS DATE)
+                ORDER BY Fecha DESC;";
+
+            try
+            {
+                using var conn = Conexion.ObtenerConexionAbierta();
+                return conn.Query<FilaAsistenciaDTO>(sql, new { Desde = desde.Date, Hasta = hastaExclusiva.Date });
+            }
+            catch (SqlException ex)
+            {
+                throw new AccesoDatosException("Error al consultar la asistencia por día: " + ex.Message, ex);
+            }
+        }
+
+        /// <summary>Mantenimientos iniciados en el período (hasta exclusiva), del más reciente al más antiguo.</summary>
+        public IEnumerable<FilaMantenimientoDTO> ObtenerMantenimientosDelPeriodo(DateTime desde, DateTime hastaExclusiva)
+        {
+            const string sql = @"
+                SELECT maq.nombre AS Maquina, maq.marca AS Marca,
+                       pe.apellido + ', ' + pe.nombre AS Tecnico,
+                       m.fecha_inicio AS Inicio, m.fecha_fin AS Fin,
+                       m.detalle_tecnico AS Detalle
+                FROM dbo.Mantenimiento m
+                INNER JOIN dbo.Maquina maq ON maq.id_maquina = m.id_maquina
+                INNER JOIN dbo.Persona pe ON pe.id_persona = m.id_persona
+                WHERE m.fecha_inicio >= @Desde AND m.fecha_inicio < @Hasta
+                ORDER BY m.fecha_inicio DESC, m.id_mantenimiento DESC;";
+
+            try
+            {
+                using var conn = Conexion.ObtenerConexionAbierta();
+                return conn.Query<FilaMantenimientoDTO>(sql, new { Desde = desde.Date, Hasta = hastaExclusiva.Date });
+            }
+            catch (SqlException ex)
+            {
+                throw new AccesoDatosException("Error al consultar los mantenimientos del período: " + ex.Message, ex);
             }
         }
     }

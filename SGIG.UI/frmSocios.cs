@@ -17,6 +17,8 @@ namespace SGIG.UI
     //   dado de baja — no hace falta agregar un botón nuevo)
     //   colPerfil (columna de botón "Ver perfil", agregada por código en
     //   ConfigurarGrilla) → abre ucPerfilSocio dentro de esta misma pantalla (Fase 12)
+    //   Barra de filtros (Fase 14, creada por código con BarraFiltros, junto a
+    //   txtBuscar): cboEstado, cboCuota, cboPlan, lblResultado
     // ───────────────────────────────────────────────────────────────────────────
     public partial class frmSocios : Form
     {
@@ -27,13 +29,31 @@ namespace SGIG.UI
         private readonly ServicioSocio _servicioSocio = new();
         private readonly Usuario _usuarioLogueado;
         private List<Socio> _socios = new();
+        private List<Plan> _planes = new();
         private ucPerfilSocio? _perfilAbierto;
+
+        private readonly ComboBox cboEstado = BarraFiltros.Combo("cboEstado", 120, "Todos", "Activos", "Dados de baja");
+        private readonly ComboBox cboCuota = BarraFiltros.Combo("cboCuota", 120, "Todas", "Al día", "Por vencer", "Vencida", "Sin cuotas");
+        private readonly ComboBox cboPlan = BarraFiltros.Combo("cboPlan", 150, "Todos los planes");
+        private readonly Label lblResultado = BarraFiltros.Resultado("lblResultado");
 
         /// <param name="usuarioLogueado">Define qué parte del perfil del socio se muestra (Fase 12).</param>
         public frmSocios(Usuario usuarioLogueado)
         {
             _usuarioLogueado = usuarioLogueado;
             InitializeComponent();
+
+            // Fase 14: filtros junto a la búsqueda. Los combos usan el mismo criterio de cuota que el Check-in.
+            BarraFiltros.Crear(dgvSocios, null,
+                BarraFiltros.Rotulo("Buscar", 0), BarraFiltros.ComoCampo(txtBuscar),
+                BarraFiltros.Rotulo("Estado"), cboEstado,
+                BarraFiltros.Rotulo("Cuota"), cboCuota,
+                BarraFiltros.Rotulo("Plan"), cboPlan,
+                lblResultado);
+            lblBuscar.Visible = false; // reemplazado por el rótulo de la barra
+            foreach (var combo in new[] { cboEstado, cboCuota, cboPlan })
+                combo.SelectedIndexChanged += (s, e) => AplicarFiltro();
+
             dgvSocios.CellFormatting += DgvSocios_CellFormatting;
             dgvSocios.DataBindingComplete += DgvSocios_DataBindingComplete;
             dgvSocios.SelectionChanged += (s, e) => ActualizarBotonBaja();
@@ -52,6 +72,7 @@ namespace SGIG.UI
             try
             {
                 ConfigurarGrilla();
+                CargarPlanes();
                 CargarGrilla();
             }
             catch (Exception ex)
@@ -164,20 +185,33 @@ namespace SGIG.UI
             ActualizarBotonBaja();
         }
 
-        /// <summary>Filtro rápido en memoria por apellido, nombre o documento.</summary>
+        /// <summary>Planes del combo de filtro (el plan preferido de cada socio).</summary>
+        private void CargarPlanes()
+        {
+            _planes = new ServicioPlan().Listar().ToList();
+            cboPlan.Items.Clear();
+            cboPlan.Items.Add("Todos los planes");
+            cboPlan.Items.AddRange(_planes.Select(p => (object)p.Nombre).ToArray());
+            cboPlan.SelectedIndex = 0;
+        }
+
+        /// <summary>
+        /// Aplica la barra de filtros sobre la lista ya cargada (sin volver a la base). El
+        /// criterio vive en <see cref="ServicioSocio.Filtrar"/>.
+        /// </summary>
         private void AplicarFiltro()
         {
-            var texto = txtBuscar.Text.Trim();
+            var filtro = new FiltroSocios
+            {
+                Texto = txtBuscar.Text,
+                Estado = (FiltroEstado)Math.Max(0, cboEstado.SelectedIndex),
+                Cuota = (FiltroCuota)Math.Max(0, cboCuota.SelectedIndex),
+                IdPlan = cboPlan.SelectedIndex > 0 ? _planes[cboPlan.SelectedIndex - 1].IdPlan : null
+            };
 
-            var filtrados = string.IsNullOrEmpty(texto)
-                ? _socios
-                : _socios.Where(s =>
-                        s.Apellido.Contains(texto, StringComparison.OrdinalIgnoreCase) ||
-                        s.Nombre.Contains(texto, StringComparison.OrdinalIgnoreCase) ||
-                        s.Documento.Contains(texto, StringComparison.OrdinalIgnoreCase))
-                    .ToList();
-
-            dgvSocios.DataSource = filtrados.ToList();
+            var filtrados = ServicioSocio.Filtrar(_socios, filtro, DateTime.Today);
+            dgvSocios.DataSource = filtrados;
+            lblResultado.Text = $"Mostrando {filtrados.Count} de {_socios.Count} socios";
         }
 
         private void txtBuscar_TextChanged(object sender, EventArgs e) => AplicarFiltro();

@@ -34,7 +34,9 @@ Requiere SQL Server LocalDB (el mismo que usa la app). No hace falta preparar na
 | `ActivosReportesYBackupTests.cs` | Mantenimiento (estado de la máquina atómico), reportes vs. SQL, métricas, catálogos, backup y restore |
 | `PerfilSocioTests.cs` | Perfil del socio (Fase 12): plan actual vs. preferido, estado de la cuota, pagos y accesos del socio, socio inexistente |
 | `InicioTests.cs` | Inicio (Fase 13): avisos por rol (cuotas vencidas, por vencer, cumpleaños, reparaciones demoradas) vs. SQL, 29/02, últimos cobros |
-| `GraficosTests.cs` | Sección de gráficos (Fase 11): ingresos por plan, ingresos por mes, accesos por hora y mantenimientos por mes vs. SQL, huecos completados en 0, validaciones |
+| `GraficosTests.cs` | Gráficos (Fases 11 y 14): ingresos por plan, accesos por hora, ingresos y mantenimientos en el tiempo (por día ≤ 31 días, por mes si no) vs. SQL, rangos vacíos, invertidos y de más de 24 meses |
+| `ReportesPeriodoTests.cs` | Los 5 reportes por período (Fase 14): porcentajes, totales vs. SQL, detalle de cobros, asistencia concedidos/rechazados, días y estado de mantenimientos, períodos sin datos, rangos invertidos |
+| `FiltrosTests.cs` | Filtros de Socios, Usuarios y Máquinas (Fase 14), sin base: cuota (mismo criterio que el Check-in), estado, plan, rol, marca, texto y antigüedad |
 
 ## Convenciones para agregar pruebas
 

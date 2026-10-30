@@ -174,6 +174,49 @@ namespace SGIG.Negocio
             return nacimiento.Month == hoy.Month && nacimiento.Day == hoy.Day;
         }
 
+        /// <summary>
+        /// Aplica la barra de filtros de Socios (Fase 14) sobre una lista ya cargada: texto
+        /// (apellido, nombre o documento), estado, situación de la cuota y plan preferido.
+        /// La cuota usa el mismo criterio que el Check-in (<see cref="DescribirCuota"/>).
+        /// </summary>
+        public static List<Socio> Filtrar(IEnumerable<Socio> socios, FiltroSocios filtro, DateTime hoy)
+        {
+            var texto = filtro.Texto?.Trim();
+
+            return socios.Where(s =>
+                    (string.IsNullOrEmpty(texto)
+                        || s.Apellido.Contains(texto, StringComparison.OrdinalIgnoreCase)
+                        || s.Nombre.Contains(texto, StringComparison.OrdinalIgnoreCase)
+                        || s.Documento.Contains(texto, StringComparison.OrdinalIgnoreCase))
+                    && filtro.Estado switch
+                    {
+                        FiltroEstado.Activos => s.Activo,
+                        FiltroEstado.DadosDeBaja => !s.Activo,
+                        _ => true
+                    }
+                    && CumpleCuota(s, filtro.Cuota, hoy)
+                    && (filtro.IdPlan is null || s.IdPlan == filtro.IdPlan))
+                .ToList();
+        }
+
+        private static bool CumpleCuota(Socio socio, FiltroCuota filtro, DateTime hoy)
+        {
+            if (filtro == FiltroCuota.Todas) return true;
+
+            int? dias = socio.FechaVencimientoCuota.HasValue
+                ? (socio.FechaVencimientoCuota.Value.Date - hoy.Date).Days
+                : null;
+
+            return (filtro, DescribirCuota(dias)) switch
+            {
+                (FiltroCuota.AlDia, "Al día") => true,
+                (FiltroCuota.PorVencer, "Por vencer" or "Vence hoy") => true,
+                (FiltroCuota.Vencida, "Vencida") => true,
+                (FiltroCuota.SinCuotas, "Sin cuotas") => true,
+                _ => false
+            };
+        }
+
         /// <summary>Mismo criterio que el Check-in: al día mientras el vencimiento no sea anterior a hoy.</summary>
         public static string DescribirCuota(int? diasParaVencer) => diasParaVencer switch
         {

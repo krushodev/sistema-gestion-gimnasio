@@ -20,10 +20,11 @@ namespace SGIG.UI
         public enum Orientacion { Columnas, Barras }
 
         private const int Margen = 20;
-        private const int AltoEncabezado = 52;
+        private const int AltoEncabezado = 72; // título, subtítulo y línea de resumen
 
         private readonly string _titulo;
-        private readonly string _subtitulo;
+        private string _subtitulo;
+        private string? _resumen;
         private readonly Orientacion _orientacion;
         private readonly Func<decimal, string> _formato;
         private readonly ToolTip _tooltip = new();
@@ -46,19 +47,31 @@ namespace SGIG.UI
             Dock = DockStyle.Fill;
         }
 
-        /// <summary>Muestra los datos (si todos valen 0, el estado vacío).</summary>
-        public void Mostrar(IEnumerable<PuntoGraficoDTO> puntos)
+        /// <summary>Texto bajo el título (por ejemplo, el período que se está mostrando).</summary>
+        public string Subtitulo
+        {
+            get => _subtitulo;
+            set { _subtitulo = value; Invalidate(); }
+        }
+
+        /// <summary>
+        /// Muestra los datos (si todos valen 0, el estado vacío) y, opcionalmente, una línea de
+        /// resumen bajo el subtítulo ("Total $ 470.000 · Promedio por mes $ 39.167 · …").
+        /// </summary>
+        public void Mostrar(IEnumerable<PuntoGraficoDTO> puntos, string? resumen = null)
         {
             _puntos = puntos.ToList();
-            _mensaje = _puntos.Any(p => p.Valor > 0) ? null : "Sin datos para mostrar";
+            _mensaje = _puntos.Any(p => p.Valor > 0) ? null : "Sin datos para mostrar en este período";
+            _resumen = _mensaje is null ? resumen : null;
             Invalidate();
         }
 
-        /// <summary>Reemplaza el gráfico por un texto (por ejemplo, un error de carga).</summary>
+        /// <summary>Reemplaza el gráfico por un texto (por ejemplo, un error de carga o "Cargando…").</summary>
         public void MostrarMensaje(string mensaje)
         {
             _puntos = new List<PuntoGraficoDTO>();
             _mensaje = mensaje;
+            _resumen = null;
             Invalidate();
         }
 
@@ -70,6 +83,12 @@ namespace SGIG.UI
 
             TextRenderer.DrawText(g, _titulo, _fuenteTitulo, new Point(Margen - 4, 16), Tema.TextoPrimario);
             TextRenderer.DrawText(g, _subtitulo, _fuenteSubtitulo, new Point(Margen - 4, 36), Tema.TextoSecundario);
+            if (_resumen != null)
+            {
+                TextRenderer.DrawText(g, _resumen, _fuenteValor,
+                    new Rectangle(Margen - 4, 54, Width - Margen * 2, 18), Tema.TextoPrimario,
+                    TextFormatFlags.Left | TextFormatFlags.EndEllipsis | TextFormatFlags.NoPrefix);
+            }
 
             _zonas.Clear();
             var area = new Rectangle(Margen, AltoEncabezado + 12, Width - Margen * 2, Height - AltoEncabezado - 12 - Margen);
@@ -91,8 +110,10 @@ namespace SGIG.UI
             decimal maximo = EscalaMaxima(_puntos.Max(p => p.Valor));
             int altoEje = _fuenteEje.Height + 6;
             int anchoEtiquetaY = TextRenderer.MeasureText(_formato(maximo), _fuenteEje).Width + 8;
-            var grafico = new Rectangle(area.Left + anchoEtiquetaY, area.Top + 8,
-                area.Width - anchoEtiquetaY, area.Height - altoEje - 8);
+            // Arriba se deja lugar para el valor escrito sobre la columna más alta.
+            int altoValor = _fuenteValor.Height + 4;
+            var grafico = new Rectangle(area.Left + anchoEtiquetaY, area.Top + altoValor,
+                area.Width - anchoEtiquetaY, area.Height - altoEje - altoValor);
 
             // Líneas guía horizontales con su valor a la izquierda.
             using var lapizGuia = new Pen(Tema.Borde);
@@ -124,6 +145,15 @@ namespace SGIG.UI
                 {
                     using var relleno = new SolidBrush(ColorDe(punto, mayor));
                     g.FillRectangle(relleno, columna);
+
+                    // El valor arriba de la columna, sólo si entra en el ancho de la celda.
+                    var valor = _formato(punto.Valor);
+                    var tamValor = TextRenderer.MeasureText(valor, _fuenteValor);
+                    if (tamValor.Width <= anchoCelda - 2)
+                    {
+                        TextRenderer.DrawText(g, valor, _fuenteValor,
+                            new Point(centro - tamValor.Width / 2, columna.Top - tamValor.Height - 1), Tema.TextoPrimario);
+                    }
                 }
 
                 if (i % cadaCuantas == 0)

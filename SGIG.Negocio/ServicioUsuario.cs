@@ -23,6 +23,31 @@ namespace SGIG.Negocio
         public IEnumerable<Rol> ObtenerRoles() => _repositorioRol.ObtenerActivos();
 
         /// <summary>
+        /// Aplica la barra de filtros de Usuarios (Fase 14) sobre una lista ya cargada: texto
+        /// (apellido, nombre, documento, legajo o usuario), estado y rol.
+        /// </summary>
+        public static List<Usuario> Filtrar(IEnumerable<Usuario> usuarios, FiltroUsuarios filtro)
+        {
+            var texto = filtro.Texto?.Trim();
+
+            return usuarios.Where(u =>
+                    (string.IsNullOrEmpty(texto)
+                        || u.Apellido.Contains(texto, StringComparison.OrdinalIgnoreCase)
+                        || u.Nombre.Contains(texto, StringComparison.OrdinalIgnoreCase)
+                        || u.Documento.Contains(texto, StringComparison.OrdinalIgnoreCase)
+                        || u.Legajo.Contains(texto, StringComparison.OrdinalIgnoreCase)
+                        || u.NombreUsuario.Contains(texto, StringComparison.OrdinalIgnoreCase))
+                    && filtro.Estado switch
+                    {
+                        FiltroEstado.Activos => u.Activo,
+                        FiltroEstado.DadosDeBaja => !u.Activo,
+                        _ => true
+                    }
+                    && (filtro.IdRol is null || u.IdRol == filtro.IdRol))
+                .ToList();
+        }
+
+        /// <summary>
         /// Da de alta un usuario. La contraseña llega en texto plano y se guarda
         /// hasheada; nunca se persiste en claro (RNF#11). Si <see cref="Usuario.IdPersona"/>
         /// ya viene cargado (se reutilizó una Persona existente, por ejemplo alguien

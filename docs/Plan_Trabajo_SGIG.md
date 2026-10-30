@@ -594,6 +594,34 @@ Para cada pantalla: aplicar `Tema.EstilizarGrilla`, botones por variante, reempl
 
 ---
 
+## Fase 14 — Devolución de la cátedra: filtros por fecha, reportes ampliados y filtros en listados (agregada 28/10/2026)
+
+> **Origen:** devolución del proyecto: (1) los reportes y gráficos tienen que poder filtrarse por fecha, (2) cada reporte tiene que dar más información, (3) faltan filtros en Socios, Máquinas y Usuarios. Sin cambios en el modelo de datos, los roles ni la ERS (sólo consultas de lectura nuevas).
+
+- **Filtro de fechas reutilizable** (`ucFiltroFechas`): combo de período rápido (Hoy, Últimos 7 días, Este mes, Mes anterior, Últimos 6 meses, Últimos 12 meses, Este año, Personalizado) + `dtpDesde`/`dtpHasta`. Lo usan Gráficos y Reportes; al cambiar el rango se recarga solo.
+- **Gráficos** (`frmGraficos`): todos respetan el rango. Los de evolución (ingresos, mantenimientos) agrupan **por día si el rango es ≤ 31 días y por mes si es mayor** (tope 24 meses); "Accesos por hora" suma todos los días del rango por franja horaria. Cada gráfico suma una **línea de resumen** (total, promedio, máximo) y los valores escritos sobre las columnas.
+- **Reportes** (`frmReportes`, Administrador): selector `cboTipoReporte` con 5 reportes, todos con Desde/Hasta, exportación a CSV y tarjetas de **indicadores del período** (`IndicadorDTO`, calculados en `ServicioReporte`):
+
+  | Reporte | Columnas | Indicadores |
+  |---|---|---|
+  | Ingresos por plan | Plan, período, cantidad, monto, % del total | Total facturado, cuotas emitidas, ticket promedio, plan más vendido |
+  | Ingresos por medio de pago | Medio, cantidad, monto, % del total | Total cobrado, cobros, medio más usado |
+  | Detalle de cobros | Fecha, socio, documento, plan, medio, monto, cubre hasta | Total cobrado, cobros, socios distintos, ticket promedio |
+  | Asistencia por día | Fecha, accesos, concedidos, rechazados, % rechazo | Accesos, concedidos, rechazados, promedio diario |
+  | Mantenimientos | Máquina, marca, técnico, inicio, fin, días, estado, detalle | Mantenimientos, en curso, finalizados, promedio de días de reparación |
+- **Filtros en listados** (barra armada por código sobre la grilla, criterio en negocio con `FiltroSocios`/`FiltroUsuarios`/`FiltroMaquinas` y métodos estáticos `Filtrar` probados sin base):
+  - `frmSocios`: buscar + `cboEstado` (Todos/Activos/Dados de baja) + `cboCuota` (Todas/Al día/Por vencer/Vencida/Sin cuotas) + `cboPlan` (plan preferido) + `lblResultado` ("Mostrando X de Y").
+  - `frmUsuarios`: buscar + `cboRol` + `cboEstado` + `lblResultado`.
+  - `frmMaquinas`: `txtBuscar` (nombre/marca) + `cboEstado` (Todas/Operativa/En reparación) + `cboMarca` + `lblResultado`, y columna "Antigüedad".
+
+- [x] DTOs, consultas en `RepositorioReporte` y métodos en `ServicioReporte` (rango de fechas, agrupación día/mes, 5 reportes con indicadores).
+- [x] Filtros de negocio (`FiltroSocios`/`FiltroUsuarios`/`FiltroMaquinas` + `Filtrar`).
+- [x] Pruebas (`GraficosTests`, `ReportesPeriodoTests`, `FiltrosTests`).
+- [x] `ucFiltroFechas`, `frmGraficos` y `frmReportes` con filtro de fechas; barras de filtro en Socios, Usuarios y Máquinas.
+- [ ] Revisión visual por el usuario en su máquina.
+
+---
+
 ## Fase 13 — Inicio "qué tengo que hacer hoy" (agregada 25/10/2026)
 
 > **Origen:** el usuario notó el Inicio "muy blanco y vacío" después de mover los gráficos a su sección. Se rediseña como una pantalla de pendientes del día (los gráficos cubren el "cómo vamos"). Sin cambios en el modelo de datos, los roles ni la ERS.
