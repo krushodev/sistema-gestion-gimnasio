@@ -54,6 +54,14 @@ sqlcmd -S "(localdb)\MSSQLLocalDB" -i "docs\SGIG_CreateDB.sql"
 
 Usar solo en entornos de desarrollo/pruebas — el reset elimina todos los datos sin confirmación adicional.
 
+## Datos históricos para demo (opcional)
+
+Para ver los gráficos y reportes con volumen real, corré **`docs/SGIG_SeedHistorico.sql`** después de `SGIG_CreateDB.sql`. Genera 5 años de historia terminando hoy (largo configurable con `@anios`): 450 socios, ~12 mil cobros con inflación y cambio de medios de pago, ~170 mil check-ins con estacionalidad y mantenimientos de máquinas. También agrega el personal que falta (`aibarra`, `cmedina`, `lferreyra`, `dparedes`, contraseña `Gimnasio2026!`). Es re-ejecutable: borra lo que generó antes y no toca los datos cargados a mano.
+
+```powershell
+sqlcmd -S "(localdb)\MSSQLLocalDB" -b -i "docs\SGIG_SeedHistorico.sql"
+```
+
 ## Estructura del proyecto
 
 Ver la sección "Arquitectura obligatoria: 4 capas" en `CLAUDE.md`: `SGIG.Entidades` → `SGIG.Datos` → `SGIG.Negocio` → `SGIG.UI`, dependencias en un solo sentido.
