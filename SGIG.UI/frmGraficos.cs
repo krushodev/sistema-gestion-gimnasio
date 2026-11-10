@@ -15,7 +15,7 @@ namespace SGIG.UI
     /// Sección propia de gráficos (Fase 11). Desde la Fase 14 todos se filtran por fecha con
     /// <see cref="ucFiltroFechas"/> y muestran una línea de resumen (total, promedio, máximo).
     /// Cada rol ve los suyos, uno debajo del otro ocupando toda la pantalla:
-    /// Administrador → ingresos en el tiempo e ingresos por plan; Recepcionista → accesos por
+    /// Administrador → ingresos en el tiempo (línea), ingresos por plan (barras) e ingresos por medio de pago (torta); Recepcionista → accesos por
     /// hora; Técnico → mantenimientos en el tiempo. Se abre dentro de <see cref="frmMDIParent"/>.
     /// </summary>
     //
@@ -51,7 +51,7 @@ namespace SGIG.UI
                 case Roles.Administrador:
                     periodoInicial = ucFiltroFechas.Periodo.Ultimos12Meses;
                     _graficos.Add(new Definicion(
-                        new TarjetaGrafico("Ingresos en el tiempo", "", TarjetaGrafico.Orientacion.Columnas, Pesos),
+                        new TarjetaGrafico("Ingresos en el tiempo", "", TarjetaGrafico.Orientacion.Linea, Pesos),
                         reportes.ObtenerIngresosEnElTiempo,
                         (d, h) => $"Facturado {Agrupacion(d, h)}",
                         (p, d, h) => ResumenTemporal(p, d, h, Pesos, "Mejor")));
@@ -60,6 +60,11 @@ namespace SGIG.UI
                         reportes.ObtenerIngresosPorPlan,
                         (d, h) => "Facturado en el período, de mayor a menor",
                         (p, d, h) => ResumenPorPlan(p)));
+                    _graficos.Add(new Definicion(
+                        new TarjetaGrafico("Ingresos por medio de pago", "", TarjetaGrafico.Orientacion.Torta, Pesos),
+                        reportes.ObtenerIngresosPorMedioPagoGrafico,
+                        (d, h) => "Participación de cada medio en lo cobrado",
+                        (p, d, h) => ResumenPorMedioPago(p)));
                     break;
 
                 case Roles.Recepcionista:
@@ -101,24 +106,40 @@ namespace SGIG.UI
         private static string Agrupacion(DateTime desde, DateTime hasta) =>
             ServicioReporte.AgrupaPorDia(desde, hasta) ? "por día" : "por mes";
 
-        /// <summary>Un gráfico por fila, todas del mismo alto, separadas por 16 px.</summary>
+        /// <summary>
+        /// Un gráfico por fila, todas del mismo alto, separadas por 16 px. Con 3 gráficos el
+        /// primero ocupa todo el ancho y los otros dos van lado a lado debajo.
+        /// </summary>
         private Control ConstruirGrilla()
         {
+            bool tres = _graficos.Count == 3;
             var tabla = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill,
-                ColumnCount = 1,
-                RowCount = _graficos.Count,
+                ColumnCount = tres ? 2 : 1,
+                RowCount = tres ? 2 : _graficos.Count,
                 BackColor = Tema.Fondo
             };
-            tabla.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+            for (int c = 0; c < tabla.ColumnCount; c++)
+                tabla.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F / tabla.ColumnCount));
+            for (int r = 0; r < tabla.RowCount; r++)
+                tabla.RowStyles.Add(new RowStyle(SizeType.Percent, 100F / tabla.RowCount));
 
             for (int i = 0; i < _graficos.Count; i++)
             {
-                tabla.RowStyles.Add(new RowStyle(SizeType.Percent, 100F / _graficos.Count));
                 var grafico = _graficos[i].Grafico;
-                grafico.Margin = new Padding(0, 0, 0, i < _graficos.Count - 1 ? 16 : 0);
-                tabla.Controls.Add(grafico, 0, i);
+                if (tres)
+                {
+                    int fila = i == 0 ? 0 : 1, columna = i == 2 ? 1 : 0;
+                    grafico.Margin = new Padding(i == 2 ? 8 : 0, 0, i == 1 ? 8 : 0, fila == 0 ? 16 : 0);
+                    tabla.Controls.Add(grafico, columna, fila);
+                    if (i == 0) tabla.SetColumnSpan(grafico, 2);
+                }
+                else
+                {
+                    grafico.Margin = new Padding(0, 0, 0, i < _graficos.Count - 1 ? 16 : 0);
+                    tabla.Controls.Add(grafico, 0, i);
+                }
             }
             return tabla;
         }
@@ -177,6 +198,14 @@ namespace SGIG.UI
             int conVentas = puntos.Count(p => p.Valor > 0);
             return $"Total {Pesos(total)}  ·  Plan que más facturó: {primero.Etiqueta} ({ServicioReporte.Porcentaje(primero.Valor, total):N1} %)"
                  + $"  ·  {conVentas} de {puntos.Count} planes con ventas";
+        }
+
+        private static string ResumenPorMedioPago(List<PuntoGraficoDTO> puntos)
+        {
+            decimal total = puntos.Sum(p => p.Valor);
+            if (puntos.Count == 0 || total == 0) return string.Empty;
+            var primero = puntos.OrderByDescending(p => p.Valor).First();
+            return $"Total {Pesos(total)}  ·  Medio más usado: {primero.Etiqueta} ({ServicioReporte.Porcentaje(primero.Valor, total):N1} %)";
         }
 
         private static string ResumenPorHora(List<PuntoGraficoDTO> puntos, DateTime desde, DateTime hasta)

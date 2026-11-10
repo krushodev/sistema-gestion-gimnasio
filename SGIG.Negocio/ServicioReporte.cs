@@ -61,6 +61,15 @@ namespace SGIG.Negocio
             return _repoReporte.ObtenerIngresosPorPlan(desde.Date, hasta.Date.AddDays(1)).ToList();
         }
 
+        /// <summary>Cobrado por medio de pago en el rango (ambas fechas inclusive), de mayor a menor, para la torta.</summary>
+        public List<PuntoGraficoDTO> ObtenerIngresosPorMedioPagoGrafico(DateTime desde, DateTime hasta)
+        {
+            ValidarRango(desde, hasta);
+            return _repoReporte.ObtenerIngresosPorMedioPago(desde.Date, hasta.Date.AddDays(1))
+                .Select(f => new PuntoGraficoDTO { Etiqueta = f.Concepto, Valor = f.Monto })
+                .ToList();
+        }
+
         /// <summary>
         /// Accesos del rango sumados por hora del día. Devuelve una columna por hora, de
         /// corrido, entre las 6 y las 22 (o más si hubo accesos fuera de esa franja).

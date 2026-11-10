@@ -10,14 +10,15 @@ using SGIG.Entidades;
 namespace SGIG.UI
 {
     /// <summary>
-    /// Tarjeta con un gráfico de barras dibujado con GDI+ (el <c>Chart</c> de .NET Framework no
-    /// existe en .NET moderno y no se agregan paquetes). Columnas verticales o barras
-    /// horizontales; la de mayor valor va en <see cref="Tema.Acento"/> y el resto en
+    /// Tarjeta con un gráfico dibujado con GDI+ (el <c>Chart</c> de .NET Framework no
+    /// existe en .NET moderno y no se agregan paquetes). Cuatro tipos: columnas, barras
+    /// horizontales, líneas (evolución) y torta con centro vacío (participación). En columnas y
+    /// barras la de mayor valor va en <see cref="Tema.Acento"/> y el resto en
     /// <see cref="Tema.AcentoSuave"/>. Al pasar el mouse muestra el valor exacto.
     /// </summary>
     internal sealed class TarjetaGrafico : RoundedPanel
     {
-        public enum Orientacion { Columnas, Barras }
+        public enum Orientacion { Columnas, Barras, Linea, Torta }
 
         private const int Margen = 20;
         private const int AltoEncabezado = 72; // título, subtítulo y línea de resumen
@@ -101,11 +102,16 @@ namespace SGIG.UI
                 return;
             }
 
-            if (_orientacion == Orientacion.Columnas) DibujarColumnas(g, area);
-            else DibujarBarras(g, area);
+            switch (_orientacion)
+            {
+                case Orientacion.Columnas: DibujarColumnas(g, area, false); break;
+                case Orientacion.Linea: DibujarColumnas(g, area, true); break;
+                case Orientacion.Torta: DibujarTorta(g, area); break;
+                default: DibujarBarras(g, area); break;
+            }
         }
 
-        private void DibujarColumnas(Graphics g, Rectangle area)
+        private void DibujarColumnas(Graphics g, Rectangle area, bool linea)
         {
             decimal maximo = EscalaMaxima(_puntos.Max(p => p.Valor));
             int altoEje = _fuenteEje.Height + 6;
@@ -133,6 +139,7 @@ namespace SGIG.UI
             int anchoEtiqueta = _puntos.Max(p => TextRenderer.MeasureText(p.Etiqueta, _fuenteEje).Width) + 6;
             int cadaCuantas = Math.Max(1, (int)Math.Ceiling(anchoEtiqueta / anchoCelda));
             decimal mayor = _puntos.Max(p => p.Valor);
+            var puntosLinea = new List<PointF>();
 
             for (int i = 0; i < _puntos.Count; i++)
             {
@@ -141,7 +148,11 @@ namespace SGIG.UI
                 int alto = (int)(grafico.Height * (punto.Valor / maximo));
                 var columna = new Rectangle(centro - anchoColumna / 2, grafico.Bottom - alto, anchoColumna, alto);
 
-                if (alto > 0)
+                if (linea)
+                {
+                    puntosLinea.Add(new PointF(centro, grafico.Bottom - alto));
+                }
+                else if (alto > 0)
                 {
                     using var relleno = new SolidBrush(ColorDe(punto, mayor));
                     g.FillRectangle(relleno, columna);
@@ -166,6 +177,8 @@ namespace SGIG.UI
                 _zonas.Add((new Rectangle((int)(grafico.Left + anchoCelda * i), grafico.Top,
                     (int)Math.Ceiling(anchoCelda), grafico.Height), punto));
             }
+
+            if (linea) DibujarLinea(g, grafico, puntosLinea, mayor);
         }
 
         private void DibujarBarras(Graphics g, Rectangle area)
@@ -205,6 +218,124 @@ namespace SGIG.UI
             }
         }
 
+        /// <summary>Línea con área suave debajo y un punto por dato; el valor del máximo va rotulado.</summary>
+        private void DibujarLinea(Graphics g, Rectangle grafico, List<PointF> pts, decimal mayor)
+        {
+            if (pts.Count == 0) return;
+            var oldMode = g.SmoothingMode;
+            g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+
+            if (pts.Count > 1)
+            {
+                var area = new List<PointF>(pts) { new PointF(pts[^1].X, grafico.Bottom), new PointF(pts[0].X, grafico.Bottom) };
+                using var relleno = new SolidBrush(Color.FromArgb(40, Tema.Acento));
+                g.FillPolygon(relleno, area.ToArray());
+                using var lapiz = new Pen(Tema.Acento, 2.5F) { LineJoin = System.Drawing.Drawing2D.LineJoin.Round };
+                g.DrawLines(lapiz, pts.ToArray());
+            }
+
+            int radio = pts.Count > 40 ? 2 : 4;
+            for (int i = 0; i < pts.Count; i++)
+            {
+                using var blanco = new SolidBrush(Tema.Superficie);
+                using var borde = new Pen(Tema.Acento, 2F);
+                g.FillEllipse(blanco, pts[i].X - radio, pts[i].Y - radio, radio * 2, radio * 2);
+                g.DrawEllipse(borde, pts[i].X - radio, pts[i].Y - radio, radio * 2, radio * 2);
+            }
+            g.SmoothingMode = oldMode;
+
+            int imax = _puntos.FindIndex(p => p.Valor == mayor);
+            if (imax >= 0)
+            {
+                var valor = _formato(mayor);
+                var tam = TextRenderer.MeasureText(valor, _fuenteValor);
+                int x = (int)Math.Clamp(pts[imax].X - tam.Width / 2, grafico.Left, grafico.Right - tam.Width);
+                TextRenderer.DrawText(g, valor, _fuenteValor, new Point(x, (int)pts[imax].Y - tam.Height - radio - 2), Tema.TextoPrimario);
+            }
+        }
+
+        private static readonly Color[] PaletaTorta =
+        {
+            Color.FromArgb(37, 99, 235), Color.FromArgb(22, 163, 74), Color.FromArgb(217, 119, 6),
+            Color.FromArgb(147, 51, 234), Color.FromArgb(220, 38, 38), Color.FromArgb(14, 165, 233)
+        };
+
+        private Rectangle _rectTorta;
+        private readonly List<(float Inicio, float Barrido, PuntoGraficoDTO Punto)> _sectores = new();
+
+        /// <summary>Torta con centro vacío (total adentro) y leyenda a la derecha con valor y porcentaje.</summary>
+        private void DibujarTorta(Graphics g, Rectangle area)
+        {
+            _sectores.Clear();
+            decimal total = _puntos.Sum(p => p.Valor);
+            int lado = Math.Min(area.Height, area.Width / 2) - 4;
+            if (lado < 40 || total <= 0) return;
+
+            _rectTorta = new Rectangle(area.Left + 8, area.Top + (area.Height - lado) / 2, lado, lado);
+            var oldMode = g.SmoothingMode;
+            g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+
+            float angulo = -90F;
+            for (int i = 0; i < _puntos.Count; i++)
+            {
+                var p = _puntos[i];
+                if (p.Valor <= 0) continue;
+                float barrido = (float)(p.Valor / total) * 360F;
+                using var pincel = new SolidBrush(PaletaTorta[i % PaletaTorta.Length]);
+                g.FillPie(pincel, _rectTorta, angulo, barrido);
+                _sectores.Add((angulo, barrido, p));
+                angulo += barrido;
+            }
+
+            // Separadores blancos y centro vacío (dona).
+            using (var sep = new Pen(Tema.Superficie, 2F))
+                foreach (var s in _sectores)
+                    g.DrawPie(sep, _rectTorta, s.Inicio, s.Barrido);
+            int hueco = (int)(lado * 0.56F);
+            var centro = new Rectangle(_rectTorta.Left + (lado - hueco) / 2, _rectTorta.Top + (lado - hueco) / 2, hueco, hueco);
+            using (var fondo = new SolidBrush(Tema.Superficie)) g.FillEllipse(fondo, centro);
+            g.SmoothingMode = oldMode;
+
+            TextRenderer.DrawText(g, _formato(total), _fuenteValor, centro, Tema.TextoPrimario,
+                TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPrefix);
+
+            // Leyenda.
+            int x = _rectTorta.Right + 28;
+            int altoFila = Math.Min(34, area.Height / Math.Max(1, _puntos.Count));
+            int y = area.Top + (area.Height - altoFila * _puntos.Count) / 2;
+            for (int i = 0; i < _puntos.Count; i++)
+            {
+                var p = _puntos[i];
+                using (var pincel = new SolidBrush(PaletaTorta[i % PaletaTorta.Length]))
+                    g.FillRectangle(pincel, x, y + (altoFila - 12) / 2, 12, 12);
+                var texto = $"{p.Etiqueta}   {_formato(p.Valor)}  ({p.Valor / total * 100:N1} %)";
+                TextRenderer.DrawText(g, texto, _fuenteEje,
+                    new Rectangle(x + 20, y, Math.Max(10, area.Right - x - 20), altoFila), Tema.TextoPrimario,
+                    TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis | TextFormatFlags.NoPrefix);
+                y += altoFila;
+            }
+        }
+
+        /// <summary>Dato bajo el mouse: en la torta por ángulo sobre la dona; en el resto por zona.</summary>
+        private PuntoGraficoDTO? PuntoEn(Point pos)
+        {
+            if (_orientacion != Orientacion.Torta)
+                return _zonas.FirstOrDefault(z => z.Zona.Contains(pos)).Punto;
+
+            if (_sectores.Count == 0) return null;
+            double cx = _rectTorta.Left + _rectTorta.Width / 2.0, cy = _rectTorta.Top + _rectTorta.Height / 2.0;
+            double dx = pos.X - cx, dy = pos.Y - cy, dist = Math.Sqrt(dx * dx + dy * dy);
+            double radio = _rectTorta.Width / 2.0;
+            if (dist > radio || dist < radio * 0.56) return null;
+            double grados = Math.Atan2(dy, dx) * 180 / Math.PI;
+            foreach (var s in _sectores)
+            {
+                double rel = ((grados - s.Inicio) % 360 + 360) % 360;
+                if (rel <= s.Barrido) return s.Punto;
+            }
+            return null;
+        }
+
         private static Color ColorDe(PuntoGraficoDTO punto, decimal mayor) =>
             punto.Valor == mayor ? Tema.Acento : Tema.AcentoSuave;
 
@@ -228,7 +359,7 @@ namespace SGIG.UI
         protected override void OnMouseMove(MouseEventArgs e)
         {
             base.OnMouseMove(e);
-            var punto = _zonas.FirstOrDefault(z => z.Zona.Contains(e.Location)).Punto;
+            var punto = PuntoEn(e.Location);
             if (ReferenceEquals(punto, _puntoBajoMouse)) return;
 
             _puntoBajoMouse = punto;
