@@ -95,7 +95,7 @@ namespace SGIG.UI
                 (nameof(Socio.Telefono), "Teléfono", 90),
                 (nameof(Socio.Email), "Correo electrónico", 150),
                 (nameof(Socio.FechaVencimientoCuota), "Vencim. cuota", 90),
-                (nameof(Socio.Activo), "Estado", 70));
+                (nameof(Socio.Activo), "Estado", 60));
 
             // Botón por fila para ir al perfil (Fase 12). Se dibuja a mano en CellPainting
             // para que tenga el estilo de Tema y no el botón gris de Windows.
@@ -307,28 +307,24 @@ namespace SGIG.UI
             btnDarDeBaja.Text = socio is { Activo: false } ? "Dar de &alta" : "Dar de &baja";
         }
 
-        /// <summary>Convierte la columna booleana Activo en un texto legible.</summary>
+        /// <summary>Muestra la columna Activo como estado coloreado (verde/rojo).</summary>
         private void DgvSocios_CellFormatting(object? sender, DataGridViewCellFormattingEventArgs e)
         {
             if (dgvSocios.Columns[e.ColumnIndex].Name != "col" + nameof(Socio.Activo)) return;
 
             if (e.Value is bool activo)
             {
-                e.Value = activo ? "Activo" : "Dado de baja";
-                e.FormattingApplied = true;
+                Tema.PintarEstado(e, activo, activo ? "Activo" : "Baja");
             }
         }
 
-        /// <summary>Atenúa visualmente las filas de socios dados de baja.</summary>
+        /// <summary>Tiñe cada fila de verde (activo) o rojo (baja) suave.</summary>
         private void DgvSocios_DataBindingComplete(object? sender, DataGridViewBindingCompleteEventArgs e)
         {
             foreach (DataGridViewRow fila in dgvSocios.Rows)
             {
-                if (fila.DataBoundItem is Socio { Activo: false })
-                {
-                    fila.DefaultCellStyle.ForeColor = Tema.SlateTexto;
-                    fila.DefaultCellStyle.Font = new Font(dgvSocios.Font, FontStyle.Italic);
-                }
+                if (fila.DataBoundItem is Socio u)
+                    Tema.TintarFila(fila, u.Activo);
             }
         }
 

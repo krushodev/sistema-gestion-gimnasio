@@ -397,6 +397,27 @@ namespace SGIG.UI
             dgv.AlternatingRowsDefaultCellStyle.BackColor = Fondo;
         }
 
+        public static readonly Color FilaActiva = Color.FromArgb(240, 253, 244);       // #F0FDF4 (verde muy suave)
+        public static readonly Color FilaInactiva = Color.FromArgb(254, 242, 242);     // #FEF2F2 (rojo muy suave)
+
+        /// <summary>Tiñe suavemente toda la fila: verde si es positiva, rojo si no.</summary>
+        public static void TintarFila(DataGridViewRow fila, bool positivo) =>
+            fila.DefaultCellStyle.BackColor = positivo ? FilaActiva : FilaInactiva;
+
+        /// <summary>
+        /// Estado minimalista para una celda de grilla: punto + texto corto en verde
+        /// (positivo) o rojo (negativo), sin fondo. El color se mantiene al seleccionar la fila.
+        /// </summary>
+        public static void PintarEstado(DataGridViewCellFormattingEventArgs e, bool positivo, string texto)
+        {
+            var color = positivo ? ExitoTexto : PeligroTexto;
+            e.Value = "● " + texto;
+            e.CellStyle!.ForeColor = color;
+            e.CellStyle.SelectionForeColor = color;
+            e.CellStyle.Font = Fuente(9F, FontStyle.Bold);
+            e.FormattingApplied = true;
+        }
+
         // ── Visualizador de contraseña (Toggle) ─────────────────────────────
         public static void AgregarToggleContrasenia(TextBox txt)
         {

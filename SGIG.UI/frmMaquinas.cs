@@ -121,7 +121,16 @@ namespace SGIG.UI
         /// <summary>La columna Antigüedad muestra "8 años" en vez de la fecha de compra.</summary>
         private void DgvMaquinas_CellFormatting(object? sender, DataGridViewCellFormattingEventArgs e)
         {
-            if (e.RowIndex < 0 || dgvMaquinas.Columns[e.ColumnIndex].Name != ColumnaAntiguedad) return;
+            if (e.RowIndex < 0) return;
+            var nombreColumna = dgvMaquinas.Columns[e.ColumnIndex].Name;
+            if (dgvMaquinas.Rows[e.RowIndex].DataBoundItem is Maquina maq)
+                e.CellStyle!.BackColor = maq.Estado == "Operativa" ? Tema.FilaActiva : Tema.FilaInactiva;
+            if (nombreColumna == "col" + nameof(Maquina.Estado) && e.Value is string estado)
+            {
+                Tema.PintarEstado(e, estado == "Operativa", estado == "Operativa" ? "Operativa" : "En reparación");
+                return;
+            }
+            if (nombreColumna != ColumnaAntiguedad) return;
             e.Value = ServicioMaquina.Antiguedad(e.Value as DateTime?, DateTime.Today);
             e.FormattingApplied = true;
         }

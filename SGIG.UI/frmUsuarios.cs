@@ -80,7 +80,7 @@ namespace SGIG.UI
                 (nameof(Usuario.NombreRol), "Rol", 115),
                 (nameof(Usuario.Legajo), "Legajo", 85),
                 (nameof(Usuario.Email), "Correo electrónico", 175),
-                (nameof(Usuario.Activo), "Estado", 95));
+                (nameof(Usuario.Activo), "Estado", 60));
         }
 
         private void CargarGrilla()
@@ -211,28 +211,24 @@ namespace SGIG.UI
             btnDarDeBaja.Text = usuario is { Activo: false } ? "Dar de &alta" : "Dar de &baja";
         }
 
-        /// <summary>Convierte la columna booleana Activo en un texto legible.</summary>
+        /// <summary>Muestra la columna Activo como estado coloreado (verde/rojo).</summary>
         private void DgvUsuarios_CellFormatting(object? sender, DataGridViewCellFormattingEventArgs e)
         {
             if (dgvUsuarios.Columns[e.ColumnIndex].Name != "col" + nameof(Usuario.Activo)) return;
 
             if (e.Value is bool activo)
             {
-                e.Value = activo ? "Activo" : "Dado de baja";
-                e.FormattingApplied = true;
+                Tema.PintarEstado(e, activo, activo ? "Activo" : "Baja");
             }
         }
 
-        /// <summary>Atenúa visualmente las filas de usuarios dados de baja.</summary>
+        /// <summary>Tiñe cada fila de verde (activo) o rojo (baja) suave.</summary>
         private void DgvUsuarios_DataBindingComplete(object? sender, DataGridViewBindingCompleteEventArgs e)
         {
             foreach (DataGridViewRow fila in dgvUsuarios.Rows)
             {
-                if (fila.DataBoundItem is Usuario { Activo: false })
-                {
-                    fila.DefaultCellStyle.ForeColor = Tema.SlateTexto;
-                    fila.DefaultCellStyle.Font = new Font(dgvUsuarios.Font, FontStyle.Italic);
-                }
+                if (fila.DataBoundItem is Usuario u)
+                    Tema.TintarFila(fila, u.Activo);
             }
         }
 
