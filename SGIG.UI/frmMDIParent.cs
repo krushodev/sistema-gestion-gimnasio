@@ -178,7 +178,7 @@ namespace SGIG.UI
 
                 new("Administración", "usuarios", "Usuarios", Iconos.Usuarios, new[] { A }, () => new frmUsuarios(_usuario)),
                 new("Administración", "reportes", "Reportes", Iconos.Reportes, new[] { A }, () => new frmReportes()),
-                new("Administración", "backup", "Copia de seguridad", Iconos.Backup, new[] { A }, () => new frmBackup()),
+                new("Administración", "backup", "Copia de seguridad", Iconos.Backup, new[] { A }, () => new frmBackup(_usuario)),
             };
 
             _sidebar.AgregarItem(ClaveInicio, "Inicio", Iconos.Inicio);

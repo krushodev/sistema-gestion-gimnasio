@@ -126,6 +126,36 @@ public class ReportesYCatalogosTests(BaseDeDatosFixture _)
 public class BackupTests(BaseDeDatosFixture _)
 {
     private readonly ServicioBackup _servicio = new();
+    private const string ClaveAdmin = "admin1234";
+    private static readonly SGIG.Entidades.Usuario Admin = new ServicioAutenticacion().Autenticar("admin", ClaveAdmin)!;
+
+    [Fact]
+    public void Solo_el_administrador_puede_generar_o_restaurar_copias()
+    {
+        var ruta = Path.Combine(Path.GetTempPath(), $"sgig_test_{Guid.NewGuid():N}.bak");
+        var recepcionista = new SGIG.Entidades.Usuario { IdPersona = Admin.IdPersona, IdRol = SGIG.Entidades.Roles.Recepcionista };
+        var tecnico = new SGIG.Entidades.Usuario { IdPersona = Admin.IdPersona, IdRol = SGIG.Entidades.Roles.Tecnico };
+
+        foreach (var u in new[] { recepcionista, tecnico, null })
+        {
+            Assert.Contains("Administrador", Assert.Throws<NegocioException>(() => _servicio.GenerarCopiaSeguridad(u, ClaveAdmin, ruta)).Message);
+            Assert.Contains("Administrador", Assert.Throws<NegocioException>(() => _servicio.RestaurarCopiaSeguridad(u, ClaveAdmin, ruta)).Message);
+        }
+        Assert.False(File.Exists(ruta));
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("incorrecta")]
+    public void Sin_contrasenia_o_con_contrasenia_incorrecta_no_se_genera_la_copia(string? clave)
+    {
+        var ruta = Path.Combine(Path.GetTempPath(), $"sgig_test_{Guid.NewGuid():N}.bak");
+        Assert.Throws<NegocioException>(() => _servicio.GenerarCopiaSeguridad(Admin, clave, ruta));
+        Assert.Throws<NegocioException>(() => _servicio.RestaurarCopiaSeguridad(Admin, clave, ruta));
+        Assert.False(File.Exists(ruta));
+    }
+
 
     [Fact]
     public void Generar_copia_crea_el_archivo_y_restaurar_deshace_los_cambios_posteriores()
@@ -133,7 +163,7 @@ public class BackupTests(BaseDeDatosFixture _)
         var ruta = Path.Combine(Path.GetTempPath(), $"sgig_test_{Guid.NewGuid():N}.bak");
         try
         {
-            _servicio.GenerarCopiaSeguridad(ruta);
+            _servicio.GenerarCopiaSeguridad(Admin, ClaveAdmin, ruta);
             Assert.True(File.Exists(ruta) && new FileInfo(ruta).Length > 0);
 
             var antes = Datos.Entero("SELECT COUNT(*) FROM dbo.Persona");
@@ -141,7 +171,7 @@ public class BackupTests(BaseDeDatosFixture _)
             Assert.Equal(antes + 1, Datos.Entero("SELECT COUNT(*) FROM dbo.Persona"));
 
             Microsoft.Data.SqlClient.SqlConnection.ClearAllPools();
-            _servicio.RestaurarCopiaSeguridad(ruta);
+            _servicio.RestaurarCopiaSeguridad(Admin, ClaveAdmin, ruta);
             Microsoft.Data.SqlClient.SqlConnection.ClearAllPools();
 
             Assert.Equal(antes, Datos.Entero("SELECT COUNT(*) FROM dbo.Persona"));
@@ -162,11 +192,11 @@ public class BackupTests(BaseDeDatosFixture _)
         var ruta = Path.Combine(Path.GetTempPath(), $"sgig_test_{Guid.NewGuid():N}.bak");
         try
         {
-            _servicio.GenerarCopiaSeguridad(ruta);
+            _servicio.GenerarCopiaSeguridad(Admin, ClaveAdmin, ruta);
             // Deja conexiones abiertas en el pool, como la app en uso.
             Assert.NotEmpty(new ServicioSocio().ObtenerTodos());
 
-            _servicio.RestaurarCopiaSeguridad(ruta);
+            _servicio.RestaurarCopiaSeguridad(Admin, ClaveAdmin, ruta);
 
             // Primera operación después del restore, sin ClearAllPools manual.
             Assert.NotEmpty(new ServicioSocio().ObtenerTodos());
@@ -192,7 +222,7 @@ public class BackupTests(BaseDeDatosFixture _)
         File.WriteAllText(ruta, "esto no es un backup de SQL Server");
         try
         {
-            var ex = Assert.Throws<NegocioException>(() => _servicio.RestaurarCopiaSeguridad(ruta));
+            var ex = Assert.Throws<NegocioException>(() => _servicio.RestaurarCopiaSeguridad(Admin, ClaveAdmin, ruta));
             Assert.Contains("no es una copia de seguridad válida", ex.Message);
 
             Assert.Equal("MULTI_USER", AccesoDeLaBase());
@@ -217,7 +247,7 @@ public class BackupTests(BaseDeDatosFixture _)
             Datos.Ejecutar("BACKUP DATABASE [model] TO DISK = @r WITH INIT", ("@r", ruta));
             var personasAntes = Datos.Entero("SELECT COUNT(*) FROM dbo.Persona");
 
-            var ex = Assert.Throws<NegocioException>(() => _servicio.RestaurarCopiaSeguridad(ruta));
+            var ex = Assert.Throws<NegocioException>(() => _servicio.RestaurarCopiaSeguridad(Admin, ClaveAdmin, ruta));
 
             Assert.Contains("\"model\"", ex.Message);
             Assert.Equal(personasAntes, Datos.Entero("SELECT COUNT(*) FROM dbo.Persona"));
@@ -239,7 +269,7 @@ public class BackupTests(BaseDeDatosFixture _)
         var ruta = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), $"sgig_test_{Guid.NewGuid():N}.bak");
         try
         {
-            _servicio.GenerarCopiaSeguridad(ruta);
+            _servicio.GenerarCopiaSeguridad(Admin, ClaveAdmin, ruta);
             // Si SQL Server corre con permisos de administrador, la carpeta sí es escribible:
             // no hay error que verificar en esta máquina.
         }
@@ -256,8 +286,8 @@ public class BackupTests(BaseDeDatosFixture _)
     [Fact]
     public void Rutas_invalidas_son_rechazadas_con_NegocioException()
     {
-        Assert.Throws<NegocioException>(() => _servicio.GenerarCopiaSeguridad(""));
-        Assert.Throws<NegocioException>(() => _servicio.GenerarCopiaSeguridad(@"C:\directorio_que_no_existe_sgig\x.bak"));
-        Assert.Throws<NegocioException>(() => _servicio.RestaurarCopiaSeguridad(@"C:\no_existe_sgig.bak"));
+        Assert.Throws<NegocioException>(() => _servicio.GenerarCopiaSeguridad(Admin, ClaveAdmin, ""));
+        Assert.Throws<NegocioException>(() => _servicio.GenerarCopiaSeguridad(Admin, ClaveAdmin, @"C:\directorio_que_no_existe_sgig\x.bak"));
+        Assert.Throws<NegocioException>(() => _servicio.RestaurarCopiaSeguridad(Admin, ClaveAdmin, @"C:\no_existe_sgig.bak"));
     }
 }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using SGIG.Entidades;
 using SGIG.Negocio;
 
 namespace SGIG.UI
@@ -8,9 +9,11 @@ namespace SGIG.UI
     public partial class frmBackup : Form
     {
         private readonly ServicioBackup _servicioBackup;
+        private readonly Usuario _usuario;
 
-        public frmBackup()
+        public frmBackup(Usuario usuario)
         {
+            _usuario = usuario;
             InitializeComponent();
             Tema.EstilizarFormulario(this);
             Tema.EstilizarControles(this);
@@ -29,12 +32,14 @@ namespace SGIG.UI
             if (sfd.ShowDialog() != DialogResult.OK) return;
 
             string rutaSeleccionada = sfd.FileName;
+            string? contrasenia = frmConfirmarContrasenia.Pedir(this, "Crear copia de seguridad");
+            if (contrasenia is null) return;
 
             BloquearUI("Generando copia de seguridad en SQL Server...");
 
             try
             {
-                await Task.Run(() => _servicioBackup.GenerarCopiaSeguridad(rutaSeleccionada));
+                await Task.Run(() => _servicioBackup.GenerarCopiaSeguridad(_usuario, contrasenia, rutaSeleccionada));
 
                 lblEstado.Text = "Copia de seguridad generada con éxito.";
                 prgProgreso.Style = ProgressBarStyle.Blocks;
@@ -83,12 +88,14 @@ namespace SGIG.UI
             if (confirmacion != DialogResult.Yes) return;
 
             string rutaSeleccionada = ofd.FileName;
+            string? contrasenia = frmConfirmarContrasenia.Pedir(this, "Restaurar copia de seguridad");
+            if (contrasenia is null) return;
 
             BloquearUI("Restaurando base de datos desde el backup...");
 
             try
             {
-                await Task.Run(() => _servicioBackup.RestaurarCopiaSeguridad(rutaSeleccionada));
+                await Task.Run(() => _servicioBackup.RestaurarCopiaSeguridad(_usuario, contrasenia, rutaSeleccionada));
 
                 lblEstado.Text = "Base de datos restaurada con éxito.";
                 prgProgreso.Style = ProgressBarStyle.Blocks;
