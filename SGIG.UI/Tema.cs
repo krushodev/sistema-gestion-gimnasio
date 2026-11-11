@@ -404,20 +404,6 @@ namespace SGIG.UI
         public static void TintarFila(DataGridViewRow fila, bool positivo) =>
             fila.DefaultCellStyle.BackColor = positivo ? FilaActiva : FilaInactiva;
 
-        /// <summary>
-        /// Estado minimalista para una celda de grilla: punto + texto corto en verde
-        /// (positivo) o rojo (negativo), sin fondo. El color se mantiene al seleccionar la fila.
-        /// </summary>
-        public static void PintarEstado(DataGridViewCellFormattingEventArgs e, bool positivo, string texto)
-        {
-            var color = positivo ? ExitoTexto : PeligroTexto;
-            e.Value = "● " + texto;
-            e.CellStyle!.ForeColor = color;
-            e.CellStyle.SelectionForeColor = color;
-            e.CellStyle.Font = Fuente(9F, FontStyle.Bold);
-            e.FormattingApplied = true;
-        }
-
         // ── Visualizador de contraseña (Toggle) ─────────────────────────────
         public static void AgregarToggleContrasenia(TextBox txt)
         {

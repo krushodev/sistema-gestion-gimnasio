@@ -45,7 +45,6 @@ namespace SGIG.UI
             cboRol.SelectedIndexChanged += (s, e) => AplicarFiltro();
             cboEstado.SelectedIndexChanged += (s, e) => AplicarFiltro();
 
-            dgvUsuarios.CellFormatting += DgvUsuarios_CellFormatting;
             dgvUsuarios.DataBindingComplete += DgvUsuarios_DataBindingComplete;
             dgvUsuarios.SelectionChanged += (s, e) => ActualizarBotonBaja();
         }
@@ -67,7 +66,7 @@ namespace SGIG.UI
         /// <summary>
         /// Columnas explícitas: la grilla muestra sólo lo que le sirve al administrador.
         /// Sin esto se autogeneraría una columna por propiedad, incluido el hash de la
-        /// contraseña y todos los ids internos. Se incluye el estado (Activo/Dado de
+        /// contraseña y todos los ids internos. El estado no es una columna: la fila se tiñe verde (activo) o rojo (dado de
         /// baja) para que un usuario dado de baja siga siendo visible y se pueda reactivar.
         /// </summary>
         private void ConfigurarGrilla()
@@ -79,8 +78,7 @@ namespace SGIG.UI
                 (nameof(Usuario.NombreUsuario), "Usuario", 85),
                 (nameof(Usuario.NombreRol), "Rol", 115),
                 (nameof(Usuario.Legajo), "Legajo", 85),
-                (nameof(Usuario.Email), "Correo electrónico", 175),
-                (nameof(Usuario.Activo), "Estado", 60));
+                (nameof(Usuario.Email), "Correo electrónico", 175));
         }
 
         private void CargarGrilla()
@@ -209,17 +207,6 @@ namespace SGIG.UI
         {
             var usuario = dgvUsuarios.CurrentRow?.DataBoundItem as Usuario;
             btnDarDeBaja.Text = usuario is { Activo: false } ? "Dar de &alta" : "Dar de &baja";
-        }
-
-        /// <summary>Muestra la columna Activo como estado coloreado (verde/rojo).</summary>
-        private void DgvUsuarios_CellFormatting(object? sender, DataGridViewCellFormattingEventArgs e)
-        {
-            if (dgvUsuarios.Columns[e.ColumnIndex].Name != "col" + nameof(Usuario.Activo)) return;
-
-            if (e.Value is bool activo)
-            {
-                Tema.PintarEstado(e, activo, activo ? "Activo" : "Baja");
-            }
         }
 
         /// <summary>Tiñe cada fila de verde (activo) o rojo (baja) suave.</summary>

@@ -67,8 +67,7 @@ namespace SGIG.UI
             Grillas.Configurar(dgvMaquinas,
                 (nameof(Maquina.Nombre), "Nombre", 110),
                 (nameof(Maquina.Marca), "Marca", 90),
-                (nameof(Maquina.FechaCompra), "Fecha compra", 90),
-                (nameof(Maquina.Estado), "Estado", 90));
+                (nameof(Maquina.FechaCompra), "Fecha compra", 90));
             dgvMaquinas.Columns["col" + nameof(Maquina.FechaCompra)]!.DefaultCellStyle.Format = "dd/MM/yyyy";
 
             // Antigüedad: se calcula a partir de la fecha de compra (ver DgvMaquinas_CellFormatting).
@@ -118,18 +117,13 @@ namespace SGIG.UI
             lblResultado.Text = $"Mostrando {filtradas.Count} de {_maquinas.Count} máquinas";
         }
 
-        /// <summary>La columna Antigüedad muestra "8 años" en vez de la fecha de compra.</summary>
+        /// <summary>Tiñe la fila según el estado (verde operativa, rojo en reparación) y muestra la Antigüedad como "8 años".</summary>
         private void DgvMaquinas_CellFormatting(object? sender, DataGridViewCellFormattingEventArgs e)
         {
             if (e.RowIndex < 0) return;
             var nombreColumna = dgvMaquinas.Columns[e.ColumnIndex].Name;
             if (dgvMaquinas.Rows[e.RowIndex].DataBoundItem is Maquina maq)
                 e.CellStyle!.BackColor = maq.Estado == "Operativa" ? Tema.FilaActiva : Tema.FilaInactiva;
-            if (nombreColumna == "col" + nameof(Maquina.Estado) && e.Value is string estado)
-            {
-                Tema.PintarEstado(e, estado == "Operativa", estado == "Operativa" ? "Operativa" : "En reparación");
-                return;
-            }
             if (nombreColumna != ColumnaAntiguedad) return;
             e.Value = ServicioMaquina.Antiguedad(e.Value as DateTime?, DateTime.Today);
             e.FormattingApplied = true;

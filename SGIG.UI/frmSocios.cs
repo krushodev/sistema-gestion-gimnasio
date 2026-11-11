@@ -54,7 +54,6 @@ namespace SGIG.UI
             foreach (var combo in new[] { cboEstado, cboCuota, cboPlan })
                 combo.SelectedIndexChanged += (s, e) => AplicarFiltro();
 
-            dgvSocios.CellFormatting += DgvSocios_CellFormatting;
             dgvSocios.DataBindingComplete += DgvSocios_DataBindingComplete;
             dgvSocios.SelectionChanged += (s, e) => ActualizarBotonBaja();
             dgvSocios.CellPainting += DgvSocios_CellPainting;
@@ -83,7 +82,7 @@ namespace SGIG.UI
 
         /// <summary>
         /// Columnas explícitas: la grilla muestra sólo lo que le sirve a recepción,
-        /// sin exponer ids internos. Se incluye el estado (Activo/Dado de baja) para
+        /// sin exponer ids internos. El estado no es una columna: la fila se tiñe verde (activo) o rojo (baja) para
         /// que un socio dado de baja siga siendo visible y se pueda reactivar.
         /// </summary>
         private void ConfigurarGrilla()
@@ -94,8 +93,7 @@ namespace SGIG.UI
                 (nameof(Socio.Documento), "Documento", 80),
                 (nameof(Socio.Telefono), "Teléfono", 90),
                 (nameof(Socio.Email), "Correo electrónico", 150),
-                (nameof(Socio.FechaVencimientoCuota), "Vencim. cuota", 90),
-                (nameof(Socio.Activo), "Estado", 60));
+                (nameof(Socio.FechaVencimientoCuota), "Vencim. cuota", 90));
 
             // Botón por fila para ir al perfil (Fase 12). Se dibuja a mano en CellPainting
             // para que tenga el estilo de Tema y no el botón gris de Windows.
@@ -305,17 +303,6 @@ namespace SGIG.UI
         {
             var socio = dgvSocios.CurrentRow?.DataBoundItem as Socio;
             btnDarDeBaja.Text = socio is { Activo: false } ? "Dar de &alta" : "Dar de &baja";
-        }
-
-        /// <summary>Muestra la columna Activo como estado coloreado (verde/rojo).</summary>
-        private void DgvSocios_CellFormatting(object? sender, DataGridViewCellFormattingEventArgs e)
-        {
-            if (dgvSocios.Columns[e.ColumnIndex].Name != "col" + nameof(Socio.Activo)) return;
-
-            if (e.Value is bool activo)
-            {
-                Tema.PintarEstado(e, activo, activo ? "Activo" : "Baja");
-            }
         }
 
         /// <summary>Tiñe cada fila de verde (activo) o rojo (baja) suave.</summary>
